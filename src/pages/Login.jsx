@@ -7,7 +7,7 @@ function Login() {
     const username = usernameRef.current.value;
     if (username) {
       localStorage.setItem("username", username);
-      window.location.href = "/Leki";
+      window.location.href = "/Main/Leki";
     }
   };
 

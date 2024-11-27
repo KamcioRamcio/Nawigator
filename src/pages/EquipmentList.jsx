@@ -4,7 +4,7 @@ import EquipmentAdd from "../components/EquipmentAdd.jsx";
 import SiteChange from "../components/SiteChange.jsx";
 import ConstantsEquipment from "../constants/constantsEquipment.js";
 
-function MainEquipmentList() {
+function EquipmentList() {
     const [equipments, setEquipments] = useState([]);
     const [editMode, setEditMode] = useState(false);
     const [editedEquipment, setEditedEquipment] = useState({});
@@ -307,12 +307,9 @@ function MainEquipmentList() {
                         <thead className="text-left">
                         <tr>
                             <th className="px-2 py-4">Wyroby Medyczne</th>
-                            <th className="px-2 py-4">Ilość Wymagana</th>
-                            <th className="px-2 py-4">Ilość Aktualna</th>
                             <th className="px-2 py-4">Data Ważności</th>
-                            <th className="px-2 py-4">Uwagi</th>
+                            <th className="px-2 py-4">Ilość Aktualna</th>
                             <th className="px-2 py-4 text-red-600">Termin</th>
-                            <th className="px-2 py-4 text-red-600">Ilość/Termin</th>
                             <th className="px-2 py-4">Kto Zmienił</th>
                             <th className="px-2 py-4">Akcje</th>
                         </tr>
@@ -351,30 +348,6 @@ function MainEquipmentList() {
                                                     <td className="pl-6 px-2 py-4">
                                                         {editMode[equipment.sprzet_id] ? (
                                                             <input
-                                                                type="number"
-                                                                value={editedEquipment[equipment.sprzet_id]?.sprzet_ilosc_wymagana || ""}
-                                                                onChange={(e) => handleEdit(equipment.sprzet_id, "sprzet_ilosc_wymagana", e.target.value)}
-                                                                className="w-full"
-                                                            />
-                                                        ) : (
-                                                            equipment.sprzet_ilosc_wymagana
-                                                        )}
-                                                    </td>
-                                                    <td className="pl-6 px-2 py-4">
-                                                        {editMode[equipment.sprzet_id] ? (
-                                                            <input
-                                                                type="number"
-                                                                value={editedEquipment[equipment.sprzet_id]?.sprzet_ilosc_aktualna || ""}
-                                                                onChange={(e) => handleEdit(equipment.sprzet_id, "sprzet_ilosc_aktualna", e.target.value)}
-                                                                className="w-full"
-                                                            />
-                                                        ) : (
-                                                            equipment.sprzet_ilosc_aktualna
-                                                        )}
-                                                    </td>
-                                                    <td className="pl-6 px-2 py-4">
-                                                        {editMode[equipment.sprzet_id] ? (
-                                                            <input
                                                                 type="date"
                                                                 value={editedEquipment[equipment.sprzet_id]?.sprzet_data_waznosci || ""}
                                                                 onChange={(e) => handleEdit(equipment.sprzet_id, "sprzet_data_waznosci", e.target.value)}
@@ -387,32 +360,13 @@ function MainEquipmentList() {
                                                     <td className="pl-6 px-2 py-4">
                                                         {editMode[equipment.sprzet_id] ? (
                                                             <input
-                                                                type="text"
-                                                                value={editedEquipment[equipment.sprzet_id]?.sprzet_status || ""}
-                                                                onChange={(e) => handleEdit(equipment.sprzet_id, "sprzet_status", e.target.value)}
+                                                                type="number"
+                                                                value={editedEquipment[equipment.sprzet_id]?.sprzet_ilosc_aktualna || ""}
+                                                                onChange={(e) => handleEdit(equipment.sprzet_id, "sprzet_ilosc_aktualna", e.target.value)}
                                                                 className="w-full"
                                                             />
                                                         ) : (
-                                                            equipment.sprzet_status
-                                                        )}
-                                                    </td>
-                                                    <td className="pl-6 px-2 py-4">
-                                                        {editMode[equipment.sprzet_id] ? (
-                                                            <select
-                                                                value={editedEquipment[equipment.sprzet_id]?.sprzet_termin || ""}
-                                                                onChange={(e) => handleEdit(equipment.sprzet_id, "sprzet_termin", e.target.value)}
-                                                                className="border px-2 py-1 w-5/6"
-                                                            >
-                                                                <option>Wybierz Termin</option>
-                                                                {ConstantsEquipment.StatusOptions.map(option => (
-                                                                    <option key={option.value} value={option.value}>
-                                                                        {option.label}
-                                                                    </option>
-                                                                ))}
-
-                                                            </select>
-                                                        ) : (
-                                                            equipment.sprzet_termin
+                                                            equipment.sprzet_ilosc_aktualna
                                                         )}
                                                     </td>
                                                     <td className="pl-6 px-2 py-4">
@@ -500,4 +454,4 @@ function MainEquipmentList() {
 
 }
 
-export default MainEquipmentList;
+export default EquipmentList;

@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from "react";
-import apiUrl from "./api.js";
+import apiUrl from "../constants/api.js";
 import MedicineAdd from "../components/MedicineAdd";
 import SiteChange from "../components/SiteChange.jsx";
 import ConstantsMedicine from "../constants/constantsMedicine.js";
@@ -373,8 +373,9 @@ function MainMedicineList() {
                                                     </tr>
                                                 )}
                                                 {medicines[category][subcategory][subsubcategory].map(medicine => (
-                                                    <tr key={medicine.lek_id}>
-                                                        <td className="pl-6 px-2 py-4">
+                                                    <tr key={medicine.lek_id}
+                                                        className={medicine.lek_przechowywanie !== "freezer" ? "bg-blue-200" : ""}>
+                                                    <td className="pl-6 px-2 py-4">
                                                             {editMode[medicine.lek_id] ? (
                                                                 <input
                                                                     type="text"
@@ -488,7 +489,7 @@ function MainMedicineList() {
                                                                     type = "number"
                                                                     value = {editedValues[medicine.lek_id]?.stan_magazynowy_ilosc || ""}
                                                                     onChange = {(e) =>
-                                                                        handleEdit(medicine.lek_id, "stan_magazynowy", e.target.value)
+                                                                        handleEdit(medicine.lek_id, "stan_magazynowy_ilosc", e.target.value)
                                                                     }
                                                                     className="border px-2 py-1 w-5/6"
                                                                 />
