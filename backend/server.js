@@ -1,6 +1,6 @@
-const express = require('express');
-const cors = require('cors'); // Import the CORS package
-const sqlite3 = require('sqlite3').verbose();
+import express from 'express';
+import cors from 'cors';
+import sqlite3 from 'sqlite3';
 
 const app = express();
 const port = 3000;
@@ -17,7 +17,7 @@ const db = new sqlite3.Database('db.sqlite3', (err) => {
         console.log('Connected to the SQLite database');
     }
 });
-
+//TODO: Add import/export of database schema
 
 // Create 'Leki' table
 // db.run(`CREATE TABLE IF NOT EXISTS Leki (
@@ -157,6 +157,13 @@ const db = new sqlite3.Database('db.sqlite3', (err) => {
 //     }
 // });
 
+// db.run('CREATE TABLE IF NOT EXISTS Utylizacja(id INTEGER PRIMARY KEY AUTOINCREMENT, nazwa TEXT, ilosc INTEGER, data_waznosci DATE, ilosc_nominalna TEXT, grupa TEXT)', (err) => {
+//     if (err) {
+//         console.error('Error creating Utylizacja table:', err.message);
+//     } else {
+//         console.log('Utylizacja table created');
+//     }
+// });
 // Dodawanie leku
 
 // Data look "2021-06-01"
@@ -572,6 +579,62 @@ app.delete('/api/sprzet/delete/:id', (req, res) => {
     })
 });
 
+// Utylizacja
+app.get('/api/utylizacja', (req, res) => {
+    db.all('SELECT * FROM Utylizacja', [], (err, rows) => {
+        if (err) {
+            return res.status(500).json({error: err.message});
+        }
+
+        res.json(rows);
+    });
+});
+
+app.post('/api/utylizacja', (req, res) => {
+    const {nazwa, ilosc ,data_waznosci, ilosc_nominalna, grupa} = req.body;
+
+    db.run('INSERT INTO Utylizacja (nazwa, ilosc,data_waznosci, ilosc_nominalna, grupa) VALUES (?, ?, ?, ?, ?)', [nazwa, ilosc, data_waznosci, ilosc_nominalna, grupa], function (err) {
+        if (err) {
+            return res.status(500).json({error: err.message});
+        }
+
+        res.status(201).json({message: 'Utylizacja added successfully'});
+    });
+});
+
+app.delete('/api/utylizacja/delete/:id', (req, res) => {
+    const {id} = req.params;
+
+    db.run('DELETE FROM Utylizacja WHERE id = ?', [id], function (err) {
+        if (err) {
+            return res.status(500).json({error: err.message});
+        }
+
+        res.json({message: 'Utylizacja deleted successfully'});
+    });
+});
+
+app.put('/api/utylizacja/:id', (req, res) => {
+    const {id} = req.params;
+    const {nazwa, ilosc, data_waznosci, ilosc_nominalna, grupa} = req.body;
+
+    const sql = `
+        UPDATE Utylizacja
+        SET nazwa = ?, ilosc = ?, data_waznosci = ?, ilosc_nominalna = ?, grupa = ?
+        WHERE id = ?
+    `;
+
+    const params = [nazwa, ilosc, data_waznosci, ilosc_nominalna, grupa, id];
+
+    db.run(sql, params, function (err) {
+        if (err) {
+            return res.status(500).json({error: err.message});
+        }
+
+        res.json({message: 'Utylizacja updated successfully'});
+    });
+});
+
 db.run('PRAGMA foreign_keys = ON;', (err) => {
     if (err) {
         console.error('Failed to enable foreign keys:', err.message);
@@ -580,6 +643,153 @@ db.run('PRAGMA foreign_keys = ON;', (err) => {
     }
 });
 
+import fs from 'fs/promises';
+import path from 'path';
+
+// db_backup
+const DB_PATH = 'db.sqlite3';
+const BACKUP_PATH = './protected/db_backup.sqlite3';
+const EXPORT_PATH = './temp'
+
+export async function createBackup() {
+    try {
+        await fs.mkdir('./protected', { recursive: true });
+
+        await fs.copyFile(DB_PATH, BACKUP_PATH);
+        console.log('Backup created successfully');
+    }catch (error) {
+        console.error('Failed to create backup:', error.message);
+    }
+}
+
+export function exportDatabase() {
+    return new Promise((resolve, reject) => {
+        fs.mkdir(EXPORT_PATH, { recursive: true })
+            .then(() => {
+                const exportFilePath = path.join(EXPORT_PATH, `export_${Date.now()}.db`);
+
+                fs.copyFile(DB_PATH, exportFilePath)
+                    .then(() => resolve(exportFilePath))
+                    .catch(reject);
+            })
+            .catch(reject);
+    });
+}
+
+app.get('/api/export-database', async (req, res) => {
+    try {
+        const exportPath = await exportDatabase();
+
+        res.download(exportPath, 'database_export.db', (err) => {
+            if (err) {
+                console.error('Download error:', err);
+            }
+            fs.unlink(exportPath).catch(console.error);
+        });
+    } catch (error) {
+        console.error('Export error:', error);
+        res.status(500).json({ error: 'Błąd podczas eksportu bazy danych' });
+    }
+});
+
+const backupMiddleware = async (req, res, next) => {
+    await next();
+
+    if (['POST', 'PUT', 'DELETE'].includes(req.method)) {
+        try {
+            await createBackup();
+        } catch (error) {
+            console.error('Backup middleware error:', error);
+        }
+    }
+};
+app.use('/api/medicines', backupMiddleware);
+app.use('/api/utilizations', backupMiddleware);
+app.use('/api/equipment', backupMiddleware);
+
+// db import
+import multer from 'multer';
+
+const storage = multer.diskStorage({
+    destination: './uploads/',
+    filename: (req, file, cb) => {
+        cb(null, 'imported_database.db');
+    }
+});
+
+const upload = multer({ storage: storage });
+
+const closeDatabase = (db) => {
+    return new Promise((resolve, reject) => {
+        db.close((err) => {
+            if (err) reject(err);
+            else resolve();
+        });
+    });
+};
+
+app.post('/api/import-database', upload.single('database'), async (req, res) => {
+    let db = null;
+    try {
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                message: 'Nie przesłano pliku'
+            });
+        }
+
+        const currentDbPath = './db.sqlite3';
+        const importedDbPath = req.file.path;
+        const backupDbPath = './db.sqlite3.backup';
+
+        // Zamknij obecne połączenie z bazą danych
+        if (global.db) {
+            await closeDatabase(global.db);
+            global.db = null;
+        }
+
+        // Utwórz kopię zapasową
+        await fs.copyFile(currentDbPath, backupDbPath);
+
+        try {
+            // Spróbuj skopiować nową bazę danych
+            await fs.copyFile(importedDbPath, currentDbPath);
+
+            // Usuń plik tymczasowy
+            await fs.unlink(importedDbPath);
+
+            // Sprawdź czy nowa baza działa
+            db = new sqlite3.Database(currentDbPath);
+
+            // Zainicjuj nowe połączenie globalne
+            global.db = db;
+
+            res.json({
+                success: true,
+                message: 'Baza danych została pomyślnie zaimportowana'
+            });
+
+        } catch (error) {
+            // W przypadku błędu, przywróć kopię zapasową
+            if (await fs.access(backupDbPath).then(() => true).catch(() => false)) {
+                await fs.copyFile(backupDbPath, currentDbPath);
+            }
+            throw error;
+        } finally {
+            // Usuń kopię zapasową
+            if (await fs.access(backupDbPath).then(() => true).catch(() => false)) {
+                await fs.unlink(backupDbPath);
+            }
+        }
+
+    } catch (error) {
+        console.error('Błąd podczas importowania bazy danych:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Wystąpił błąd podczas importowania bazy danych: ' + error.message
+        });
+    }
+});
 
 // Start the server
 app.listen(port, () => {

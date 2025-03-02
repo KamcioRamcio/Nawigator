@@ -1,8 +1,8 @@
 import React, {useEffect, useState} from "react";
-import apiUrl from "../constants/api.js";
-import MedicineAdd from "../components/MedicineAdd";
-import SiteChange from "../components/SiteChange.jsx";
-import ConstantsMedicine from "../constants/constantsMedicine.js";
+import apiUrl from "../../constants/api.js";
+import MedicineAdd from "../../components/MedicineAdd.jsx";
+import SiteChange from "../../components/SiteChange.jsx";
+import ConstantsMedicine from "../../constants/constantsMedicine.js";
 
 
 function MainMedicineList() {

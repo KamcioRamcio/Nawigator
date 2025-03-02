@@ -1,8 +1,8 @@
 import React, {useEffect, useState} from "react";
-import apiUrl from "../constants/api.js";
-import EquipmentAdd from "../components/EquipmentAdd.jsx";
-import SiteChange from "../components/SiteChange.jsx";
-import ConstantsEquipment from "../constants/constantsEquipment.js";
+import apiUrl from "../../constants/api.js";
+import EquipmentAdd from "../../components/EquipmentAdd.jsx";
+import SiteChange from "../../components/SiteChange.jsx";
+import ConstantsEquipment from "../../constants/constantsEquipment.js";
 
 function EquipmentList() {
     const [equipments, setEquipments] = useState([]);
@@ -372,8 +372,8 @@ function EquipmentList() {
                                                     <td className="pl-6 px-2 py-4">
                                                         {editMode[equipment.sprzet_id] ? (
                                                             <select
-                                                                value={editedEquipment[equipment.sprzet_id]?.sprzet_ilosc_termin || ""}
-                                                                onChange={(e) => handleEdit(equipment.sprzet_id, "sprzet_ilosc_termin", e.target.value)}
+                                                                value={editedEquipment[equipment.sprzet_id]?.sprzet_termin || ""}
+                                                                onChange={(e) => handleEdit(equipment.sprzet_id, "sprzet_termin", e.target.value)}
                                                                 className="w-full"
                                                             >
                                                                 <option>Wybierz Ilosc/Termin</option>
@@ -384,7 +384,7 @@ function EquipmentList() {
                                                                 ))}
                                                             </select>
                                                         ) : (
-                                                            equipment.sprzet_ilosc_termin
+                                                            equipment.sprzet_termin
 
                                                         )}
                                                     </td>

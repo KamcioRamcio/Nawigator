@@ -1,0 +1,28 @@
+version: "3.8"
+
+services:
+  backend:
+    container_name: navigator-backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: weatherme/navigator-backend:2.0
+    ports:
+      - "3000:3000"
+    networks:
+      - navigator
+
+
+  frontend:
+    container_name: navigator-frontend
+    build:
+      dockerfile: Dockerfile-101
+    image: weatherme/navigator-frontend
+    ports:
+      - "8888:8888"
+    networks:
+      - navigator
+
+networks:
+  navigator:
+    driver: bridge
