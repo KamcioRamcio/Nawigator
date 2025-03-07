@@ -17,7 +17,8 @@ function MainMedicineList() {
         ilosc: '',
         data_waznosci: '',
         ilosc_nominalna: '',
-        grupa: ''
+        grupa: '',
+        kto_zmienil: username
     });
 
     useEffect(() => {
@@ -69,7 +70,8 @@ function MainMedicineList() {
                 ilosc: '',
                 data_waznosci: '',
                 ilosc_nominalna: '',
-                grupa: ''
+                grupa: '',
+                kto_zmienil: ''
             });
         } catch (error) {
             console.error('Error adding utilization:', error);
@@ -137,7 +139,7 @@ function MainMedicineList() {
             const downloadUrl = window.URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = downloadUrl;
-            link.download = `database_export_${currentDate.toISOString().slice(0,10)}.db`;
+            link.download = `database_export_${currentDate.toISOString().slice(0, 10)}.db`;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -155,291 +157,276 @@ function MainMedicineList() {
     };
 
     const handleDatabaseImport = async (e) => {
-    try {
-        const file = e.target.files[0];
-        if (!file) return;
+        try {
+            const file = e.target.files[0];
+            if (!file) return;
 
-        if (!file.name.endsWith('.db') && !file.name.endsWith('.sqlite')) {
-            alert('Proszę wybrać prawidłowy plik bazy danych (rozszerzenie .db lub .sqlite)');
-            return;
+            if (!file.name.endsWith('.db') && !file.name.endsWith('.sqlite')) {
+                alert('Proszę wybrać prawidłowy plik bazy danych (rozszerzenie .db lub .sqlite)');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('database', file);
+
+            const response = await fetch(apiUrl + 'import-database', {
+                method: 'POST',
+                body: formData,
+            });
+
+            if (!response.ok) throw new Error('Network response was not ok');
+        } catch (error) {
+            console.error('Error importing database:', error);
         }
-
-        const formData = new FormData();
-        formData.append('database', file);
-
-        const response = await fetch(apiUrl + 'import-database', {
-            method: 'POST',
-            body: formData,
-        });
-
-        if (!response.ok) throw new Error('Network response was not ok');
-    } catch (error) {
-        console.error('Error importing database:', error);
     }
-}
 
     return (
-        <div className="bg-gray-100 min-h-screen">
-            {/* Nagłówek */}
-            <header className="bg-white shadow-md py-4 fixed top-0 w-full z-10">
-                <div className="max-w-7xl mx-auto px-4">
-                    <div className="flex flex-col space-y-4">
-                        {/* Tytuł */}
-                        <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-gray-900 text-center">
-                            Zestawienie Utylizacji MV Nawigator XXI
-                        </h1>
-
-                        {/* Przyciski */}
-                        <div className="flex flex-col sm:flex-row justify-center items-center gap-3 sm:gap-4">
+        <div className="bg-gray-100 min-h-screen py-10">
+            <div>
+                <div>
+                    <h1 className="text-2xl text-center font-bold flex-grow">Zestawienie Utylizacji MV NAWIGATOR
+                        XXI</h1>
+                    <button className="absolute left-32 rounded-3xl bg-slate-900 text-white font-bold text-lg p-3"
+                            onClick={handleSiteChangeOpen}
+                    > Zmiana Arkusza
+                    </button>
+                    <button className="absolute right-32 rounded-3xl bg-slate-900 text-white font-bold text-lg p-3"
+                            onClick={handleAddUtilizationOpen}
+                    >Dodaj Pozycję
+                    </button>
+                    <div className="flex justify-center gap-4 mt-16">
+                        <button
+                            onClick={handleExportDatabase}
+                            className="rounded-3xl bg-slate-900 text-white font-bold text-lg p-3 flex items-center"
+                        >
+                            <span>Eksportuj bazę</span>
+                            <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                            </svg>
+                        </button>
+                        <>
+                            <input
+                                type="file"
+                                ref={fileInputRef}
+                                onChange={handleDatabaseImport}
+                                accept=".db,.sqlite"
+                                style={{display: 'none'}}
+                            />
                             <button
-                                onClick={handleSiteChangeOpen}
-                                className="w-full sm:w-auto rounded-full bg-slate-900 hover:bg-slate-700 text-white font-bold px-4 py-2 text-sm md:text-base transition-colors duration-200"
+                                onClick={handleImportClick}
+                                className="rounded-3xl bg-slate-900 text-white font-bold text-lg p-3 flex items-center"
                             >
-                                Zmiana Arkusza
-                            </button>
-
-                            <button
-                                onClick={handleAddUtilizationOpen}
-                                className="w-full sm:w-auto rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 text-sm md:text-base transition-colors duration-200"
-                            >
-                                Dodaj Pozycję
-                            </button>
-
-                            <button
-                                onClick={handleExportDatabase}
-                                className="w-full sm:w-auto rounded-full bg-amber-500 hover:bg-amber-600 text-white font-bold px-4 py-2 text-sm md:text-base flex items-center justify-center transition-colors duration-200"
-                            >
-                                <span>Eksportuj bazę</span>
+                                <span>Importuj bazę</span>
                                 <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                                           d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
                                 </svg>
                             </button>
-                            <>
-                                <input
-                                    type="file"
-                                    ref={fileInputRef}
-                                    onChange={handleDatabaseImport}
-                                    accept=".db,.sqlite"
-                                    style={{ display: 'none' }}
-                                />
-                                <button
-                                    onClick={handleImportClick}
-                                    className="w-full sm:w-auto rounded-full bg-amber-500 hover:bg-amber-600 text-white font-bold px-4 py-2 text-sm md:text-base flex items-center justify-center transition-colors duration-200"
-                                >
-                                    <span>Importuj bazę</span>
-                                    <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                                              d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-                                    </svg>
-                                </button>
-                            </>
-                        </div>
-
-                        {/* Info */}
-                        <div className="flex flex-col sm:flex-row justify-center items-center gap-2 text-sm">
-                            <p className="text-red-600 font-semibold">
-                                Data: {currentDate.toLocaleDateString('pl-PL')}
-                            </p>
-                            <span className="hidden sm:block">•</span>
-                            <p className="text-gray-600">
-                                Zalogowany jako: <span className="font-medium">{username}</span>
-                            </p>
-                        </div>
+                        </>
                     </div>
-                </div>
-            </header>
-
-            {/* Główna zawartość */}
-            <div className="mt-48 sm:mt-40 px-4">
-                <div className="max-w-7xl mx-auto bg-white shadow-lg rounded-lg overflow-hidden">
-                    {/* Tabela */}
-                    <div className="overflow-x-auto">
-                        <table className="w-full">
-                            <thead className="text-left">
-                                <tr className="bg-gray-200 text-gray-700 uppercase text-xs md:text-sm tracking-wide">
-                                    <th className="px-2 py-3">Nazwa</th>
-                                    <th className="px-2 py-3">Ilość</th>
-                                    <th className="px-2 py-3">Data ważności</th>
-                                    <th className="px-2 py-3">Ilość nominalna</th>
-                                    <th className="px-2 py-3">Grupa</th>
-                                    <th className="px-2 py-3">Kto Zmienił</th>
-                                    <th className="px-2 py-3">Akcje</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {utilizations.map(utilization => (
-                                    <tr key={utilization.id} className="border-b hover:bg-gray-50">
-                                        <td className="px-2 py-3">
-                                            {editMode[utilization.id] ? (
-                                                <input
-                                                    type="text"
-                                                    value={editedValues[utilization.id]?.nazwa || ""}
-                                                    onChange={(e) => handleEdit(utilization.id, "nazwa", e.target.value)}
-                                                    className="w-full border rounded px-2 py-1"
-                                                />
-                                            ) : (
-                                                utilization.nazwa
-                                            )}
-                                        </td>
-                                        <td className="px-2 py-3">
-                                            {editMode[utilization.id] ? (
-                                                <input
-                                                    type="number"
-                                                    value={editedValues[utilization.id]?.ilosc || ""}
-                                                    onChange={(e) => handleEdit(utilization.id, "ilosc", e.target.value)}
-                                                    className="w-full border rounded px-2 py-1"
-                                                />
-                                            ) : (
-                                                utilization.ilosc
-                                            )}
-                                        </td>
-                                        <td className="px-2 py-3">
-                                            {editMode[utilization.id] ? (
-                                                <input
-                                                    type="date"
-                                                    value={editedValues[utilization.id]?.data_waznosci || ""}
-                                                    onChange={(e) => handleEdit(utilization.id, "data_waznosci", e.target.value)}
-                                                    className="w-full border rounded px-2 py-1"
-                                                />
-                                            ) : (
-                                                utilization.data_waznosci
-                                            )}
-                                        </td>
-                                        <td className="px-2 py-3">
-                                            {editMode[utilization.id] ? (
-                                                <input
-                                                    type="number"
-                                                    value={editedValues[utilization.id]?.ilosc_nominalna || ""}
-                                                    onChange={(e) => handleEdit(utilization.id, "ilosc_nominalna", e.target.value)}
-                                                    className="w-full border rounded px-2 py-1"
-                                                />
-                                            ) : (
-                                                utilization.ilosc_nominalna
-                                            )}
-                                        </td>
-                                        <td className="px-2 py-3">
-                                            {editMode[utilization.id] ? (
-                                                <input
-                                                    type="text"
-                                                    value={editedValues[utilization.id]?.grupa || ""}
-                                                    onChange={(e) => handleEdit(utilization.id, "grupa", e.target.value)}
-                                                    className="w-full border rounded px-2 py-1"
-                                                />
-                                            ) : (
-                                                utilization.grupa
-                                            )}
-                                        </td>
-                                        <td className="px-2 py-3">{utilization.kto_zmienil}</td>
-                                        <td className="px-2 py-3">
-                                            <div className="flex flex-col sm:flex-row gap-2 justify-center">
-                                                {editMode[utilization.id] ? (
-                                                    <>
-                                                        <button
-                                                            onClick={() => handleSave(utilization.id)}
-                                                            className="text-green-600 hover:text-green-800 font-medium text-sm"
-                                                        >
-                                                            Zapisz
-                                                        </button>
-                                                        <button
-                                                            onClick={() => setEditMode(prev => ({
-                                                                ...prev,
-                                                                [utilization.id]: false
-                                                            }))}
-                                                            className="text-red-600 hover:text-red-800 font-medium text-sm"
-                                                        >
-                                                            Anuluj
-                                                        </button>
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <button
-                                                            onClick={() => {
-                                                                setEditMode(prev => ({
-                                                                    ...prev,
-                                                                    [utilization.id]: true
-                                                                }));
-                                                                setEditedValues(prev => ({
-                                                                    ...prev,
-                                                                    [utilization.id]: utilization
-                                                                }));
-                                                            }}
-                                                            className="text-blue-600 hover:text-blue-800 font-medium text-sm"
-                                                        >
-                                                            Edytuj
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleDeleteUtilization(utilization.id)}
-                                                            className="text-red-600 hover:text-red-800 font-medium text-sm"
-                                                        >
-                                                            Usuń
-                                                        </button>
-                                                    </>
-                                                )}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                    <h2 className="text-center text-xl text-red-800 font-bold pt-4 ">
+                        Data: {currentDate.toLocaleDateString('pl-PL')}
+                    </h2>
+                    <h3 className="text-center font-semibold p-4 text-lg">
+                        Zalogowany jako {username}
+                    </h3>
+                    <table className="w-full">
+                        <thead className="text-left">
+                        <tr>
+                            <th className="px-2 py-4">Nazwa</th>
+                            <th className="px-2 py-4">Ilość</th>
+                            <th className="px-2 py-4">Data ważności</th>
+                            <th className="px-2 py-4">Ilość nominalna</th>
+                            <th className="px-2 py-4">Grupa</th>
+                            <th className="px-2 py-4">Kto Zmienił</th>
+                            <th className="px-2 py-4">Akcje</th>
+                        </tr>
+                        </thead>
+                        <tbody className="text-left">
+                        {utilizations.map(utilization => (
+                            <tr key={utilization.id} className="border border-gray-700 hover:bg-gray-50">
+                                <td className="pl-6 px-2 py-4 border-r border-l border-gray-700">
+                                    {editMode[utilization.id] ? (
+                                        <input
+                                            type="text"
+                                            value={editedValues[utilization.id]?.nazwa || ""}
+                                            onChange={(e) => handleEdit(utilization.id, "nazwa", e.target.value)}
+                                            className="w-full"
+                                        />
+                                    ) : (
+                                        utilization.nazwa
+                                    )}
+                                </td>
+                                <td className="pl-6 px-2 py-4 border-r border-l border-gray-700">
+                                    {editMode[utilization.id] ? (
+                                        <input
+                                            type="number"
+                                            value={editedValues[utilization.id]?.ilosc || ""}
+                                            onChange={(e) => handleEdit(utilization.id, "ilosc", e.target.value)}
+                                            className="w-full"
+                                        />
+                                    ) : (
+                                        utilization.ilosc
+                                    )}
+                                </td>
+                                <td className="pl-6 px-2 py-4 border-r border-l border-gray-700">
+                                    {editMode[utilization.id] ? (
+                                        <input
+                                            type="date"
+                                            value={editedValues[utilization.id]?.data_waznosci || ""}
+                                            onChange={(e) => handleEdit(utilization.id, "data_waznosci", e.target.value)}
+                                            className="w-full"
+                                        />
+                                    ) : (
+                                        utilization.data_waznosci
+                                    )}
+                                </td>
+                                <td className="pl-6 px-2 py-4 border-r border-l border-gray-700">
+                                    {editMode[utilization.id] ? (
+                                        <input
+                                            type="number"
+                                            value={editedValues[utilization.id]?.ilosc_nominalna || ""}
+                                            onChange={(e) => handleEdit(utilization.id, "ilosc_nominalna", e.target.value)}
+                                            className="w-full"
+                                        />
+                                    ) : (
+                                        utilization.ilosc_nominalna
+                                    )}
+                                </td>
+                                <td className="pl-6 px-2 py-4 border-r border-l border-gray-700">
+                                    {editMode[utilization.id] ? (
+                                        <input
+                                            type="text"
+                                            value={editedValues[utilization.id]?.grupa || ""}
+                                            onChange={(e) => handleEdit(utilization.id, "grupa", e.target.value)}
+                                            className="w-full"
+                                        />
+                                    ) : (
+                                        utilization.grupa
+                                    )}
+                                </td>
+                                <td className="pl-6 px-2 py-4 border-r border-l border-gray-700">
+                                    {utilization.kto_zmienil}</td>
+                                <td>
+                                    {editMode[utilization.id] ? (
+                                        <>
+                                            <button
+                                                onClick={() => handleSave(utilization.id)}
+                                                className="text-green-500 font-semibold mr-2"
+                                            >
+                                                Zapisz
+                                            </button>
+                                            <button
+                                                onClick={() => setEditMode(prev => ({
+                                                    ...prev,
+                                                    [utilization.id]: false
+                                                }))}
+                                                className="text-red-500 font-semibold"
+                                            >
+                                                Anuluj
+                                            </button>
+                                            <button
+                                                onClick={() => handleDeleteUtilization(utilization.id)}
+                                                className="text-red-400 font-semibold mr-2 ml-2"
+                                            >
+                                                Usuń
+                                            </button>
+                                        </>
+                                    ) : (
+                                        <button
+                                            onClick={() => {
+                                                setEditMode(prev => ({
+                                                    ...prev,
+                                                    [utilization.id]: true
+                                                }));
+                                                setEditedValues(prev => ({
+                                                    ...prev,
+                                                    [utilization.id]: utilization
+                                                }));
+                                            }}
+                                            className="text-blue-500 font-semibold"
+                                        >
+                                            Edytuj
+                                        </button>
+                                    )}
+                                </td>
+                            </tr>
+                        ))}
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
-            {/* Modale */}
             <UtilizationAdd isOpen={utilizationAdd} onClose={handleAddUtilizationClose}>
-                <div className="p-6">
-                    <h2 className="text-xl font-bold mb-4">Dodaj nową pozycję</h2>
-                    <div className="space-y-4">
-                        <input
-                            type="text"
-                            name="nazwa"
-                            value={newUtilization.nazwa}
-                            onChange={handleInputUtilization}
-                            placeholder="Nazwa"
-                            className="w-full p-2 border rounded"
-                        />
-                        <input
-                            type="number"
-                            name="ilosc"
-                            value={newUtilization.ilosc}
-                            onChange={handleInputUtilization}
-                            placeholder="Ilość"
-                            className="w-full p-2 border rounded"
-                        />
-                        <input
-                            type="date"
-                            name="data_waznosci"
-                            value={newUtilization.data_waznosci}
-                            onChange={handleInputUtilization}
-                            className="w-full p-2 border rounded"
-                        />
-                        <input
-                            type="number"
-                            name="ilosc_nominalna"
-                            value={newUtilization.ilosc_nominalna}
-                            onChange={handleInputUtilization}
-                            placeholder="Ilość nominalna"
-                            className="w-full p-2 border rounded"
-                        />
-                        <input
-                            type="text"
-                            name="grupa"
-                            value={newUtilization.grupa}
-                            onChange={handleInputUtilization}
-                            placeholder="Grupa"
-                            className="w-full p-2 border rounded"
-                        />
-                        <button
-                            onClick={handleAddUtilization}
-                            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded transition-colors duration-200"
-                        >
-                            Dodaj
-                        </button>
-                    </div>
-                </div>
+                <h2>ADD UTILIZATION</h2>
+                <table>
+                    <thead>
+                    <tr>
+                        <th className="px-12 py-4">Nazwa</th>
+                        <th className="px-12 py-4">Ilość</th>
+                        <th className="px-12 py-4">Data ważności</th>
+                        <th className="px-12 py-4">Ilość nominalna</th>
+                        <th className="px-12 py-4">Grupa</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                        <td>
+                            <input
+                                type="text"
+                                name="nazwa"
+                                value={newUtilization.nazwa}
+                                onChange={handleInputUtilization}
+                                placeholder="Nazwa"
+                            />
+                        </td>
+                        <td>
+                            <input
+                                type="number"
+                                name="ilosc"
+                                value={newUtilization.ilosc}
+                                onChange={handleInputUtilization}
+                                placeholder="Ilość"
+                            />
+                        </td>
+                        <td>
+                            <input
+                                type="date"
+                                name="data_waznosci"
+                                value={newUtilization.data_waznosci}
+                                onChange={handleInputUtilization}
+                            />
+                        </td>
+                        <td>
+                            <input
+                                type="number"
+                                name="ilosc_nominalna"
+                                value={newUtilization.ilosc_nominalna}
+                                onChange={handleInputUtilization}
+                                placeholder="Ilość nominalna"
+                            />
+                        </td>
+                        <td>
+                            <input
+                                type="text"
+                                name="grupa"
+                                value={newUtilization.grupa}
+                                onChange={handleInputUtilization}
+                                placeholder="Grupa"
+                            />
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+                <button className="p-4 bg-slate-700 rounded-3xl" onClick={() => {
+                    handleAddUtilization();
+                    handleAddUtilizationClose();
+                }}>
+                    Dodaj
+                </button>
             </UtilizationAdd>
-            <SiteChange isOpen={siteChange} onClose={handleSiteChangeClose} />
+            <SiteChange isOpen={siteChange} onClose={handleSiteChangeClose}/>
         </div>
     );
 }

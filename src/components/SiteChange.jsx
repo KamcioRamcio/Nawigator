@@ -12,7 +12,7 @@ function SiteChange({ isOpen, onClose }) {
             <a href="/zestawienie-sprzetu" key="zestawienie-sprzetu" className="p-2 font-bold">Spis sprzętu</a>
             <a href="/zgrany-sprzet" key="zgrany-sprzet" className="p-2 font-bold">Zgrany spis sprzętu</a>
             <a href="/old" key="old" className="p-2 font-bold">OLD</a>
-            <a href="/utulizacja" key="utulizacja" className="p-2 font-bold">Utulizacja</a>
+            <a href="/utylizacja" key="utulizacja" className="p-2 font-bold">Utylizacja</a>
             <button onClick={onClose} className="mt-4 p-2 bg-red-500 text-white rounded-3xl">Zamknij</button>
         </div>
     );

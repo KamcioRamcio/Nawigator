@@ -1,9 +1,13 @@
 import express from 'express';
 import cors from 'cors';
 import sqlite3 from 'sqlite3';
+import multer from 'multer';
+import schedule from "node-schedule";
+import os from 'os'
 
 const app = express();
 const port = 3000;
+
 
 // Middleware
 app.use(cors()); // Enable CORS to allow cross-origin requests
@@ -17,7 +21,21 @@ const db = new sqlite3.Database('db.sqlite3', (err) => {
         console.log('Connected to the SQLite database');
     }
 });
-//TODO: Add import/export of database schema
+
+
+// db.run(`CREATE TABLE IF NOT EXISTS Leki_spis_min (
+//     id INTEGER PRIMARY KEY AUTOINCREMENT,
+//     nazwa_leku TEXT,
+//     pakowanie TEXT,
+//     w_opakowaniu TEXT
+// )`, (err) => {
+//     if (err) {
+//         console.error('Error creating Leki_spis_min table:', err.message);
+//     } else {
+//         console.log('Leki_spis_min table created');
+//     }
+// });
+
 
 // Create 'Leki' table
 // db.run(`CREATE TABLE IF NOT EXISTS Leki (
@@ -217,7 +235,7 @@ function addMedicine(name, amount, packaging, expirationDate, status, minimalAmo
 // Dodawanie sprzetu
 
 function addEquipment (name, requiredAmount, currentAmount, expirationDate, status, term, termAmount, category, subCategory) {
-    db.run('INSERT INTO Sprzet (nazwa, ilosc_wymagana, ilosc_aktualna, data_waznosci, status, termin, ilosc_termin) VALUES (?, ?, ?, ?, ?, ?, ?)', [name, requiredAmount, currentAmount, expirationDate, status, term, termAmount], function (err) {
+    db.run('INSERT INTO Sprzet (nazwa, ilosc_wymagana, ilosc_aktualna, data_waznosci, status, termin, ilosc_termin, na_statku, torba_ratownika) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', [name, requiredAmount, currentAmount, expirationDate, status, term, termAmount], function (err) {
         if (err) {
             return console.log(err.message);
         }
@@ -298,27 +316,15 @@ app.get('/api/leki-kategorie', (req, res) => {
                stan_magazynowy.data             AS stan_magazynowy_data,
                stan_magazynowy.status           AS stan_magazynowy_status,
                stan_magazynowy.important_status AS stan_magazynowy_important_status
-
-        FROM Kategorie kategorie
-                 LEFT JOIN Pod_kategorie pod_kategorie ON kategorie.id = pod_kategorie.id_kategorii
-                 LEFT JOIN Pod_pod_kategorie pod_pod_kategorie ON pod_kategorie.id = pod_pod_kategorie.id_pod_kategorii
-                 LEFT JOIN Leki_kategorie leki_kategorie ON kategorie.id = leki_kategorie.id_kategorii
-                 LEFT JOIN Leki_pod_kategorie leki_pod_kategorie
-                           ON pod_kategorie.id = leki_pod_kategorie.id_pod_kategorii
-                 LEFT JOIN Leki_pod_pod_kategorie leki_pod_pod_kategorie
-                           ON pod_pod_kategorie.id = leki_pod_pod_kategorie.id_pod_pod_kategorii
-                 LEFT JOIN Leki leki
-                           ON leki.id = leki_kategorie.id_leku
-                               OR leki.id = leki_pod_kategorie.id_leku
-                               OR leki.id = leki_pod_pod_kategorie.id_leku
-                 LEFT JOIN Rozchod rozchod
-                           ON leki.id = rozchod.id_leku
-                 LEFT JOIN Stan_magazynowy stan_magazynowy
-                           ON leki.id = stan_magazynowy.id_leku
-
-        WHERE (leki_kategorie.id_leku IS NOT NULL AND pod_kategorie.id IS NULL AND pod_pod_kategorie.id IS NULL)
-           OR (leki_pod_kategorie.id_leku IS NOT NULL AND pod_pod_kategorie.id IS NULL)
-           OR (leki_pod_pod_kategorie.id_leku IS NOT NULL)
+        FROM Leki leki
+                 LEFT JOIN Leki_kategorie leki_kategorie ON leki.id = leki_kategorie.id_leku
+                 LEFT JOIN Kategorie kategorie ON leki_kategorie.id_kategorii = kategorie.id
+                 LEFT JOIN Leki_pod_kategorie leki_pod_kategorie ON leki.id = leki_pod_kategorie.id_leku
+                 LEFT JOIN Pod_kategorie pod_kategorie ON leki_pod_kategorie.id_pod_kategorii = pod_kategorie.id
+                 LEFT JOIN Leki_pod_pod_kategorie leki_pod_pod_kategorie ON leki.id = leki_pod_pod_kategorie.id_leku
+                 LEFT JOIN Pod_pod_kategorie pod_pod_kategorie ON leki_pod_pod_kategorie.id_pod_pod_kategorii = pod_pod_kategorie.id
+                 LEFT JOIN Rozchod rozchod ON leki.id = rozchod.id_leku
+                 LEFT JOIN Stan_magazynowy stan_magazynowy ON leki.id = stan_magazynowy.id_leku
         ORDER BY kategoria_id, podkategoria_id, podpodkategoria_id, lek_id;
     `;
 
@@ -328,9 +334,10 @@ app.get('/api/leki-kategorie', (req, res) => {
         }
 
         const groupedData = rows.reduce((result, row) => {
-            const kategoriaNazwa = row.kategoria_nazwa;
-            const podkategoriaNazwa = row.podkategoria_nazwa;
-            const podpodkategoriaNazwa = row.podpodkategoria_nazwa;
+            const kategoriaNazwa = row.kategoria_nazwa || 27;
+            const podkategoriaNazwa = row.podkategoria_nazwa || 'null';
+            const podpodkategoriaNazwa = row.podpodkategoria_nazwa || 'null';
+
             if (!result[kategoriaNazwa]) {
                 result[kategoriaNazwa] = {};
             }
@@ -344,9 +351,8 @@ app.get('/api/leki-kategorie', (req, res) => {
             const isLekAlreadyAdded = result[kategoriaNazwa][podkategoriaNazwa][podpodkategoriaNazwa]
                 .some(lek => lek.lek_id === row.lek_id);
 
-            if (!isLekAlreadyAdded) {
+            if (!isLekAlreadyAdded && row.lek_id) {
                 result[kategoriaNazwa][podkategoriaNazwa][podpodkategoriaNazwa].push({
-                    // tabela leki
                     lek_id: row.lek_id,
                     lek_nazwa: row.lek_nazwa,
                     lek_ilosc: row.lek_ilosc,
@@ -354,11 +360,9 @@ app.get('/api/leki-kategorie', (req, res) => {
                     lek_data: row.lek_data,
                     lek_status: row.lek_status,
                     lek_ilosc_minimalna: row.lek_ilosc_minimalna,
-                    // tabela rozchod
                     rozchod_ilosc: row.rozchod_ilosc,
                     rozchod_data: row.rozchod_data,
                     rozchod_kto_zmienil: row.rozchod_kto_zmienil,
-                    // tabela stan_magazynowy
                     stan_magazynowy_ilosc: row.stan_magazynowy_ilosc,
                     stan_magazynowy_data: row.stan_magazynowy_data,
                     stan_magazynowy_status: row.stan_magazynowy_status,
@@ -390,7 +394,10 @@ app.put('/api/leki/:id', (req, res) => {
         stan_magazynowy_data,
         stan_magazynowy_ilosc,
         stan_magazynowy_important_status,
-        stan_magazynowy_status
+        stan_magazynowy_status,
+        id_kategorii,
+        id_pod_kategorii,
+        id_pod_pod_kategorii
     } = req.body;
 
     db.serialize(() => {
@@ -415,6 +422,27 @@ app.put('/api/leki/:id', (req, res) => {
                 db.run('ROLLBACK');
                 return res.status(500).json({error: err.message});
             }
+        });
+
+        db.run('UPDATE Leki_kategorie SET id_kategorii = ? WHERE id_leku = ?', [id_kategorii, id], function (err) {
+            if (err) {
+                db.run('ROLLBACK');
+                return res.status(500).json({error: err.message});
+            }
+        });
+
+        db.run('UPDATE Leki_pod_kategorie SET id_pod_kategorii = ? WHERE id_leku = ?', [id_pod_kategorii, id], function (err) {
+            if (err) {
+                db.run('ROLLBACK');
+                return res.status(500).json({error: err.message});
+            }
+        });
+
+        db.run(`UPDATE Leki_pod_pod_kategorie SET id_pod_pod_kategorii = ? WHERE id_leku = ?`, [id_pod_pod_kategorii, id], function (err) {
+        if (err) {
+            db.run('ROLLBACK');
+            return res.status(500).json({error: err.message});
+        }
         });
 
         db.run('COMMIT', function (err) {
@@ -445,41 +473,41 @@ app.delete('/api/leki/delete/:id', (req, res) => {
 
 app.get('/api/sprzet-kategorie', (req, res) => {
     const sql = `
-        SELECT kategorie_sprzet.id AS kategoria_sprzet_id,
-               kategorie_sprzet.nazwa AS kategoria_sprzet_nazwa,
-               pod_kategorie_sprzet.id AS podkategoria_sprzet_id,
-               pod_kategorie_sprzet.nazwa AS podkategoria_sprzet_nazwa,
-               sprzet.id AS sprzet_id,
-               sprzet.nazwa AS sprzet_nazwa,
-               sprzet.ilosc_wymagana AS sprzet_ilosc_wymagana,
-               sprzet.ilosc_aktualna AS sprzet_ilosc_aktualna,
-               sprzet.data_waznosci AS sprzet_data_waznosci,
-               sprzet.status AS sprzet_status,
-               sprzet.termin AS sprzet_termin,
-               sprzet.ilosc_termin AS sprzet_ilosc_termin,
-                sprzet.kto_zmienil AS sprzet_kto_zmienil
-        FROM Kategorie_sprzet kategorie_sprzet
-                 LEFT JOIN Pod_kategorie_sprzet pod_kategorie_sprzet
-                           ON kategorie_sprzet.id = pod_kategorie_sprzet.id_kategorii
-                 LEFT JOIN Sprzet_kategorie sprzet_kategorie ON kategorie_sprzet.id = sprzet_kategorie.id_kategorii
-                 LEFT JOIN Sprzet_pod_kategorie sprzet_pod_kategorie
-                           ON pod_kategorie_sprzet.id = sprzet_pod_kategorie.id_pod_kategorii
-                 LEFT JOIN Sprzet sprzet
-                           ON sprzet.id = sprzet_kategorie.id_sprzet OR sprzet.id = sprzet_pod_kategorie.id_sprzet
-        WHERE (kategorie_sprzet.id IS NOT NULL AND pod_kategorie_sprzet.id IS NULL AND sprzet.id IS NOT NULL)
-           OR (pod_kategorie_sprzet.id IS NOT NULL AND sprzet.id IS NOT NULL)
+        SELECT
+            kategorie_sprzet.id AS kategoria_sprzet_id,
+            kategorie_sprzet.nazwa AS kategoria_sprzet_nazwa,
+            pod_kategorie_sprzet.id AS podkategoria_sprzet_id,
+            pod_kategorie_sprzet.nazwa AS podkategoria_sprzet_nazwa,
+            sprzet.id AS sprzet_id,
+            sprzet.nazwa AS sprzet_nazwa,
+            sprzet.ilosc_wymagana AS sprzet_ilosc_wymagana,
+            sprzet.ilosc_aktualna AS sprzet_ilosc_aktualna,
+            sprzet.data_waznosci AS sprzet_data_waznosci,
+            sprzet.status AS sprzet_status,
+            sprzet.termin AS sprzet_termin,
+            sprzet.ilosc_termin AS sprzet_ilosc_termin,
+            sprzet.kto_zmienil AS sprzet_kto_zmienil,
+            sprzet.na_statku AS sprzet_na_statku,
+            sprzet.torba_ratownika AS sprzet_torba_ratownika
             
-        ORDER BY kategoria_sprzet_id, podkategoria_sprzet_id, sprzet_id;
+        FROM Sprzet sprzet
+                 LEFT JOIN Sprzet_kategorie sprzet_kategorie ON sprzet.id = sprzet_kategorie.id_sprzet
+                 LEFT JOIN Kategorie_sprzet kategorie_sprzet ON sprzet_kategorie.id_kategorii = kategorie_sprzet.id
+                 LEFT JOIN Sprzet_pod_kategorie sprzet_pod_kategorie ON sprzet.id = sprzet_pod_kategorie.id_sprzet
+                 LEFT JOIN Pod_kategorie_sprzet pod_kategorie_sprzet ON sprzet_pod_kategorie.id_pod_kategorii = pod_kategorie_sprzet.id
+        ORDER BY kategoria_sprzet_id, podkategoria_sprzet_id, sprzet_id
     `;
 
     db.all(sql, [], (err, rows) => {
         if (err) {
-            return res.status(500).json({error: err.message});
+            console.error('Database error:', err);
+            return res.status(500).json({ error: err.message });
         }
 
         const groupedData = rows.reduce((result, row) => {
-            const kategoriaNazwa = row.kategoria_sprzet_nazwa;
-            const podkategoriaNazwa = row.podkategoria_sprzet_nazwa;
+            const kategoriaNazwa = row.kategoria_sprzet_nazwa || 'Uncategorized';
+            const podkategoriaNazwa = row.podkategoria_sprzet_nazwa || 'null';
+
             if (!result[kategoriaNazwa]) {
                 result[kategoriaNazwa] = {};
             }
@@ -490,7 +518,7 @@ app.get('/api/sprzet-kategorie', (req, res) => {
             const isSprzetAlreadyAdded = result[kategoriaNazwa][podkategoriaNazwa]
                 .some(sprzet => sprzet.sprzet_id === row.sprzet_id);
 
-            if (!isSprzetAlreadyAdded) {
+            if (!isSprzetAlreadyAdded && row.sprzet_id) {
                 result[kategoriaNazwa][podkategoriaNazwa].push({
                     sprzet_id: row.sprzet_id,
                     sprzet_nazwa: row.sprzet_nazwa,
@@ -500,12 +528,15 @@ app.get('/api/sprzet-kategorie', (req, res) => {
                     sprzet_status: row.sprzet_status,
                     sprzet_termin: row.sprzet_termin,
                     sprzet_ilosc_termin: row.sprzet_ilosc_termin,
-                    sprzet_kto_zmienil : row.sprzet_kto_zmienil
+                    sprzet_kto_zmienil: row.sprzet_kto_zmienil,
+                    sprzet_na_statku: row.sprzet_na_statku,
+                    sprzet_torba_ratownika: row.sprzet_torba_ratownika
                 });
             }
 
             return result;
-        },{});
+        }, {});
+
         res.json(groupedData);
     });
 });
@@ -519,11 +550,13 @@ app.post('/api/sprzet-all', (req, res) => {
         eq_status,
         eq_termin,
         eq_ilosc_termin,
+        eq_na_satku,
+        eq_torba_ratownka,
         eq_kategoria,
         eq_podkategoria
     } = req.body;
 
-    addEquipment(eq_nazwa, eq_ilosc_wymagana, eq_ilosc_aktualna, eq_data, eq_status, eq_termin, eq_ilosc_termin, eq_kategoria, eq_podkategoria);
+    addEquipment(eq_nazwa, eq_ilosc_wymagana, eq_ilosc_aktualna, eq_data, eq_status, eq_termin, eq_ilosc_termin, eq_na_satku, eq_torba_ratownka,eq_kategoria, eq_podkategoria);
 
     res.status(201).json({message: 'Equipment added successfully'});
 });
@@ -538,32 +571,63 @@ app.put('/api/sprzet/:id', (req, res) => {
         sprzet_status,
         sprzet_termin,
         sprzet_ilosc_termin,
-        sprzet_kto_zmienil
+        sprzet_kto_zmienil,
+        sprzet_na_satku,
+        sprzet_torba_ratownka,
+        id_kategorii,
+        id_pod_kategorii
     } = req.body;
 
-    const sql = `
-        UPDATE Sprzet
-        SET nazwa = ?, ilosc_wymagana = ?, ilosc_aktualna = ?, data_waznosci = ?, status = ?, termin = ?, ilosc_termin = ?, kto_zmienil = ?
-        WHERE id = ?
-    `;
+    db.serialize(() => {
+        db.run('BEGIN TRANSACTION');
 
-    const params = [
-        sprzet_nazwa,
-        sprzet_ilosc_wymagana,
-        sprzet_ilosc_aktualna,
-        sprzet_data_waznosci,
-        sprzet_status,
-        sprzet_termin,
-        sprzet_ilosc_termin,
-        sprzet_kto_zmienil,
-        id
-    ];
+        const sql = `
+            UPDATE Sprzet
+            SET nazwa = ?, ilosc_wymagana = ?, ilosc_aktualna = ?, data_waznosci = ?, status = ?, termin = ?, ilosc_termin = ?, kto_zmienil = ?,na_statku = ?, torba_ratownka = ?
+            WHERE id = ?
+        `;
 
-    db.run(sql, params, function (err) {
-        if (err) {
-            return res.status(500).json({ error: err.message });
-        }
-        res.json({ message: 'Equipment updated successfully' });
+        const params = [
+            sprzet_nazwa,
+            sprzet_ilosc_wymagana,
+            sprzet_ilosc_aktualna,
+            sprzet_data_waznosci,
+            sprzet_status,
+            sprzet_termin,
+            sprzet_ilosc_termin,
+            sprzet_kto_zmienil,
+            sprzet_na_satku,
+            sprzet_torba_ratownka,
+            id
+        ];
+
+        db.run(sql, params, function (err) {
+            if (err) {
+                db.run('ROLLBACK');
+                return res.status(500).json({ error: err.message });
+            }
+        });
+
+        db.run('UPDATE Sprzet_kategorie SET id_kategorii = ? WHERE id_sprzet = ?', [id_kategorii, id], function (err) {
+            if (err) {
+                db.run('ROLLBACK');
+                return res.status(500).json({ error: err.message });
+            }
+        });
+
+        db.run('UPDATE Sprzet_pod_kategorie SET id_pod_kategorii = ? WHERE id_sprzet = ?', [id_pod_kategorii, id], function (err) {
+            if (err) {
+                db.run('ROLLBACK');
+                return res.status(500).json({ error: err.message });
+            }
+        });
+
+        db.run('COMMIT', function (err) {
+            if (err) {
+                return res.status(500).json({ error: err.message });
+            }
+            res.json({ message: 'Equipment updated successfully' });
+        });
     });
 });
 
@@ -703,12 +767,54 @@ const backupMiddleware = async (req, res, next) => {
         }
     }
 };
-app.use('/api/medicines', backupMiddleware);
+app.use('/api/leki', backupMiddleware);
 app.use('/api/utilizations', backupMiddleware);
 app.use('/api/equipment', backupMiddleware);
 
-// db import
-import multer from 'multer';
+
+const desktopPath = path.join(os.homedir(), 'Desktop');
+
+// Function to create dated backup filename
+function getBackupFilename() {
+    const date = new Date();
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `db_backup_${year}${month}${day}.sqlite3`;
+}
+
+// Function to create daily backup
+async function createDailyBackup() {
+    try {
+        const backupFilename = getBackupFilename();
+        const backupPath = path.join(desktopPath, backupFilename);
+
+        await fs.copyFile(DB_PATH, backupPath);
+        console.log(`Daily backup created: ${backupFilename}`);
+
+        // Delete old backups (keep last 7 days)
+        const files = await fs.readdir(desktopPath);
+        const backupFiles = files.filter(file => file.startsWith('db_backup_') && file.endsWith('.sqlite3'));
+
+        if (backupFiles.length > 7) {
+            const oldestFiles = backupFiles
+                .sort()
+                .slice(0, backupFiles.length - 7);
+
+            for (const file of oldestFiles) {
+                await fs.unlink(path.join(desktopPath, file));
+                console.log(`Deleted old backup: ${file}`);
+            }
+        }
+    } catch (error) {
+        console.error('Failed to create daily backup:', error.message);
+    }
+}
+
+// Schedule daily backup at 23:59
+schedule.scheduleJob('59 23 * * *', createDailyBackup);
+
+
 
 const storage = multer.diskStorage({
     destination: './uploads/',
@@ -789,6 +895,166 @@ app.post('/api/import-database', upload.single('database'), async (req, res) => 
             message: 'Wystąpił błąd podczas importowania bazy danych: ' + error.message
         });
     }
+});
+
+// Leki min
+
+function addMinMedicine(nazwa_leku, pakowanie, w_opakowaniu, id_kategorii, id_pod_kategorii, id_pod_pod_kategorii) {
+    return new Promise((resolve, reject) => {
+        db.run(
+            'INSERT INTO Leki_spis_min (nazwa_leku, pakowanie, w_opakowaniu, id_kategorii, id_pod_kategorii, id_pod_pod_kategorii) VALUES (?, ?, ?, ?, ?, ?)',
+            [nazwa_leku, pakowanie, w_opakowaniu, id_kategorii, id_pod_kategorii, id_pod_pod_kategorii],
+            function(err) {
+                if (err) {
+                    reject(err);
+                    return;
+                }
+                resolve({
+                    id: this.lastID,
+                    nazwa_leku,
+                    pakowanie,
+                    w_opakowaniu,
+                    id_kategorii,
+                    id_pod_kategorii,
+                    id_pod_pod_kategorii
+                });
+            }
+        );
+    });
+}
+
+app.post('/api/leki-min', (req, res) => {
+    const { nazwa_leku, pakowanie, w_opakowaniu, id_kategorii, id_pod_kategorii, id_pod_pod_kategorii } = req.body;
+
+    if (!nazwa_leku) {
+        return res.status(400).json({ error: "Nazwa leku jest wymagana" });
+    }
+
+    addMinMedicine(nazwa_leku, pakowanie, w_opakowaniu, id_kategorii, id_pod_kategorii, id_pod_pod_kategorii)
+        .then(data => {
+            res.status(201).json({
+                message: "Min medicine added successfully",
+                data
+            });
+        })
+        .catch(err => {
+            res.status(500).json({ error: err.message });
+        });
+});
+
+app.put('/api/leki-min/:id', (req, res) => {
+    const { id } = req.params;
+    const { nazwa_leku, pakowanie, w_opakowaniu, id_kategorii, id_pod_kategorii, id_pod_pod_kategorii } = req.body;
+
+    if (!nazwa_leku) {
+        return res.status(400).json({ error: "Nazwa leku jest wymagana" });
+    }
+
+    db.get('SELECT * FROM Leki_spis_min WHERE id = ?', [id], (err, row) => {
+        if (err) {
+            return res.status(500).json({ error: err.message });
+        }
+
+        if (!row) {
+            return res.status(404).json({ error: "Entry not found" });
+        }
+
+        const updatedValues = {
+            nazwa_leku: nazwa_leku || row.nazwa_leku,
+            pakowanie: pakowanie !== undefined ? pakowanie : row.pakowanie,
+            w_opakowaniu: w_opakowaniu !== undefined ? w_opakowaniu : row.w_opakowaniu,
+            id_kategorii: id_kategorii !== undefined ? id_kategorii : row.id_kategorii,
+            id_pod_kategorii: id_pod_kategorii !== undefined ? id_pod_kategorii : row.id_pod_kategorii,
+            id_pod_pod_kategorii: id_pod_pod_kategorii !== undefined ? id_pod_pod_kategorii : row.id_pod_pod_kategorii
+        };
+
+        const sql = `
+            UPDATE Leki_spis_min
+            SET nazwa_leku = ?, pakowanie = ?, w_opakowaniu = ?, id_kategorii = ?, id_pod_kategorii = ?, id_pod_pod_kategorii = ?
+            WHERE id = ?
+        `;
+
+        db.run(sql, [
+            updatedValues.nazwa_leku,
+            updatedValues.pakowanie,
+            updatedValues.w_opakowaniu,
+            updatedValues.id_kategorii,
+            updatedValues.id_pod_kategorii,
+            updatedValues.id_pod_pod_kategorii,
+            id
+        ], function(err) {
+            if (err) {
+                return res.status(500).json({ error: err.message });
+            }
+
+            res.json({
+                message: "Min medicine updated successfully",
+                changes: this.changes
+            });
+        });
+    });
+});
+
+app.get('/api/leki-min-kategorie', (req, res) => {
+    const sql = `
+        SELECT
+            kategorie.id AS kategoria_id,
+            kategorie.nazwa AS kategoria_nazwa,
+            pod_kategorie.id AS podkategoria_id,
+            pod_kategorie.nazwa AS podkategoria_nazwa,
+            pod_pod_kategorie.id AS podpodkategoria_id,
+            pod_pod_kategorie.nazwa AS podpodkategoria_nazwa,
+            leki_min.id AS lek_min_id,
+            leki_min.nazwa_leku AS lek_min_nazwa,
+            leki_min.pakowanie AS lek_min_pakowanie,
+            leki_min.w_opakowaniu AS lek_min_w_opakowaniu
+        FROM Leki_spis_min leki_min
+                 LEFT JOIN Kategorie kategorie
+                           ON leki_min.id_kategorii = kategorie.id
+                 LEFT JOIN Pod_kategorie pod_kategorie
+                           ON leki_min.id_pod_kategorii = pod_kategorie.id
+                 LEFT JOIN Pod_pod_kategorie pod_pod_kategorie
+                           ON leki_min.id_pod_pod_kategorii = pod_pod_kategorie.id
+        ORDER BY kategoria_id, podkategoria_id, podpodkategoria_id, lek_min_id
+    `;
+
+    db.all(sql, [], (err, rows) => {
+        if (err) {
+            return res.status(500).json({ error: err.message });
+        }
+
+        const groupedData = rows.reduce((result, row) => {
+            const kategoriaNazwa = row.kategoria_nazwa || 27;
+            const podkategoriaNazwa = row.podkategoria_nazwa || "null";
+            const podpodkategoriaNazwa = row.podpodkategoria_nazwa || "null";
+
+            if (!result[kategoriaNazwa]) {
+                result[kategoriaNazwa] = {};
+            }
+            if (!result[kategoriaNazwa][podkategoriaNazwa]) {
+                result[kategoriaNazwa][podkategoriaNazwa] = {};
+            }
+            if (!result[kategoriaNazwa][podkategoriaNazwa][podpodkategoriaNazwa]) {
+                result[kategoriaNazwa][podkategoriaNazwa][podpodkategoriaNazwa] = [];
+            }
+
+            const isLekMinAlreadyAdded = result[kategoriaNazwa][podkategoriaNazwa][podpodkategoriaNazwa]
+                .some(lek => lek.lek_min_id === row.lek_min_id);
+
+            if (!isLekMinAlreadyAdded) {
+                result[kategoriaNazwa][podkategoriaNazwa][podpodkategoriaNazwa].push({
+                    lek_min_id: row.lek_min_id,
+                    lek_min_nazwa: row.lek_min_nazwa,
+                    lek_min_pakowanie: row.lek_min_pakowanie,
+                    lek_min_w_opakowaniu: row.lek_min_w_opakowaniu
+                });
+            }
+
+            return result;
+        }, {});
+
+        res.json(groupedData);
+    });
 });
 
 // Start the server

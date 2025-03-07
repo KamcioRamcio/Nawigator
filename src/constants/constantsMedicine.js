@@ -46,6 +46,7 @@ const ConstantsMedicine = {
         {value: 8, label: "Preparaty nawadniające, odżywcze i osoczowe"},
         {value: 9, label: "Do użytku zewnętrznego"},
         {value: 10, label: "Poza katalogiem minimum"},
+        {value: 27, label: "Bez kategorii"},
     ],
 
     SubCategoryOptions: {

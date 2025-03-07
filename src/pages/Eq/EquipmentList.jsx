@@ -12,6 +12,7 @@ function EquipmentList() {
     const username = localStorage.getItem("username");
     const [siteChange, setSiteChange] = useState(false)
     const [selectedCategory, setSelectedCategory] = useState(0);
+    const [selectedSubCategory, setSelectedSubCategory] = useState(0);
     const [addEquipment, setAddEquipment] = useState(false);
     const [newEquipment, setNewEquipment] = useState({
         eq_nazwa: "",
@@ -332,20 +333,56 @@ function EquipmentList() {
                                                 </tr>
                                             )}
                                             {equipments[category][subcategory].map(equipment => (
-                                                <tr key={equipment.sprzet_id}>
-                                                    <td className="pl-6 px-2 py-4">
+                                                <tr key={equipment.sprzet_id} className="border border-gray-700">
+                                                    <td className="pl-6 px-2 py-4 max-w-[500px]  border-r border-l border-gray-700">
                                                         {editMode[equipment.sprzet_id] ? (
-                                                            <input
-                                                                type="text"
-                                                                value={editedEquipment[equipment.sprzet_id]?.sprzet_nazwa || ""}
-                                                                onChange={(e) => handleEdit(equipment.sprzet_id, "sprzet_nazwa", e.target.value)}
-                                                                className="w-full"
-                                                            />
+
+                                                            <>
+                                                                <input
+                                                                    type="text"
+                                                                    value={editedEquipment[equipment.sprzet_id]?.sprzet_nazwa || ""}
+                                                                    onChange={(e) => handleEdit(equipment.sprzet_id, "sprzet_nazwa", e.target.value)
+                                                                    }
+                                                                    className="border px-2 py-1 w-5/6"
+                                                                />
+                                                                <select
+                                                                    name="id_kategorii"
+                                                                    value={editedEquipment[equipment.sprzet_id]?.id_kategorii || ""}
+                                                                    onChange={(e) => {
+                                                                        handleEdit(equipment.sprzet_id, "id_kategorii", e.target.value)
+                                                                        setSelectedCategory(e.target.value)
+                                                                    }}
+                                                                    className="border px-2 py-1 w-5/6"
+                                                                >
+                                                                    <option>Wybierz Kategorie</option>
+                                                                    {ConstantsEquipment.CategoryOptions.map(option => (
+                                                                        <option key={option.value} value={option.value}>
+                                                                            {option.label}
+                                                                        </option>
+                                                                    ))}
+                                                                </select>
+                                                                <select
+                                                                    name="id_pod_kategorii"
+                                                                    value={editedEquipment[equipment.sprzet_id]?.id_pod_kategorii || ""}
+                                                                    onChange={(e) => {
+                                                                        handleEdit(equipment.sprzet_id, "id_pod_kategorii", e.target.value)
+                                                                        setSelectedCategory(e.target.value)
+                                                                    }}
+                                                                    className="border px-2 py-1 w-5/6"
+                                                                >
+                                                                    <option>Wybierz Pod Kategorie</option>
+                                                                    {selectedCategory && ConstantsEquipment.SubCategoryOptions[selectedCategory]?.map(option => (
+                                                                        <option key={option.value} value={option.value}>
+                                                                            {option.label}
+                                                                        </option>
+                                                                    ))}
+                                                                </select>
+                                                            </>
                                                         ) : (
                                                             equipment.sprzet_nazwa
                                                         )}
                                                     </td>
-                                                    <td className="pl-6 px-2 py-4">
+                                                    <td className="pl-6 px-2 py-4 border-r border-l border-gray-700">
                                                         {editMode[equipment.sprzet_id] ? (
                                                             <input
                                                                 type="date"
@@ -357,7 +394,7 @@ function EquipmentList() {
                                                             equipment.sprzet_data_waznosci
                                                         )}
                                                     </td>
-                                                    <td className="pl-6 px-2 py-4">
+                                                    <td className="pl-6 px-2 py-4 border-r border-l border-gray-700">
                                                         {editMode[equipment.sprzet_id] ? (
                                                             <input
                                                                 type="number"
@@ -369,7 +406,7 @@ function EquipmentList() {
                                                             equipment.sprzet_ilosc_aktualna
                                                         )}
                                                     </td>
-                                                    <td className="pl-6 px-2 py-4">
+                                                    <td className="pl-6 px-2 py-4 border-r border-l border-gray-700">
                                                         {editMode[equipment.sprzet_id] ? (
                                                             <select
                                                                 value={editedEquipment[equipment.sprzet_id]?.sprzet_termin || ""}
@@ -388,7 +425,7 @@ function EquipmentList() {
 
                                                         )}
                                                     </td>
-                                                    <td className="pl-6 px-2 py-4">
+                                                    <td className="pl-6 px-2 py-4 border-r border-l border-gray-700">
                                                         {equipment.sprzet_kto_zmienil}
                                                     </td>
                                                     <td>

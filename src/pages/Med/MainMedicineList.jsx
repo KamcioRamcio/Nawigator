@@ -331,8 +331,8 @@ function MainMedicineList() {
                 </h3>
                 <table className="w-full">
                     <thead className="text-ceter">
-                    <tr className="bg-gray-200 text-gray-700 uppercase text-sm tracking-wide">
-                        <th className="px-2 py-4">Nazwa Leku</th>
+                    <tr className="bg-gray-200 text-gray-700 uppercase text-sm tracking-wide ">
+                        <th className="px-2 py-4 ">Nazwa Leku</th>
                         <th className="px-2 py-4">Ilość</th>
                         <th className="px-2 py-4">Opakowanie</th>
                         <th className="px-2 py-4">Data ważności</th>
@@ -374,22 +374,73 @@ function MainMedicineList() {
                                                 )}
                                                 {medicines[category][subcategory][subsubcategory].map(medicine => (
                                                     <tr key={medicine.lek_id}
-                                                        className={medicine.lek_przechowywanie !== "freezer" ? "bg-blue-200" : ""}>
-                                                    <td className="pl-6 px-2 py-4">
-                                                            {editMode[medicine.lek_id] ? (
+                                                        className={`${medicine.lek_przechowywanie !== "freezer" ? "bg-blue-200" : ""} border border-gray-700`}>
+                                                    <td className="pl-6 px-2 py-4 border-r border-l border-gray-700">
+                                                        {editMode[medicine.lek_id] ? (
+                                                            <>
                                                                 <input
                                                                     type="text"
                                                                     value={editedValues[medicine.lek_id]?.lek_nazwa || ""}
                                                                     onChange={(e) =>
-                                                                        handleEdit(medicine.lek_id, "lek_nazwa", e.target.value)
+                                                                        handleEdit(medicine.lek_id, "lek_min_nazwa", e.target.value)
                                                                     }
                                                                     className="border px-2 py-1 w-5/6"
                                                                 />
-                                                            ) : (
-                                                                medicine.lek_nazwa
-                                                            )}
+                                                                <select
+                                                                    name="id_kategorii"
+                                                                    value={editedValues[medicine.lek_id]?.id_kategorii || ""}
+                                                                    onChange={(e) => {
+                                                                        handleEdit(medicine.lek_id, "id_kategorii", parseInt(e.target.value));
+                                                                        setSelectedCategory(e.target.value);
+                                                                    }}
+                                                                    className="border px-2 py-1 mt-1 w-5/6"
+                                                                >
+                                                                    <option value="">Wybierz kategorię</option>
+                                                                    {ConstantsMedicine.CategoryOptions.map(option => (
+                                                                        <option key={option.value} value={option.value}>
+                                                                            {option.label}
+                                                                        </option>
+                                                                    ))}
+                                                                </select>
+                                                                <select
+                                                                    name="id_pod_kategorii"
+                                                                    value={editedValues[medicine.lek_id]?.id_pod_kategorii || ""}
+                                                                    onChange={(e) => {
+                                                                        handleEdit(medicine.lek_id, "id_pod_kategorii", parseInt(e.target.value));
+                                                                        setSelectedSubCategory(e.target.value);
+                                                                    }}
+                                                                    className="border px-2 py-1 mt-1 w-5/6"
+                                                                >
+                                                                    <option value="">Wybierz podkategorię</option>
+                                                                    {selectedCategory && ConstantsMedicine.SubCategoryOptions[selectedCategory]?.map(option => (
+                                                                        <option key={option.value} value={option.value}>
+                                                                            {option.label}
+                                                                        </option>
+                                                                    ))}
+                                                                </select>
+                                                                <select
+                                                                    name="id_pod_pod_kategorii"
+                                                                    value={editedValues[medicine.lek_id]?.id_pod_pod_kategorii || ""}
+                                                                    onChange={(e) =>
+                                                                        handleEdit(medicine.lek_id, "id_pod_pod_kategorii", parseInt(e.target.value))
+                                                                    }
+                                                                    className="border px-2 py-1 mt-1 w-5/6"
+                                                                >
+                                                                    <option value="">Wybierz podpodkategorię</option>
+                                                                    {Array.isArray(ConstantsMedicine.SubSubCategoryOptions[selectedCategory]?.[selectedSubCategory]) &&
+                                                                        ConstantsMedicine.SubSubCategoryOptions[selectedCategory][selectedSubCategory].map(option => (
+                                                                            <option key={option.value} value={option.value}>
+                                                                                {option.label}
+                                                                            </option>
+                                                                        ))
+                                                                    }
+                                                                </select>
+                                                            </>
+                                                        ) : (
+                                                            medicine.lek_nazwa
+                                                        )}
                                                         </td>
-                                                        <td className="px-2 py-4">
+                                                        <td className="px-2 py-4 border-r border-l border-gray-700">
                                                             {editMode[medicine.lek_id] ? (
                                                                 <input
                                                                     type="number"
@@ -403,7 +454,7 @@ function MainMedicineList() {
                                                                 medicine.lek_ilosc
                                                             )}
                                                         </td>
-                                                        <td className="px-2 py-4">
+                                                        <td className="px-2 py-4 border-r border-l border-gray-700">
                                                             {editMode[medicine.lek_id] ? (
                                                                 <select
                                                                     value={editedValues[medicine.lek_id]?.lek_opakowanie || ""}
@@ -422,7 +473,7 @@ function MainMedicineList() {
                                                                 medicine.lek_opakowanie
                                                             )}
                                                         </td>
-                                                        <td className="px-2 py-4">
+                                                        <td className="px-2 py-4 border-r border-l border-gray-700">
                                                             {editMode[medicine.lek_id] ? (
                                                                 <input
                                                                     type="date"
@@ -436,7 +487,7 @@ function MainMedicineList() {
                                                                 medicine.lek_data
                                                             )}
                                                         </td>
-                                                        <td className="px-2 py-4">
+                                                        <td className="px-2 py-4 border-r border-l border-gray-700">
                                                             {editMode[medicine.lek_id] ? (
                                                                 <select
                                                                     value={editedValues[medicine.lek_id]?.lek_status || ""}
@@ -455,7 +506,7 @@ function MainMedicineList() {
                                                                 medicine.lek_status
                                                             )}
                                                         </td>
-                                                        <td className="px-2 py-4">
+                                                        <td className="px-2 py-4 border-r border-l border-gray-700">
                                                             {editMode[medicine.lek_id] ? (
                                                                 <input
                                                                     type="number"
@@ -469,7 +520,7 @@ function MainMedicineList() {
                                                                 medicine.lek_ilosc_minimalna
                                                             )}
                                                         </td>
-                                                        <td className="px-2 py-4">
+                                                        <td className="px-2 py-4 border-r border-l border-gray-700">
                                                             {editMode[medicine.lek_id] ? (
                                                                 <input
                                                                 type = "number"
@@ -483,7 +534,7 @@ function MainMedicineList() {
                                                                 medicine.rozchod_ilosc
                                                             )}
                                                         </td>
-                                                        <td className="px-2 py-4">
+                                                        <td className="px-2 py-4 border-r border-l border-gray-700">
                                                             {editMode[medicine.lek_id] ? (
                                                                 <input
                                                                     type = "number"
@@ -497,7 +548,7 @@ function MainMedicineList() {
                                                                 medicine.stan_magazynowy_ilosc
                                                             )}
                                                         </td>
-                                                        <td className="px-2 py-4">
+                                                        <td className="px-2 py-4 border-r border-l border-gray-700">
                                                             {editMode[medicine.lek_id] ? (
                                                                 <select
                                                                     value={editedValues[medicine.lek_id]?.stan_magazynowy_status || ""}
@@ -516,7 +567,7 @@ function MainMedicineList() {
                                                                 medicine.stan_magazynowy_status
                                                             )}
                                                         </td>
-                                                        <td className="px-2 py-4">
+                                                        <td className="px-2 py-4 border-r border-l border-gray-700">
                                                             {editMode[medicine.lek_id] ? (
                                                                 <input
                                                                 type = "text"
@@ -530,7 +581,8 @@ function MainMedicineList() {
                                                                 medicine.stan_magazynowy_important_status
                                                             )}
                                                         </td>
-                                                        <td className="px-2 py-4">{medicine.rozchod_kto_zmienil}</td>
+                                                        <td className="px-2 py-4 border-r border-l border-gray-700">
+                                                            {medicine.rozchod_kto_zmienil}</td>
                                                         <td>
                                                             {editMode[medicine.lek_id] ? (
                                                                 <>
