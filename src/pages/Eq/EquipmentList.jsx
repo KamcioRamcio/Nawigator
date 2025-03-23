@@ -22,7 +22,8 @@ function EquipmentList() {
         eq_termin: "",
         eq_ilosc_termin: "",
         eq_kategoria: "",
-        eq_podkategoria: "",
+        eq_na_statku: "true",
+        eq_torba_ratownika:"false",
     });
 
     useEffect(() => {
@@ -78,6 +79,9 @@ function EquipmentList() {
     }
 
     const handleDelete = async (equipmentId) => {
+        if (!confirm("Czy na pewno chcesz usunąć tę pozycję? Ta operacja jest nieodwracalna.")) {
+            return;
+        }
         try {
             const response = await fetch(apiUrl + "sprzet/delete/" + equipmentId, {
                 method: "DELETE",
@@ -137,6 +141,8 @@ function EquipmentList() {
                 eq_data: "",
                 eq_termin: "",
                 eq_ilosc_termin: "",
+                eq_na_statku: "true",
+                eq_torba_ratownika:"false",
                 eq_kategoria: "",
                 eq_podkategoria: "",
             });
@@ -151,153 +157,174 @@ function EquipmentList() {
 
     return (
         <div className="bg-gray-100 min-h-screen py-10">
-            <div>
-                <div>
-                    <h1 className="text-2xl text-center font-bold flex-grow">Zestawienie sprzętu medycznego MV NAWIGATOR
-                        XXI</h1>
-                    <button className="absolute left-32 rounded-3xl bg-slate-900 text-white font-bold text-lg p-3"
-                            onClick={handleSiteChangeOpen}
-                    > Zmiana Arkusza
-                    </button>
+            <div className="mx-auto bg-white shadow-lg rounded-lg overflow-hidden">
+                <div className="flex justify-between items-center py-6 border-b bg-gray-200">
+                    <h1 className="text-2xl text-center font-bold text-gray-800 flex-grow">
+                        Spis minimum sprzętu medycznego MV NAWIGATOR XXI
+                    </h1>
                     <button className="absolute right-32 rounded-3xl bg-slate-900 text-white font-bold text-lg p-3"
                             onClick={handleAddEquipmentOpen}
-                    >Dodaj Pozycję
+                    >
+                        Dodaj Pozycję
                     </button>
+                    <button className="absolute left-32 rounded-3xl bg-slate-900 text-white font-bold text-lg p-3"
+                            onClick={handleSiteChangeOpen}
+                    >
+                        Zmiana Arkusza
+                    </button>
+
                     <EquipmentAdd isOpen={addEquipment} onClose={handleAddEquipmentClose}>
-                        <h2>ADD EQUIPMENT</h2>
-                        <table>
-                            <thead>
-                            <tr>
-                                <th className="px-12 py-4">Nazwa</th>
-                                <th className="px-12 py-4">Ilosc wymagana</th>
-                                <th className="px-12 py-4">Ilosc aktualna</th>
-                                <th className="px-12 py-4">Data waznosci</th>
-                                <th className="px-12 py-4">Termin</th>
-                                <th className="px-12 py-4">Ilosc/Termin</th>
-                                <th className="px-12 py-4">Kategoria</th>
-                                <th className="px-12 py-4">Podkategoria</th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            <tr>
-                                <td>
-                                    <input
-                                        type="text"
-                                        name="eq_nazwa"
-                                        value={newEquipment.eq_nazwa}
-                                        onChange={handleInputEquipment}
-                                        placeholder="Nazwa"
-                                    />
-                                </td>
-                                <td>
-                                    <input
-                                        type="number"
-                                        name="eq_ilosc_wymagana"
-                                        value={newEquipment.eq_ilosc_wymagana}
-                                        onChange={handleInputEquipment}
-                                        placeholder="Ilosc wymagana"
-                                    />
-                                </td>
-                                <td>
-                                    <input
-                                        type="number"
-                                        name="eq_ilosc_aktualna"
-                                        value={newEquipment.eq_ilosc_aktualna}
-                                        onChange={(e) => {
-                                            handleInputEquipment(e);
-                                        }}
-                                        placeholder="Ilosc aktualna"
-                                    />
-                                </td>
-                                <td>
-                                    <input
-                                        type="date"
-                                        name="eq_data"
-                                        value={newEquipment.eq_data}
-                                        onChange={(e) => {
-                                            handleInputEquipment(e);
-                                        }}
-                                        placeholder="Data waznosci"
-                                    />
-                                </td>
-                                <td>
-                                    <select
-                                        name="eq_termin"
-                                        value={newEquipment.eq_termin}
-                                        onChange={(e) => {
-                                            handleInputEquipment(e);
-                                        }
-                                        }
-                                    >
-                                        <option>Wybierz Termin</option>
-                                        {ConstantsEquipment.StatusOptions.map(option => (
-                                            <option key={option.value} value={option.value}>
-                                                {option.label}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </td>
-                                <td>
-                                    <select
-                                        name="eq_ilosc_termin"
-                                        value={newEquipment.eq_ilosc_termin}
-                                        onChange={(e) => {
-                                            handleInputEquipment(e)
-                                        }}
-                                    >
-                                        <option>Wybierz Ilosc/Termin</option>
-                                        {ConstantsEquipment.EquipmentStatusOptions.map(option => (
-                                            <option key={option.value} value={option.value}>
-                                                {option.label}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </td>
-                                <td>
-                                    <select
-                                        name="eq_kategoria"
-                                        value={newEquipment.eq_kategoria}
-                                        onChange={(e) => {
-                                            handleInputEquipment(e);
-                                            setSelectedCategory(parseInt(e.target.value, 10))
-                                        }}
-                                    >
-                                        <option>Wybierz Kategorie</option>
-                                        {ConstantsEquipment.CategoryOptions.map(option => (
-                                            <option key={option.value} value={option.value}>
-                                                {option.label}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </td>
-                                <td>
-                                    <select
-                                        name="eq_podkategoria"
-                                        value={newEquipment.eq_podkategoria}
-                                        onChange={(e) => {
-                                            handleInputEquipment(e);
-                                        }}
-                                    >
-                                        <option>Wybierz Podkategorie</option>
-                                        {ConstantsEquipment.SubCategoryOptions[selectedCategory]?.map(option => (
-                                            <option key={option.value} value={option.value}>
-                                                {option.label}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </td>
-                            </tr>
-                            </tbody>
-                        </table>
-                        <button className="p-4 bg-slate-700 rounded-3xl" onClick={() => {
-                            handleAddEquipment();
-                            handleAddEquipmentClose();
-                        }}>
-                            Dodaj
-                        </button>
+                        <h2 className="text-xl font-bold mb-4">Dodaj Wyposażenie</h2>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Nazwa*
+                                </label>
+                                <input
+                                    type="text"
+                                    name="eq_nazwa"
+                                    value={newEquipment.eq_nazwa}
+                                    onChange={handleInputEquipment}
+                                    className="border rounded-md p-2 w-full"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Ilość wymagana
+                                </label>
+                                <input
+                                    type="number"
+                                    name="eq_ilosc_wymagana"
+                                    value={newEquipment.eq_ilosc_wymagana}
+                                    onChange={handleInputEquipment}
+                                    className="border rounded-md p-2 w-full"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Ilość aktualna
+                                </label>
+                                <input
+                                    type="number"
+                                    name="eq_ilosc_aktualna"
+                                    value={newEquipment.eq_ilosc_aktualna}
+                                    onChange={handleInputEquipment}
+                                    className="border rounded-md p-2 w-full"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Data ważności
+                                </label>
+                                <input
+                                    type="date"
+                                    name="eq_data"
+                                    value={newEquipment.eq_data}
+                                    onChange={handleInputEquipment}
+                                    className="border rounded-md p-2 w-full"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Termin
+                                </label>
+                                <select
+                                    name="eq_termin"
+                                    value={newEquipment.eq_termin}
+                                    onChange={handleInputEquipment}
+                                    className="border rounded-md p-2 w-full"
+                                >
+                                    <option value="">Wybierz termin</option>
+                                    {ConstantsEquipment.StatusOptions.map(option => (
+                                        <option key={option.value} value={option.value}>
+                                            {option.label}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Ilość/Termin
+                                </label>
+                                <select
+                                    name="eq_ilosc_termin"
+                                    value={newEquipment.eq_ilosc_termin}
+                                    onChange={handleInputEquipment}
+                                    className="border rounded-md p-2 w-full"
+                                >
+                                    <option value="">Wybierz Ilość/Termin</option>
+                                    {ConstantsEquipment.EquipmentStatusOptions.map(option => (
+                                        <option key={option.value} value={option.value}>
+                                            {option.label}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Kategoria*
+                                </label>
+                                <select
+                                    name="eq_kategoria"
+                                    value={newEquipment.eq_kategoria}
+                                    onChange={(e) => {
+                                        handleInputEquipment(e);
+                                        setSelectedCategory(parseInt(e.target.value, 10))
+                                    }}
+                                    className="border rounded-md p-2 w-full"
+                                    required
+                                >
+                                    <option value="">Wybierz kategorię</option>
+                                    {ConstantsEquipment.CategoryOptions.map(option => (
+                                        <option key={option.value} value={option.value}>
+                                            {option.label}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Podkategoria
+                                </label>
+                                <select
+                                    name="eq_podkategoria"
+                                    value={newEquipment.eq_podkategoria}
+                                    onChange={handleInputEquipment}
+                                    className="border rounded-md p-2 w-full"
+                                    disabled={!selectedCategory}
+                                >
+                                    <option value="">Wybierz podkategorię</option>
+                                    {ConstantsEquipment.SubCategoryOptions[selectedCategory]?.map(option => (
+                                        <option key={option.value} value={option.value}>
+                                            {option.label}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+                        <div className="mt-6 flex justify-end">
+                            <button
+                                className="mr-2 px-4 py-2 bg-gray-300 rounded-md"
+                                onClick={handleAddEquipmentClose}
+                            >
+                                Anuluj
+                            </button>
+                            <button
+                                className="px-4 py-2 bg-blue-500 text-white rounded-md"
+                                onClick={() => {
+                                    handleAddEquipment();
+                                    handleAddEquipmentClose();
+                                }}
+                            >
+                                Dodaj
+                            </button>
+                        </div>
                     </EquipmentAdd>
-                    <SiteChange isOpen={siteChange} onClose={handleSiteChangeClose}>
-                    </SiteChange>
+
+
+                    <SiteChange isOpen={siteChange} onClose={handleSiteChangeClose} />
+                </div>
                     <h2 className="text-center text-xl text-red-800 font-bold pt-4 ">
                         Data: {currentDate}
                     </h2>
@@ -433,7 +460,7 @@ function EquipmentList() {
                                                             <>
                                                                 <button
                                                                     onClick={() => handleSave(equipment.sprzet_id)}
-                                                                    className="text-green-500 font-semibold mr-2"
+                                                                    className="text-green-500 font-semibold m-2"
                                                                 >
                                                                     Zapisz
                                                                 </button>
@@ -442,13 +469,13 @@ function EquipmentList() {
                                                                         ...prev,
                                                                         [equipment.sprzet_id]: false
                                                                     }))}
-                                                                    className="text-red-500 font-semibold"
+                                                                    className="text-gray-950 m-2 font-semibold"
                                                                 >
                                                                     Anuluj
                                                                 </button>
                                                                 <button
                                                                     onClick={() => handleDelete(equipment.sprzet_id)}
-                                                                    className="text-red-400 font-semibold mr-2 ml-2"
+                                                                    className="text-red-600 font-semibold m-2"
                                                                 >
                                                                     Usuń
                                                                 </button>
@@ -485,7 +512,6 @@ function EquipmentList() {
                 </div>
             </div>
 
-        </div>
     )
 
 

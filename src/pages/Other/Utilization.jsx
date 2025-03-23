@@ -1,9 +1,9 @@
-import React, { useState, useEffect , useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import apiUrl from "../../constants/api.js";
 import SiteChange from "../../components/SiteChange.jsx";
 import UtilizationAdd from "../../components/UtilizationAdd.jsx";
 
-function MainMedicineList() {
+function Utilization() {
     const [utilizations, setUtilizations] = useState([]);
     const [utilizationAdd, setUtilizationAdd] = useState(false);
     const [siteChange, setSiteChange] = useState(false);
@@ -18,6 +18,7 @@ function MainMedicineList() {
         data_waznosci: '',
         ilosc_nominalna: '',
         grupa: '',
+        powod_utylizacji: '',
         kto_zmienil: username
     });
 
@@ -71,6 +72,7 @@ function MainMedicineList() {
                 data_waznosci: '',
                 ilosc_nominalna: '',
                 grupa: '',
+                powod_utylizacji: '',
                 kto_zmienil: ''
             });
         } catch (error) {
@@ -114,7 +116,9 @@ function MainMedicineList() {
     };
 
     const handleDeleteUtilization = async (id) => {
-        if (!window.confirm('Czy na pewno chcesz usunąć tę pozycję?')) return;
+        if (!confirm("Czy na pewno chcesz usunąć tę pozycję? Ta operacja jest nieodwracalna.")) {
+            return;
+        }
 
         try {
             const response = await fetch(apiUrl + `utylizacja/${id}`, {
@@ -180,6 +184,161 @@ function MainMedicineList() {
         }
     }
 
+    // Filter utilizations by group
+    const sprzętUtilizations = utilizations.filter(item => item.grupa === 'S');
+    const lekiUtilizations = utilizations.filter(item => item.grupa === 'L');
+
+    // Render table function for reusability
+    const renderTable = (items, title) => (
+        <div className="mb-10">
+            <h3 className="text-xl font-bold text-center my-4 bg-slate-900 text-white py-2">{title}</h3>
+            <table className="w-full">
+                <thead className="text-left bg-gray-200">
+                <tr>
+                    <th className="px-2 py-4">Nazwa</th>
+                    <th className="px-2 py-4">Ilość</th>
+                    <th className="px-2 py-4">Data ważności</th>
+                    <th className="px-2 py-4">Ilość nominalna</th>
+                    <th className="px-2 py-4">Grupa</th>
+                    <th className="px-2 py-4">Powód</th>
+                    <th className="px-2 py-4">Kto Zmienił</th>
+                    <th className="px-2 py-4">Akcje</th>
+                </tr>
+                </thead>
+                <tbody className="text-left">
+                {items.map(utilization => (
+                    <tr key={utilization.id} className="border border-gray-700 hover:bg-gray-50">
+                        <td className="pl-6 px-2 py-4 border-r border-l border-gray-700">
+                            {editMode[utilization.id] ? (
+                                <input
+                                    type="text"
+                                    value={editedValues[utilization.id]?.nazwa || ""}
+                                    onChange={(e) => handleEdit(utilization.id, "nazwa", e.target.value)}
+                                    className="w-full"
+                                />
+                            ) : (
+                                utilization.nazwa
+                            )}
+                        </td>
+                        <td className="pl-6 px-2 py-4 border-r border-l border-gray-700">
+                            {editMode[utilization.id] ? (
+                                <input
+                                    type="number"
+                                    value={editedValues[utilization.id]?.ilosc || ""}
+                                    onChange={(e) => handleEdit(utilization.id, "ilosc", e.target.value)}
+                                    className="w-full"
+                                />
+                            ) : (
+                                utilization.ilosc
+                            )}
+                        </td>
+                        <td className="pl-6 px-2 py-4 border-r border-l border-gray-700">
+                            {editMode[utilization.id] ? (
+                                <input
+                                    type="date"
+                                    value={editedValues[utilization.id]?.data_waznosci || ""}
+                                    onChange={(e) => handleEdit(utilization.id, "data_waznosci", e.target.value)}
+                                    className="w-full"
+                                />
+                            ) : (
+                                utilization.data_waznosci
+                            )}
+                        </td>
+                        <td className="pl-6 px-2 py-4 border-r border-l border-gray-700">
+                            {editMode[utilization.id] ? (
+                                <input
+                                    type="number"
+                                    value={editedValues[utilization.id]?.ilosc_nominalna || ""}
+                                    onChange={(e) => handleEdit(utilization.id, "ilosc_nominalna", e.target.value)}
+                                    className="w-full"
+                                />
+                            ) : (
+                                utilization.ilosc_nominalna
+                            )}
+                        </td>
+                        <td className="pl-6 px-2 py-4 border-r border-l border-gray-700">
+                            {editMode[utilization.id] ? (
+                                <select
+                                    value={editedValues[utilization.id]?.grupa || ""}
+                                    onChange={(e) => handleEdit(utilization.id, "grupa", e.target.value)}
+                                    className="w-full"
+                                >
+                                    <option>
+                                        Wybierz grupę
+                                    </option>
+                                    <option value="S">Sprzęt</option>
+                                    <option value="L">Lek</option>
+                                </select>
+
+                            ) : (
+                                utilization.grupa
+                            )}
+                        </td>
+                        <td className="pl-6 px-2 py-4 border-r border-l border-gray-700">
+                            {editMode[utilization.id] ? (
+                                <input
+                                    type="text"
+                                    value={editedValues[utilization.id]?.powod_utylizacji || ""}
+                                    onChange={(e) => handleEdit(utilization.id, "powod_utylizacji", e.target.value)}
+                                    className="w-full"
+                                />
+                            ) : (
+                                utilization.powod_utylizacji
+                            )}
+                        </td>
+                        <td className="pl-6 px-2 py-4 border-r border-l border-gray-700">
+                            {utilization.kto_zmienil}
+                        </td>
+                        <td>
+                            {editMode[utilization.id] ? (
+                                <>
+                                    <button
+                                        onClick={() => handleSave(utilization.id)}
+                                        className="text-green-400 font-semibold m-2"
+                                    >
+                                        Zapisz
+                                    </button>
+                                    <button
+                                        onClick={() => setEditMode(prev => ({
+                                            ...prev,
+                                            [utilization.id]: false
+                                        }))}
+                                        className="text-gray-950 font-semibold m-2"
+                                    >
+                                        Anuluj
+                                    </button>
+                                    <button
+                                        onClick={() => handleDeleteUtilization(utilization.id)}
+                                        className="text-red-600 font-semibold mr-2 ml-2"
+                                    >
+                                        Usuń
+                                    </button>
+                                </>
+                            ) : (
+                                <button
+                                    onClick={() => {
+                                        setEditMode(prev => ({
+                                            ...prev,
+                                            [utilization.id]: true
+                                        }));
+                                        setEditedValues(prev => ({
+                                            ...prev,
+                                            [utilization.id]: utilization
+                                        }));
+                                    }}
+                                    className="text-blue-500 font-semibold"
+                                >
+                                    Edytuj
+                                </button>
+                            )}
+                        </td>
+                    </tr>
+                ))}
+                </tbody>
+            </table>
+        </div>
+    );
+
     return (
         <div className="bg-gray-100 min-h-screen py-10">
             <div>
@@ -231,130 +390,11 @@ function MainMedicineList() {
                     <h3 className="text-center font-semibold p-4 text-lg">
                         Zalogowany jako {username}
                     </h3>
-                    <table className="w-full">
-                        <thead className="text-left">
-                        <tr>
-                            <th className="px-2 py-4">Nazwa</th>
-                            <th className="px-2 py-4">Ilość</th>
-                            <th className="px-2 py-4">Data ważności</th>
-                            <th className="px-2 py-4">Ilość nominalna</th>
-                            <th className="px-2 py-4">Grupa</th>
-                            <th className="px-2 py-4">Kto Zmienił</th>
-                            <th className="px-2 py-4">Akcje</th>
-                        </tr>
-                        </thead>
-                        <tbody className="text-left">
-                        {utilizations.map(utilization => (
-                            <tr key={utilization.id} className="border border-gray-700 hover:bg-gray-50">
-                                <td className="pl-6 px-2 py-4 border-r border-l border-gray-700">
-                                    {editMode[utilization.id] ? (
-                                        <input
-                                            type="text"
-                                            value={editedValues[utilization.id]?.nazwa || ""}
-                                            onChange={(e) => handleEdit(utilization.id, "nazwa", e.target.value)}
-                                            className="w-full"
-                                        />
-                                    ) : (
-                                        utilization.nazwa
-                                    )}
-                                </td>
-                                <td className="pl-6 px-2 py-4 border-r border-l border-gray-700">
-                                    {editMode[utilization.id] ? (
-                                        <input
-                                            type="number"
-                                            value={editedValues[utilization.id]?.ilosc || ""}
-                                            onChange={(e) => handleEdit(utilization.id, "ilosc", e.target.value)}
-                                            className="w-full"
-                                        />
-                                    ) : (
-                                        utilization.ilosc
-                                    )}
-                                </td>
-                                <td className="pl-6 px-2 py-4 border-r border-l border-gray-700">
-                                    {editMode[utilization.id] ? (
-                                        <input
-                                            type="date"
-                                            value={editedValues[utilization.id]?.data_waznosci || ""}
-                                            onChange={(e) => handleEdit(utilization.id, "data_waznosci", e.target.value)}
-                                            className="w-full"
-                                        />
-                                    ) : (
-                                        utilization.data_waznosci
-                                    )}
-                                </td>
-                                <td className="pl-6 px-2 py-4 border-r border-l border-gray-700">
-                                    {editMode[utilization.id] ? (
-                                        <input
-                                            type="number"
-                                            value={editedValues[utilization.id]?.ilosc_nominalna || ""}
-                                            onChange={(e) => handleEdit(utilization.id, "ilosc_nominalna", e.target.value)}
-                                            className="w-full"
-                                        />
-                                    ) : (
-                                        utilization.ilosc_nominalna
-                                    )}
-                                </td>
-                                <td className="pl-6 px-2 py-4 border-r border-l border-gray-700">
-                                    {editMode[utilization.id] ? (
-                                        <input
-                                            type="text"
-                                            value={editedValues[utilization.id]?.grupa || ""}
-                                            onChange={(e) => handleEdit(utilization.id, "grupa", e.target.value)}
-                                            className="w-full"
-                                        />
-                                    ) : (
-                                        utilization.grupa
-                                    )}
-                                </td>
-                                <td className="pl-6 px-2 py-4 border-r border-l border-gray-700">
-                                    {utilization.kto_zmienil}</td>
-                                <td>
-                                    {editMode[utilization.id] ? (
-                                        <>
-                                            <button
-                                                onClick={() => handleSave(utilization.id)}
-                                                className="text-green-500 font-semibold mr-2"
-                                            >
-                                                Zapisz
-                                            </button>
-                                            <button
-                                                onClick={() => setEditMode(prev => ({
-                                                    ...prev,
-                                                    [utilization.id]: false
-                                                }))}
-                                                className="text-red-500 font-semibold"
-                                            >
-                                                Anuluj
-                                            </button>
-                                            <button
-                                                onClick={() => handleDeleteUtilization(utilization.id)}
-                                                className="text-red-400 font-semibold mr-2 ml-2"
-                                            >
-                                                Usuń
-                                            </button>
-                                        </>
-                                    ) : (
-                                        <button
-                                            onClick={() => {
-                                                setEditMode(prev => ({
-                                                    ...prev,
-                                                    [utilization.id]: true
-                                                }));
-                                                setEditedValues(prev => ({
-                                                    ...prev,
-                                                    [utilization.id]: utilization
-                                                }));
-                                            }}
-                                            className="text-blue-500 font-semibold"
-                                        >
-                                            Edytuj
-                                        </button>
-                                    )}
-                                </td>
-                            </tr>
-                        ))}
-                        </tbody>
-                    </table>
+
+                    <div className="mt-6">
+                        {sprzętUtilizations.length > 0 && renderTable(sprzętUtilizations, "Sprzęt")}
+                        {lekiUtilizations.length > 0 && renderTable(lekiUtilizations, "Lek")}
+                    </div>
                 </div>
             </div>
 
@@ -408,18 +448,34 @@ function MainMedicineList() {
                             />
                         </td>
                         <td>
-                            <input
-                                type="text"
+                            <select
                                 name="grupa"
                                 value={newUtilization.grupa}
                                 onChange={handleInputUtilization}
-                                placeholder="Grupa"
-                            />
+                                className="border rounded-md p-2"
+                            >
+                                <option value="">Wybierz grupę</option>
+                                <option value="S">Sprzęt</option>
+                                <option value="L">Lek</option>
+                            </select>
                         </td>
                     </tr>
                     </tbody>
                 </table>
-                <button className="p-4 bg-slate-700 rounded-3xl" onClick={() => {
+                <div className="mt-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Powód utylizacji
+                    </label>
+                    <textarea
+                        name="powod_utylizacji"
+                        value={newUtilization.powod_utylizacji}
+                        onChange={handleInputUtilization}
+                        className="border rounded-md p-2 w-full"
+                        rows="3"
+                        required
+                    />
+                </div>
+                <button className="p-4 bg-slate-700 rounded-3xl text-white mt-4" onClick={() => {
                     handleAddUtilization();
                     handleAddUtilizationClose();
                 }}>
@@ -431,4 +487,4 @@ function MainMedicineList() {
     );
 }
 
-export default MainMedicineList;
+export default Utilization;

@@ -16,7 +16,8 @@ services:
   frontend:
     container_name: navigator-frontend
     build:
-      dockerfile: Dockerfile-101
+      context: .
+      dockerfile: Dockerfile
     image: weatherme/navigator-frontend
     ports:
       - "8888:8888"

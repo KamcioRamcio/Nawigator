@@ -7,6 +7,7 @@ import EquipmentList from "./pages/Eq/EquipmentList.jsx";
 import Login from './pages/Other/Login.jsx';
 import MinMedicine from "./pages/Med/MinMedicine.jsx";
 import Utilization from "./pages/Other/Utilization.jsx";
+import Documentation from "./pages/Other/Documentation.jsx";
 
 import './index.css';
 
@@ -23,6 +24,7 @@ function App(){
                     <Route path="/minimum-lekow" element={<MinMedicine/>}></Route>
                     <Route path="/zestawienie-sprzetu" element={<EquipmentList/>}></Route>
                     <Route path="/utylizacja" element={<Utilization/>}></Route>
+                    <Route path="/dokumentacja" element={<Documentation/>}></Route>
                     <Route path="*" element={<Navigate to="/" />} />
                 </Routes>
             </BrowserRouter>

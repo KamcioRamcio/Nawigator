@@ -3,6 +3,7 @@ import apiUrl from "../../constants/api.js";
 import MedicineAdd from "../../components/MedicineAdd.jsx";
 import SiteChange from "../../components/SiteChange.jsx";
 import ConstantsMedicine from "../../constants/constantsMedicine.js";
+import UtilizationButton from '../../components/UtilizationButton';
 
 
 function MainMedicineList() {
@@ -121,25 +122,70 @@ function MainMedicineList() {
 
     const handleAddMedicine = async () => {
         try {
+            if (!newMedicine.lek_nazwa || newMedicine.lek_nazwa.trim() === "") {
+                alert("Nazwa leku jest wymagana");
+                return;
+            }
+
+            if (!newMedicine.lek_kategoria) {
+                alert("Kategoria jest wymagana");
+                return;
+            }
+
+            const payload = {
+                lek_nazwa: newMedicine.lek_nazwa,
+                lek_ilosc: newMedicine.lek_ilosc || "",
+                lek_opakowanie: newMedicine.lek_opakowanie || "",
+                lek_data: newMedicine.lek_data || "",
+                lek_status: newMedicine.lek_status || "",
+                lek_ilosc_minimalna: newMedicine.lek_ilosc_minimalna || "",
+                lek_przechowywanie: newMedicine.lek_przechowywanie || "",
+                lek_kategoria: newMedicine.lek_kategoria || null,
+                lek_podkategoria: newMedicine.lek_podkategoria || null,
+                lek_podpodkategoria: newMedicine.lek_podpodkategoria || null,
+            };
+
             const response = await fetch(apiUrl + "leki-all", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify(newMedicine),
+                body: JSON.stringify(payload),
             });
+
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
-            console.log("Medicine added:", newMedicine);
+
+            console.log("Medicine added:", payload);
+
+            setNewMedicine({
+                lek_nazwa: "",
+                lek_ilosc: "",
+                lek_opakowanie: "",
+                lek_data: "",
+                lek_status: "",
+                lek_ilosc_minimalna: "",
+                lek_przechowywanie: "",
+                lek_kategoria: "",
+                lek_podkategoria: "",
+                lek_podpodkategoria: "",
+            });
+            setSelectedCategory(null);
+            setSelectedSubCategory(null);
+
+            fetchMedicines();
+            setMedicineAdd(false);
         } catch (error) {
             console.error("Error adding medicine:", error);
+            alert(`Błąd podczas dodawania leku: ${error.message}`);
         }
-        fetchMedicines();
-        setMedicineAdd(false);
-    }
+    };
 
     const handleDeleteMedicine = async (medicineId) => {
+        if (!confirm("Czy na pewno chcesz usunąć tę pozycję? Ta operacja jest nieodwracalna.")) {
+            return;
+        }
         try {
             const response = await fetch(apiUrl + "leki/delete/" + medicineId, {
                 method: "DELETE",
@@ -153,6 +199,8 @@ function MainMedicineList() {
         }
         fetchMedicines();
     }
+
+
 
 
     return (
@@ -171,156 +219,208 @@ function MainMedicineList() {
                     </button>
 
                     <MedicineAdd isOpen={medicineAdd} onClose={handleAddMedicineClose}>
-                        <h2>ADD MEDICINE</h2>
-                        <table>
-                            <thead>
-                            <tr>
-                                <th className="px-12 py-4">Nazwa Leku</th>
-                                <th className="px-12 py-4">Ilość</th>
-                                <th className="px-12 py-4">Opakowanie</th>
-                                <th className="px-12 py-4">Data ważności</th>
-                                <th className="px-12 py-4">Status leku</th>
-                                <th className="px-12 py-6">Ilość minimalna</th>
-                                <th className="px-12 py-4">Przechowywanie</th>
-                                <th className="px-12 py-4">Kategoria</th>
-                                <th className="px-12 py-4">Pod kategoria</th>
-                                <th className="px-12 py-4">Pod Pod Kategoria</th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            <tr>
-                                <td>
-                                    <input
-                                        type="text"
-                                        name="lek_nazwa"
-                                        value={newMedicine.lek_nazwa}
-                                        onChange={handleInputMedicine}
-                                        placeholder="Nazwa Leku"
-                                    />
-                                </td>
-                                <td>
-                                    <input
-                                        type="number"
-                                        name="lek_ilosc"
-                                        value={newMedicine.lek_ilosc}
-                                        onChange={handleInputMedicine}
-                                        placeholder="Ilość"
-                                    />
-                                </td>
-                                <td>
-                                    <select
-                                        name="lek_opakowanie"
-                                        value={newMedicine.lek_opakowanie}
-                                        onChange={handleInputMedicine}
-                                    >
-                                        <option value="">Wybierz opakowanie</option>
-                                        {ConstantsMedicine.BoxTypeOptions.map(option => (
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Nazwa Leku*
+                                </label>
+                                <input
+                                    type="text"
+                                    name="lek_nazwa"
+                                    value={newMedicine.lek_nazwa}
+                                    onChange={handleInputMedicine}
+                                    className="border rounded-md p-2 w-full"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Ilość
+                                </label>
+                                <input
+                                    type="number"
+                                    step="0.05"
+                                    name="lek_ilosc"
+                                    value={newMedicine.lek_ilosc}
+                                    onChange={handleInputMedicine}
+                                    className="border rounded-md p-2 w-full"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Opakowanie
+                                </label>
+                                <select
+                                    name="lek_opakowanie"
+                                    value={newMedicine.lek_opakowanie}
+                                    onChange={handleInputMedicine}
+                                    className="border rounded-md p-2 w-full"
+                                >
+                                    <option value="">Wybierz opakowanie</option>
+                                    {ConstantsMedicine.BoxTypeOptions.map(option => (
+                                        <option key={option.value} value={option.value}>
+                                            {option.label}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Data ważności
+                                </label>
+                                <input
+                                    type="date"
+                                    name="lek_data"
+                                    value={newMedicine.lek_data}
+                                    onChange={handleInputMedicine}
+                                    className="border rounded-md p-2 w-full"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Status leku
+                                </label>
+                                <select
+                                    name="lek_status"
+                                    value={newMedicine.lek_status}
+                                    onChange={handleInputMedicine}
+                                    className="border rounded-md p-2 w-full"
+                                >
+                                    <option value="">Wybierz status</option>
+                                    {ConstantsMedicine.MedicineStatusOptions.map(option => (
+                                        <option key={option.value} value={option.value}>
+                                            {option.label}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Ilość minimalna
+                                </label>
+                                <input
+                                    type="number"
+                                    step="0.05"
+                                    name="lek_ilosc_minimalna"
+                                    value={newMedicine.lek_ilosc_minimalna}
+                                    onChange={handleInputMedicine}
+                                    className="border rounded-md p-2 w-full"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Przechowywanie
+                                </label>
+                                <select
+                                    name="lek_przechowywanie"
+                                    value={newMedicine.lek_przechowywanie}
+                                    onChange={handleInputMedicine}
+                                    className="border rounded-md p-2 w-full"
+                                >
+                                    <option value="">Wybierz przechowywanie</option>
+                                    {ConstantsMedicine.StoringOptions.map(option => (
+                                        <option key={option.value} value={option.value}>
+                                            {option.label}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Kategoria*
+                                </label>
+                                <select
+                                    name="lek_kategoria"
+                                    value={newMedicine.lek_kategoria}
+                                    onChange={(e) => {
+                                        handleInputMedicine(e);
+                                        setSelectedCategory(e.target.value);
+                                        // Reset dependent fields
+                                        setSelectedSubCategory(null);
+                                        setNewMedicine(prev => ({
+                                            ...prev,
+                                            lek_podkategoria: "",
+                                            lek_podpodkategoria: ""
+                                        }));
+                                    }}
+                                    className="border rounded-md p-2 w-full"
+                                    required
+                                >
+                                    <option value="">Wybierz kategorię</option>
+                                    {ConstantsMedicine.CategoryOptions.map(option => (
+                                        <option key={option.value} value={option.value}>
+                                            {option.label}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Podkategoria
+                                </label>
+                                <select
+                                    name="lek_podkategoria"
+                                    value={newMedicine.lek_podkategoria}
+                                    onChange={(e) => {
+                                        handleInputMedicine(e);
+                                        setSelectedSubCategory(e.target.value);
+                                        // Reset dependent field
+                                        setNewMedicine(prev => ({
+                                            ...prev,
+                                            lek_podpodkategoria: ""
+                                        }));
+                                    }}
+                                    className="border rounded-md p-2 w-full"
+                                    disabled={!selectedCategory}
+                                >
+                                    <option value="">Wybierz podkategorię</option>
+                                    {selectedCategory &&
+                                        ConstantsMedicine.SubCategoryOptions[selectedCategory]?.map(option => (
                                             <option key={option.value} value={option.value}>
                                                 {option.label}
                                             </option>
-                                        ))}
-                                    </select>
-                                </td>
-                                <td>
-                                    <input
-                                        type="date"
-                                        name="lek_data"
-                                        value={newMedicine.lek_data}
-                                        onChange={handleInputMedicine}
-                                    />
-                                </td>
-                                <td>
-                                    <select
-                                        name="lek_status"
-                                        value={newMedicine.lek_status}
-                                        onChange={handleInputMedicine}
-                                    >
-                                        <option value="">Wybierz status</option>
-                                        {ConstantsMedicine.MedicineStatusOptions.map(option => (
+                                        ))
+                                    }
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Podpodkategoria
+                                </label>
+                                <select
+                                    name="lek_podpodkategoria"
+                                    value={newMedicine.lek_podpodkategoria}
+                                    onChange={handleInputMedicine}
+                                    className="border rounded-md p-2 w-full"
+                                    disabled={!selectedSubCategory}
+                                >
+                                    <option value="">Wybierz podpodkategorię</option>
+                                    {Array.isArray(ConstantsMedicine.SubSubCategoryOptions[selectedCategory]?.[selectedSubCategory]) &&
+                                        ConstantsMedicine.SubSubCategoryOptions[selectedCategory][selectedSubCategory].map(option => (
                                             <option key={option.value} value={option.value}>
                                                 {option.label}
                                             </option>
-                                        ))}
-                                    </select>
-                                </td>
-                                <td>
-                                    <input
-                                        type="number"
-                                        name="lek_ilosc_minimalna"
-                                        value={newMedicine.lek_ilosc_minimalna}
-                                        onChange={handleInputMedicine}
-                                        placeholder="Ilość minimalna"
-                                    />
-                                </td>
-                                <td>
-                                    <select
-                                        name="lek_przechowywanie"
-                                        value={newMedicine.lek_przechowywanie}
-                                        onChange={handleInputMedicine}
-                                    >
-                                        <option value="">Wybierz przechowywanie</option>
-                                        {ConstantsMedicine.StoringOptions.map(option => (
-                                            <option key={option.value} value={option.value}>
-                                                {option.label}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </td>
-                                <td>
-                                    <select
-                                        name="lek_kategoria"
-                                        value={newMedicine.lek_kategoria}
-                                        onChange={(e) => {
-                                            handleInputMedicine(e);
-                                            setSelectedCategory(e.target.value);
-                                        }}
-                                    >
-                                        <option value="">Wybierz kategorię</option>
-                                        {ConstantsMedicine.CategoryOptions.map(option => (
-                                            <option key={option.value} value={option.value}>
-                                                {option.label}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </td>
-                                <td>
-                                    <select
-                                        name="lek_podkategoria"
-                                        value={newMedicine.lek_podkategoria}
-                                        onChange={(e) => {
-                                            handleInputMedicine(e);
-                                            setSelectedSubCategory(e.target.value);
-                                        }}
-                                    >   <option value="">Wybierz podkategorię</option>
-                                        {selectedCategory && ConstantsMedicine.SubCategoryOptions[selectedCategory]?.map(option => (
-                                            <option key={option.value} value={option.value}>
-                                                {option.label}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </td>
-                                <td>
-                                    <select
-                                        name="lek_podpodkategoria"
-                                        value={newMedicine.lek_podpodkategoria}
-                                        onChange={handleInputMedicine}
-                                    >   <option value="">Wybierz podpodkategorię</option>
-                                        {Array.isArray(ConstantsMedicine.SubSubCategoryOptions[selectedCategory]?.[selectedSubCategory]) &&
-                                            ConstantsMedicine.SubSubCategoryOptions[selectedCategory][selectedSubCategory].map(option => (
-                                                <option key={option.value} value={option.value}>
-                                                    {option.label}
-                                                </option>
-                                            ))
-                                        }
-                                    </select>
-                                </td>
-                            </tr>
-                            </tbody>
-                        </table>
-                        <button className="p-4 bg-slate-300 rounded-3xl" onClick={handleAddMedicine}>
-                            Dodaj
-                        </button>
+                                        ))
+                                    }
+                                </select>
+                            </div>
+                        </div>
+                        <div className="mt-6 flex justify-end">
+                            <button
+                                className="mr-2 px-4 py-2 bg-gray-300 rounded-md"
+                                onClick={handleAddMedicineClose}
+                            >
+                                Anuluj
+                            </button>
+                            <button
+                                className="px-4 py-2 bg-blue-500 text-white rounded-md"
+                                onClick={handleAddMedicine}
+                            >
+                                Dodaj
+                            </button>
+                        </div>
                     </MedicineAdd>
+
                     <SiteChange isOpen={siteChange} onClose={handleSiteChangeClose} />
                 </div>
                 <h2 className="text-center text-xl text-red-800 font-bold pt-4 ">
@@ -330,7 +430,7 @@ function MainMedicineList() {
                     Zalogowany jako {username}
                 </h3>
                 <table className="w-full">
-                    <thead className="text-ceter">
+                    <thead className="text-left">
                     <tr className="bg-gray-200 text-gray-700 uppercase text-sm tracking-wide ">
                         <th className="px-2 py-4 ">Nazwa Leku</th>
                         <th className="px-2 py-4">Ilość</th>
@@ -374,7 +474,7 @@ function MainMedicineList() {
                                                 )}
                                                 {medicines[category][subcategory][subsubcategory].map(medicine => (
                                                     <tr key={medicine.lek_id}
-                                                        className={`${medicine.lek_przechowywanie !== "freezer" ? "bg-blue-200" : ""} border border-gray-700`}>
+                                                        className={`${medicine.lek_przechowywanie === "freezer" ? "bg-blue-200" : ""} border border-gray-700`}>
                                                     <td className="pl-6 px-2 py-4 border-r border-l border-gray-700">
                                                         {editMode[medicine.lek_id] ? (
                                                             <>
@@ -382,7 +482,7 @@ function MainMedicineList() {
                                                                     type="text"
                                                                     value={editedValues[medicine.lek_id]?.lek_nazwa || ""}
                                                                     onChange={(e) =>
-                                                                        handleEdit(medicine.lek_id, "lek_min_nazwa", e.target.value)
+                                                                        handleEdit(medicine.lek_id, "lek_nazwa", e.target.value)
                                                                     }
                                                                     className="border px-2 py-1 w-5/6"
                                                                 />
@@ -390,52 +490,94 @@ function MainMedicineList() {
                                                                     name="id_kategorii"
                                                                     value={editedValues[medicine.lek_id]?.id_kategorii || ""}
                                                                     onChange={(e) => {
-                                                                        handleEdit(medicine.lek_id, "id_kategorii", parseInt(e.target.value));
-                                                                        setSelectedCategory(e.target.value);
+                                                                        const newCategory = e.target.value ? parseInt(e.target.value, 10) : "";
+                                                                        handleEdit(medicine.lek_id, "id_kategorii", newCategory);
+                                                                        // Reset dependent fields
+                                                                        handleEdit(medicine.lek_id, "id_pod_kategorii", "");
+                                                                        handleEdit(medicine.lek_id, "id_pod_pod_kategorii", "");
                                                                     }}
                                                                     className="border px-2 py-1 mt-1 w-5/6"
                                                                 >
-                                                                    <option value="">Wybierz kategorię</option>
+                                                                    <option value="">
+                                                                        {medicine.id_kategorii ?
+                                                                            ConstantsMedicine.CategoryOptions.find(opt => opt.value === medicine.id_kategorii)?.label || "Wybierz kategorię"
+                                                                            : "Wybierz kategorię"}
+                                                                    </option>
                                                                     {ConstantsMedicine.CategoryOptions.map(option => (
                                                                         <option key={option.value} value={option.value}>
                                                                             {option.label}
                                                                         </option>
                                                                     ))}
                                                                 </select>
+
                                                                 <select
                                                                     name="id_pod_kategorii"
                                                                     value={editedValues[medicine.lek_id]?.id_pod_kategorii || ""}
                                                                     onChange={(e) => {
-                                                                        handleEdit(medicine.lek_id, "id_pod_kategorii", parseInt(e.target.value));
-                                                                        setSelectedSubCategory(e.target.value);
+                                                                        const newSubCategory = e.target.value ? parseInt(e.target.value, 10) : "";
+                                                                        handleEdit(medicine.lek_id, "id_pod_kategorii", newSubCategory);
+                                                                        // Reset dependent field
+                                                                        handleEdit(medicine.lek_id, "id_pod_pod_kategorii", "");
                                                                     }}
                                                                     className="border px-2 py-1 mt-1 w-5/6"
+                                                                    disabled={!editedValues[medicine.lek_id]?.id_kategorii}
                                                                 >
-                                                                    <option value="">Wybierz podkategorię</option>
-                                                                    {selectedCategory && ConstantsMedicine.SubCategoryOptions[selectedCategory]?.map(option => (
-                                                                        <option key={option.value} value={option.value}>
-                                                                            {option.label}
-                                                                        </option>
-                                                                    ))}
-                                                                </select>
-                                                                <select
-                                                                    name="id_pod_pod_kategorii"
-                                                                    value={editedValues[medicine.lek_id]?.id_pod_pod_kategorii || ""}
-                                                                    onChange={(e) =>
-                                                                        handleEdit(medicine.lek_id, "id_pod_pod_kategorii", parseInt(e.target.value))
-                                                                    }
-                                                                    className="border px-2 py-1 mt-1 w-5/6"
-                                                                >
-                                                                    <option value="">Wybierz podpodkategorię</option>
-                                                                    {Array.isArray(ConstantsMedicine.SubSubCategoryOptions[selectedCategory]?.[selectedSubCategory]) &&
-                                                                        ConstantsMedicine.SubSubCategoryOptions[selectedCategory][selectedSubCategory].map(option => (
+                                                                    <option value="">
+                                                                        {medicine.id_pod_kategorii ?
+                                                                            ConstantsMedicine.SubCategoryOptions[medicine.id_kategorii]?.find(opt => opt.value === medicine.id_pod_kategorii)?.label || "Wybierz podkategorię"
+                                                                            : "Wybierz podkategorię"}
+                                                                    </option>
+                                                                    {editedValues[medicine.lek_id]?.id_kategorii &&
+                                                                        ConstantsMedicine.SubCategoryOptions[editedValues[medicine.lek_id]?.id_kategorii]?.map(option => (
                                                                             <option key={option.value} value={option.value}>
                                                                                 {option.label}
                                                                             </option>
                                                                         ))
                                                                     }
                                                                 </select>
+
+                                                                <select
+                                                                    name="id_pod_pod_kategorii"
+                                                                    value={editedValues[medicine.lek_id]?.id_pod_pod_kategorii || ""}
+                                                                    onChange={(e) => {
+                                                                        const newSubSubCategory = e.target.value ? parseInt(e.target.value, 10) : "";
+                                                                        handleEdit(medicine.lek_id, "id_pod_pod_kategorii", newSubSubCategory);
+                                                                    }}
+                                                                    className="border px-2 py-1 mt-1 w-5/6"
+                                                                    disabled={!editedValues[medicine.lek_id]?.id_pod_kategorii}
+                                                                >
+                                                                    <option value="">
+                                                                        {medicine.id_pod_pod_kategorii ?
+                                                                            ConstantsMedicine.SubSubCategoryOptions[medicine.id_kategorii]?.[medicine.id_pod_kategorii]?.find(opt => opt.value === medicine.id_pod_pod_kategorii)?.label || "Wybierz podpodkategorię"
+                                                                            : "Wybierz podpodkategorię"}
+                                                                    </option>
+                                                                    {editedValues[medicine.lek_id]?.id_kategorii && editedValues[medicine.lek_id]?.id_pod_kategorii &&
+                                                                        Array.isArray(ConstantsMedicine.SubSubCategoryOptions[editedValues[medicine.lek_id]?.id_kategorii]?.[editedValues[medicine.lek_id]?.id_pod_kategorii]) &&
+                                                                        ConstantsMedicine.SubSubCategoryOptions[editedValues[medicine.lek_id]?.id_kategorii][editedValues[medicine.lek_id]?.id_pod_kategorii].map(option => (
+                                                                            <option key={option.value} value={option.value}>
+                                                                                {option.label}
+                                                                            </option>
+                                                                        ))
+                                                                    }
+                                                                </select>
+
+                                                                <select
+                                                                    name="przechowywanie"
+                                                                    value={editedValues[medicine.lek_id]?.lek_przechowywanie || ""}
+                                                                    onChange={(e) =>
+                                                                        handleEdit(medicine.lek_id, "lek_przechowywanie", e.target.value)}
+                                                                    className="border px-2 py-1 mt-1 w-5/6"
+                                                                >
+                                                                    <option value="">Wybierz przechowywanie</option>
+                                                                    {ConstantsMedicine.StoringOptions.map(option => (
+                                                                        <option key={option.value} value={option.value}>
+                                                                            {option.label}
+                                                                        </option>
+                                                                    ))}
+                                                                </select>
                                                             </>
+
+
                                                         ) : (
                                                             medicine.lek_nazwa
                                                         )}
@@ -603,6 +745,10 @@ function MainMedicineList() {
                                                                     >
                                                                         Anuluj
                                                                     </button>
+                                                                    <button
+                                                                            onClick={() => handleDeleteMedicine(medicine.lek_id)}
+                                                                            className="text-red-600 font-semibold ml-2"
+                                                                    >Usuń</button>
                                                                 </>
                                                             ) : (
                                                                 <button
@@ -613,7 +759,9 @@ function MainMedicineList() {
                                                                         }));
                                                                         setEditedValues(prev => ({
                                                                             ...prev,
-                                                                            [medicine.lek_id]: medicine,
+                                                                            [medicine.lek_id]: {
+                                                                                ...medicine
+                                                                            }
                                                                         }));
                                                                     }}
                                                                     className="text-blue-600 font-semibold"
@@ -621,8 +769,12 @@ function MainMedicineList() {
                                                                     Edytuj
                                                                 </button>
 
+
                                                             )}
-                                                            <button className="px-4 " onClick={() => handleDeleteMedicine(medicine.lek_id)}>USUŃ</button>
+                                                            <UtilizationButton
+                                                                medicine={medicine}
+                                                                onUtilizationComplete={fetchMedicines}
+                                                            />
                                                         </td>
                                                     </tr>
                                                 ))}
