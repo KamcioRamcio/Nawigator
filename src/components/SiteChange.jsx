@@ -38,6 +38,7 @@ function SiteChange({ isOpen, onClose }) {
         { path: '/minimum-lekow', name: 'Spis minimum leków' },
         { path: '/main/sprzet', name: 'Spis minimum sprzętu' },
         { path: '/zestawienie-sprzetu', name: 'Spis sprzętu' },
+        { path: '/zgrany-sprzet', name: 'Zgrany spis sprzętu' },
         { path: '/utylizacja', name: 'Utylizacja' },
         { path: '/dokumentacja', name: 'Dokumentacja' },
     ];

@@ -1,5 +1,5 @@
 // backend/db/schema.js
-import { getDb } from './index.js';
+import {getDb} from './index.js';
 
 // export async function addPrzechowywanie() {
 //     const db = await getDb();
@@ -17,138 +17,170 @@ export async function createTables() {
 
     // Create tables
     await db.exec(`
-        CREATE TABLE IF NOT EXISTS Leki (
-                                            id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                            nazwa_leku TEXT,
-                                            ilosc_wstepna FLOAT,
-                                            opakowanie TEXT,
-                                            data_waznosci DATE,
-                                            status_leku TEXT,
-                                            ilosc_minimalna FLOAT,
-                                            przechowywanie TEXT
+        CREATE TABLE IF NOT EXISTS Leki
+        (
+            id                        INTEGER PRIMARY KEY AUTOINCREMENT,
+            nazwa_leku                TEXT,
+            ilosc_wstepna             FLOAT,
+            opakowanie                TEXT,
+            data_waznosci             DATE,
+            status_leku               TEXT,
+            ilosc_minimalna           FLOAT,
+            przechowywanie            TEXT,
+            na_statku_spis_podstawowy BOOLEAN
         );
 
-        CREATE TABLE IF NOT EXISTS Stan_magazynowy (
-                                                       id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                                       id_leku INTEGER,
-                                                       ilosc FLOAT,
-                                                       data DATE,
-                                                       status TEXT,
-                                                       important_status TEXT,
-                                                       FOREIGN KEY(id_leku) REFERENCES Leki(id) ON DELETE CASCADE
+        CREATE TABLE IF NOT EXISTS Stan_magazynowy
+        (
+            id               INTEGER PRIMARY KEY AUTOINCREMENT,
+            id_leku          INTEGER,
+            ilosc            FLOAT,
+            data             DATE,
+            status           TEXT,
+            important_status TEXT,
+            FOREIGN KEY (id_leku) REFERENCES Leki (id) ON DELETE CASCADE
         );
 
-        CREATE TABLE IF NOT EXISTS Rozchod (
-                                               id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                               id_leku INTEGER,
-                                               ilosc FLOAT,
-                                               data DATE,
-                                               kto_zmienil TEXT,
-                                               FOREIGN KEY(id_leku) REFERENCES Leki(id) ON DELETE CASCADE
+        CREATE TABLE IF NOT EXISTS Rozchod
+        (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            id_leku     INTEGER,
+            ilosc       FLOAT,
+            data        DATE,
+            kto_zmienil TEXT,
+            FOREIGN KEY (id_leku) REFERENCES Leki (id) ON DELETE CASCADE
         );
 
-        CREATE TABLE IF NOT EXISTS Kategorie (
-                                                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                                 nazwa TEXT
+        CREATE TABLE IF NOT EXISTS Kategorie
+        (
+            id    INTEGER PRIMARY KEY AUTOINCREMENT,
+            nazwa TEXT
         );
 
-        CREATE TABLE IF NOT EXISTS Pod_kategorie (
-                                                     id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                                     nazwa TEXT,
-                                                     id_kategorii INTEGER,
-                                                     FOREIGN KEY(id_kategorii) REFERENCES Kategorie(id) ON DELETE CASCADE
+        CREATE TABLE IF NOT EXISTS Pod_kategorie
+        (
+            id           INTEGER PRIMARY KEY AUTOINCREMENT,
+            nazwa        TEXT,
+            id_kategorii INTEGER,
+            FOREIGN KEY (id_kategorii) REFERENCES Kategorie (id) ON DELETE CASCADE
         );
 
-        CREATE TABLE IF NOT EXISTS Pod_pod_kategorie (
-                                                         id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                                         nazwa TEXT,
-                                                         id_pod_kategorii INTEGER,
-                                                         FOREIGN KEY(id_pod_kategorii) REFERENCES Pod_kategorie(id) ON DELETE CASCADE
+        CREATE TABLE IF NOT EXISTS Pod_pod_kategorie
+        (
+            id               INTEGER PRIMARY KEY AUTOINCREMENT,
+            nazwa            TEXT,
+            id_pod_kategorii INTEGER,
+            FOREIGN KEY (id_pod_kategorii) REFERENCES Pod_kategorie (id) ON DELETE CASCADE
         );
 
-        CREATE TABLE IF NOT EXISTS Leki_kategorie (
-                                                      id_leku INTEGER,
-                                                      id_kategorii INTEGER,
-                                                      FOREIGN KEY(id_leku) REFERENCES Leki(id) ON DELETE CASCADE,
-                                                      FOREIGN KEY(id_kategorii) REFERENCES Kategorie(id) ON DELETE CASCADE
+        CREATE TABLE IF NOT EXISTS Leki_kategorie
+        (
+            id_leku      INTEGER,
+            id_kategorii INTEGER,
+            FOREIGN KEY (id_leku) REFERENCES Leki (id) ON DELETE CASCADE,
+            FOREIGN KEY (id_kategorii) REFERENCES Kategorie (id) ON DELETE CASCADE
         );
 
-        CREATE TABLE IF NOT EXISTS Leki_pod_kategorie (
-                                                          id_leku INTEGER,
-                                                          id_pod_kategorii INTEGER,
-                                                          FOREIGN KEY(id_leku) REFERENCES Leki(id) ON DELETE CASCADE,
-                                                          FOREIGN KEY(id_pod_kategorii) REFERENCES Pod_kategorie(id) ON DELETE CASCADE
+        CREATE TABLE IF NOT EXISTS Leki_pod_kategorie
+        (
+            id_leku          INTEGER,
+            id_pod_kategorii INTEGER,
+            FOREIGN KEY (id_leku) REFERENCES Leki (id) ON DELETE CASCADE,
+            FOREIGN KEY (id_pod_kategorii) REFERENCES Pod_kategorie (id) ON DELETE CASCADE
         );
 
-        CREATE TABLE IF NOT EXISTS Leki_pod_pod_kategorie (
-                                                              id_leku INTEGER,
-                                                              id_pod_pod_kategorii INTEGER,
-                                                              FOREIGN KEY(id_leku) REFERENCES Leki(id) ON DELETE CASCADE,
-                                                              FOREIGN KEY(id_pod_pod_kategorii) REFERENCES Pod_pod_kategorie(id) ON DELETE CASCADE
+        CREATE TABLE IF NOT EXISTS Leki_pod_pod_kategorie
+        (
+            id_leku              INTEGER,
+            id_pod_pod_kategorii INTEGER,
+            FOREIGN KEY (id_leku) REFERENCES Leki (id) ON DELETE CASCADE,
+            FOREIGN KEY (id_pod_pod_kategorii) REFERENCES Pod_pod_kategorie (id) ON DELETE CASCADE
         );
 
-        CREATE TABLE IF NOT EXISTS Kategorie_sprzet (
-                                                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                                        nazwa TEXT
+        CREATE TABLE IF NOT EXISTS Kategorie_sprzet
+        (
+            id    INTEGER PRIMARY KEY AUTOINCREMENT,
+            nazwa TEXT
         );
 
-        CREATE TABLE IF NOT EXISTS Pod_kategorie_sprzet (
-                                                            id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                                            nazwa TEXT,
-                                                            id_kategorii INTEGER,
-                                                            FOREIGN KEY(id_kategorii) REFERENCES Kategorie_sprzet(id) ON DELETE CASCADE
+        CREATE TABLE IF NOT EXISTS Pod_kategorie_sprzet
+        (
+            id           INTEGER PRIMARY KEY AUTOINCREMENT,
+            nazwa        TEXT,
+            id_kategorii INTEGER,
+            FOREIGN KEY (id_kategorii) REFERENCES Kategorie_sprzet (id) ON DELETE CASCADE
         );
 
-        CREATE TABLE IF NOT EXISTS Sprzet (
-                                              id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                              nazwa TEXT,
-                                              ilosc_wymagana FLOAT,
-                                              ilosc_aktualna FLOAT,
-                                              data_waznosci DATE,
-                                              status TEXT,
-                                              termin TEXT,
-                                              ilosc_termin TEXT,
-                                              kto_zmienil TEXT,
-                                              na_statku BOOLEAN,
-                                              torba_ratownika BOOLEAN
+        CREATE TABLE IF NOT EXISTS Sprzet
+        (
+            id              INTEGER PRIMARY KEY AUTOINCREMENT,
+            nazwa           TEXT,
+            ilosc_wymagana  FLOAT,
+            ilosc_aktualna  FLOAT,
+            data_waznosci   DATE,
+            status          TEXT,
+            termin          TEXT,
+            ilosc_termin    TEXT,
+            kto_zmienil     TEXT,
+            na_statku       BOOLEAN,
+            torba_ratownika BOOLEAN
         );
 
-        CREATE TABLE IF NOT EXISTS Sprzet_kategorie (
-                                                        id_sprzet INTEGER,
-                                                        id_kategorii INTEGER,
-                                                        FOREIGN KEY(id_sprzet) REFERENCES Sprzet(id) ON DELETE CASCADE,
-                                                        FOREIGN KEY(id_kategorii) REFERENCES Kategorie_sprzet(id) ON DELETE CASCADE
+        CREATE TABLE IF NOT EXISTS Sprzet_kategorie
+        (
+            id_sprzet    INTEGER,
+            id_kategorii INTEGER,
+            FOREIGN KEY (id_sprzet) REFERENCES Sprzet (id) ON DELETE CASCADE,
+            FOREIGN KEY (id_kategorii) REFERENCES Kategorie_sprzet (id) ON DELETE CASCADE
         );
 
-        CREATE TABLE IF NOT EXISTS Sprzet_pod_kategorie (
-                                                            id_sprzet INTEGER,
-                                                            id_pod_kategorii INTEGER,
-                                                            FOREIGN KEY(id_sprzet) REFERENCES Sprzet(id) ON DELETE CASCADE,
-                                                            FOREIGN KEY(id_pod_kategorii) REFERENCES Pod_kategorie_sprzet(id) ON DELETE CASCADE
+        CREATE TABLE IF NOT EXISTS Sprzet_pod_kategorie
+        (
+            id_sprzet        INTEGER,
+            id_pod_kategorii INTEGER,
+            FOREIGN KEY (id_sprzet) REFERENCES Sprzet (id) ON DELETE CASCADE,
+            FOREIGN KEY (id_pod_kategorii) REFERENCES Pod_kategorie_sprzet (id) ON DELETE CASCADE
         );
 
-        CREATE TABLE IF NOT EXISTS Utylizacja (
-                                                  id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                                  nazwa TEXT,
-                                                  ilosc INTEGER,
-                                                  data_waznosci DATE,
-                                                  ilosc_nominalna TEXT,
-                                                  grupa TEXT,
-                                                  powod_utylizacji TEXT
+        CREATE TABLE IF NOT EXISTS Utylizacja
+        (
+            id               INTEGER PRIMARY KEY AUTOINCREMENT,
+            nazwa            TEXT,
+            ilosc            INTEGER,
+            data_waznosci    DATE,
+            ilosc_nominalna  TEXT,
+            grupa            TEXT,
+            powod_utylizacji TEXT
         );
 
-        CREATE TABLE IF NOT EXISTS Leki_spis_min (
-                                                     id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                                     nazwa_leku TEXT,
-                                                     pakowanie TEXT,
-                                                     w_opakowaniu TEXT,
-                                                     id_kategorii INTEGER,
-                                                     id_pod_kategorii INTEGER,
-                                                     id_pod_pod_kategorii INTEGER
+        CREATE TABLE IF NOT EXISTS Leki_spis_min
+        (
+            id                        INTEGER PRIMARY KEY AUTOINCREMENT,
+            nazwa_leku                TEXT,
+            pakowanie                 TEXT,
+            w_opakowaniu              TEXT,
+            przechowywanie            TEXT,
+            na_statku_spis_podstawowy BOOLEAN,
+            id_kategorii              INTEGER,
+            id_pod_kategorii          INTEGER,
+            id_pod_pod_kategorii      INTEGER
         );
 
-        CREATE TABLE IF NOT EXISTS last_ids_temp (
-                                                     id INTEGER
+        CREATE TABLE IF NOT EXISTS Sprzet_zgrany_spis
+        (
+            id                        INTEGER PRIMARY KEY AUTOINCREMENT,
+            nazwa_sprzetu             TEXT,
+            data_waznosci             DATE,
+            ilosc                     INTEGER,
+            na_statku_spis_podstawowy BOOLEAN,
+            id_kategorii              INTEGER,
+            id_pod_kategorii          INTEGER,
+            kto_zmienil               TEXT
+        );
+
+        CREATE TABLE IF NOT EXISTS last_ids_temp
+        (
+            id INTEGER
         );
     `);
 
@@ -163,12 +195,14 @@ export async function createTables() {
             INSERT INTO Leki (
                 nazwa_leku,
                 opakowanie,
-                kto_zmienil
+                przechowywanie,
+                na_statku_spis_podstawowy
             )
             VALUES (
                 NEW.nazwa_leku,
                 NEW.pakowanie,
-                'SYSTEM'
+                NEW.przechowywanie,
+                NEW.na_statku_spis_podstawowy
             );
             
             -- Store the last inserted ID for use in category relations
@@ -204,6 +238,8 @@ export async function createTables() {
                 nazwa_leku,
                 pakowanie,
                 w_opakowaniu,
+                przechowywanie,
+                na_statku_spis_podstawowy,
                 id_kategorii,
                 id_pod_kategorii,
                 id_pod_pod_kategorii
@@ -212,6 +248,8 @@ export async function createTables() {
                 NEW.nazwa_leku,
                 NEW.opakowanie,
                 NULL,
+                NEW.przechowywanie,
+                NEW.na_statku_spis_podstawowy,
                 NULL,
                 NULL,
                 NULL
@@ -254,7 +292,9 @@ export async function createTables() {
             UPDATE Leki_spis_min
             SET 
                 nazwa_leku = NEW.nazwa_leku,
-                pakowanie = NEW.opakowanie
+                pakowanie = NEW.opakowanie,
+                przechowywanie = NEW.przechowywanie,
+                na_statku_spis_podstawowy = NEW.na_statku_spis_podstawowy
             WHERE nazwa_leku = OLD.nazwa_leku;
         END;
         
@@ -374,7 +414,9 @@ export async function createTables() {
             UPDATE Leki
             SET 
                 nazwa_leku = NEW.nazwa_leku,
-                opakowanie = NEW.pakowanie
+                opakowanie = NEW.pakowanie,
+                przechowywanie = NEW.przechowywanie,
+                na_statku_spis_podstawowy = NEW.na_statku_spis_podstawowy
             WHERE nazwa_leku = OLD.nazwa_leku;
             
             -- Get the affected Leki IDs

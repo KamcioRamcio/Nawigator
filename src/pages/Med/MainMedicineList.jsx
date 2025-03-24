@@ -24,6 +24,7 @@ function MainMedicineList() {
         lek_status: "",
         lek_ilosc_minimalna: "",
         lek_przechowywanie: "",
+        lek_na_statku_spis_podstawowy: "",
         lek_kategoria: "",
         lek_podkategoria: "",
         lek_podpodkategoria: "",
@@ -74,25 +75,56 @@ function MainMedicineList() {
     }
 
     const handleEdit = (medicineId, field, value) => {
-        setEditedValues(prev => ({
-            ...prev,
-            [medicineId]: {
-                ...prev[medicineId],
-                [field]: value,
-                rozchod_kto_zmienil: username,
-            },
-
-        }));
+        if (field === 'id_kategorii') {
+            setEditedValues(prev => ({
+                ...prev,
+                [medicineId]: {
+                    ...prev[medicineId],
+                    [field]: value,
+                    id_pod_kategorii: null,
+                    id_pod_pod_kategorii: null,
+                    rozchod_kto_zmienil: username
+                }
+            }));
+        } else if (field === 'id_pod_kategorii') {
+            setEditedValues(prev => ({
+                ...prev,
+                [medicineId]: {
+                    ...prev[medicineId],
+                    [field]: value,
+                    id_pod_pod_kategorii: null,
+                    rozchod_kto_zmienil: username
+                }
+            }));
+        } else {
+            setEditedValues(prev => ({
+                ...prev,
+                [medicineId]: {
+                    ...prev[medicineId],
+                    [field]: value,
+                    rozchod_kto_zmienil: username
+                }
+            }));
+        }
     };
+
 
     const handleSave = async (medicineId) => {
         try {
+            const dataToSend = { ...editedValues[medicineId] };
+
+            // Ensure explicit null values are sent for empty category fields
+            // This ensures the backend can distinguish between "don't change" and "set to null"
+            if (dataToSend.id_kategorii === '') dataToSend.id_kategorii = null;
+            if (dataToSend.id_pod_kategorii === '') dataToSend.id_pod_kategorii = null;
+            if (dataToSend.id_pod_pod_kategorii === '') dataToSend.id_pod_pod_kategorii = null;
+
             const response = await fetch(apiUrl + "leki/" + medicineId, {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify(editedValues[medicineId]),
+                body: JSON.stringify(dataToSend),
             });
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -101,7 +133,7 @@ function MainMedicineList() {
                 ...prev,
                 [medicineId]: false,
             }));
-            console.log("Medicine updated:", editedValues[medicineId]);
+            console.log("Medicine updated:", dataToSend);
         } catch (error) {
             console.error("Error updating medicine:", error);
         }
@@ -140,6 +172,7 @@ function MainMedicineList() {
                 lek_status: newMedicine.lek_status || "",
                 lek_ilosc_minimalna: newMedicine.lek_ilosc_minimalna || "",
                 lek_przechowywanie: newMedicine.lek_przechowywanie || "",
+                lek_na_statku_spis_podstawowy: newMedicine.lek_na_statku_spis_podstawowy || "",
                 lek_kategoria: newMedicine.lek_kategoria || null,
                 lek_podkategoria: newMedicine.lek_podkategoria || null,
                 lek_podpodkategoria: newMedicine.lek_podpodkategoria || null,
@@ -159,6 +192,7 @@ function MainMedicineList() {
 
             console.log("Medicine added:", payload);
 
+            // Reset form
             setNewMedicine({
                 lek_nazwa: "",
                 lek_ilosc: "",
@@ -167,6 +201,7 @@ function MainMedicineList() {
                 lek_status: "",
                 lek_ilosc_minimalna: "",
                 lek_przechowywanie: "",
+                lek_na_statku_spis_podstawowy: "",
                 lek_kategoria: "",
                 lek_podkategoria: "",
                 lek_podpodkategoria: "",
@@ -181,6 +216,7 @@ function MainMedicineList() {
             alert(`Błąd podczas dodawania leku: ${error.message}`);
         }
     };
+
 
     const handleDeleteMedicine = async (medicineId) => {
         if (!confirm("Czy na pewno chcesz usunąć tę pozycję? Ta operacja jest nieodwracalna.")) {
@@ -326,6 +362,19 @@ function MainMedicineList() {
                                 </select>
                             </div>
                             <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Na statku spis podstawowy?</label>
+                                <select
+                                    name="lek_na_statku_spis_podstawowy"
+                                    value={newMedicine.na_statku_spis_podstawowy}
+                                    onChange={handleInputMedicine}
+                                    className="border rounded-md p-2 w-full"
+                                >
+                                    <option value="">Wybierz statku spis podstawowy</option>
+                                    <option value="1">Tak</option>
+                                    <option value="0">Nie</option>
+                                </select>
+                            </div>
+                            <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
                                     Kategoria*
                                 </label>
@@ -450,7 +499,7 @@ function MainMedicineList() {
                     {Object.keys(medicines).map((category, categoryIndex) => (
                         <React.Fragment key={category}>
                             <tr className="bg-gray-300 text-xl">
-                                <td colSpan="13" className="font-bold p-4 hover:bg-pink-300">{categoryIndex +1}. {category}</td>
+                                <td colSpan="13" className="font-bold p-4 bg-slate-500">{categoryIndex +1}. {category}</td>
                             </tr>
                             {Object.keys(medicines[category]).map((subcategory, subcategoryIndex) => {
                                 const showSubcategoryName = subcategory !== "null";
@@ -458,7 +507,7 @@ function MainMedicineList() {
                                 <React.Fragment key={subcategory}>
                                     {showSubcategoryName && (
                                     <tr className="bg-gray-200">
-                                        <td colSpan="13" className="p-2 pl-4 font-semibold text-lg">{subcategoryIndex+1}. {subcategory}</td>
+                                        <td colSpan="13" className="p-2 pl-4 font-semibold text-lg bg-slate-400">{subcategoryIndex+1}. {subcategory}</td>
                                     </tr>)}
                                     {Object.keys(medicines[category][subcategory]).map((subsubcategory, subsubcategoryIndex) => {
                                         const showSubsubcategoryName = subsubcategory !== "null";
@@ -467,7 +516,7 @@ function MainMedicineList() {
                                             <React.Fragment key={subsubcategory}>
                                                 {showSubsubcategoryName && (
                                                     <tr className="bg-gray-100">
-                                                        <td colSpan="13" className="pl-6 text-lg">
+                                                        <td colSpan="13" className="pl-6 text-lg bg-slate-300">
                                                             {subcategoryIndex + 1}.{indexToLetter(subsubcategoryIndex)}. {subsubcategory}
                                                         </td>
                                                     </tr>
@@ -760,7 +809,10 @@ function MainMedicineList() {
                                                                         setEditedValues(prev => ({
                                                                             ...prev,
                                                                             [medicine.lek_id]: {
-                                                                                ...medicine
+                                                                                ...medicine,
+                                                                                id_kategorii: medicine.id_kategorii || null,
+                                                                                id_pod_kategorii: medicine.id_pod_kategorii || null,
+                                                                                id_pod_pod_kategorii: medicine.id_pod_pod_kategorii || null
                                                                             }
                                                                         }));
                                                                     }}
@@ -768,6 +820,7 @@ function MainMedicineList() {
                                                                 >
                                                                     Edytuj
                                                                 </button>
+
 
 
                                                             )}
