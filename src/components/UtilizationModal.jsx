@@ -6,6 +6,7 @@ import apiUrl from "../constants/api.js";
 const UtilizationModal = ({ isOpen, onClose, medicine, onUtilizationComplete }) => {
     const [formData, setFormData] = useState({
         grupa: '',
+        ilosc_nominalna: '',
         powod_utylizacji: ''
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -30,8 +31,9 @@ const UtilizationModal = ({ isOpen, onClose, medicine, onUtilizationComplete }) 
             const utilizationData = {
                 nazwa: medicine.lek_nazwa,
                 ilosc: medicine.lek_ilosc,
+                opakowanie: medicine.lek_opakowanie,
                 data_waznosci: medicine.lek_data,
-                ilosc_nominalna: medicine.lek_ilosc_nominalna,
+                ilosc_nominalna: form.ilosc_nominalna,
                 grupa: formData.grupa,
                 powod_utylizacji: formData.powod_utylizacji
             };
@@ -77,9 +79,22 @@ const UtilizationModal = ({ isOpen, onClose, medicine, onUtilizationComplete }) 
                             required
                         >
                             <option value="">Wybierz grupę</option>
-                            <option value="S">Sprzęt</option>
-                            <option value="L">Lek</option>
+                            <option value="S">S</option>
+                            <option value="L">L</option>
+                            <option value="Other">Inna</option>
                         </select>
+                    </div>
+                    <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Ilość nominalna*
+                        </label>
+                        <input
+                            type="text"
+                            name="ilosc_nominalna"
+                            value={formData.ilosc_nominalna}
+                            onChange={handleChange}
+                            className="border rounded-md p-2 w-full"
+                        />
                     </div>
 
                     <div className="mb-4">

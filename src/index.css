@@ -11,3 +11,9 @@
     }
 }
 
+thead {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background-color: #fff; /* Ensure the background isn't transparent */
+}

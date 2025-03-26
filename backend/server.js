@@ -40,6 +40,31 @@ app.use('/api', backupRoutes);
 // Error handling
 app.use(errorHandler);
 
+// Add this to your API routes
+app.get('/api/leki-min/:id/associations', async (req, res) => {
+    try {
+        const db = await getDb();
+        const id = req.params.id;
+
+        const medicine = await db.get('SELECT * FROM Leki_spis_min WHERE id = ?', [id]);
+        const mainMed = await db.get('SELECT id FROM Leki WHERE nazwa_leku = ?', [medicine.nazwa_leku]);
+
+        const categories = await db.all('SELECT * FROM Leki_kategorie WHERE id_leku = ?', [mainMed.id]);
+        const subcategories = await db.all('SELECT * FROM Leki_pod_kategorie WHERE id_leku = ?', [mainMed.id]);
+        const subsubcategories = await db.all('SELECT * FROM Leki_pod_pod_kategorie WHERE id_leku = ?', [mainMed.id]);
+
+        res.json({
+            medicine,
+            categories,
+            subcategories,
+            subsubcategories
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+
 // Schedule daily backup at 23:59
 schedule.scheduleJob('59 23 * * *', createDailyBackup);
 

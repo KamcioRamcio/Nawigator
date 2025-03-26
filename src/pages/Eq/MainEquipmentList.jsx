@@ -157,10 +157,10 @@ function MainEquipmentList() {
 
     return (
         <div className="bg-gray-100 min-h-screen py-10">
-            <div className="mx-auto bg-white shadow-lg rounded-lg overflow-hidden">
-                <div className="flex justify-between items-center py-6 border-b bg-gray-200">
+            <div className="mx-auto bg-white shadow-lg rounded-lg">
+                <div className="flex justify-between items-center py-6 border-b bg-gray-200 sticky top-0 z-30">
                     <h1 className="text-2xl text-center font-bold text-gray-800 flex-grow">
-                        Spis minimum sprzętu medycznego MV NAWIGATOR XXI
+                        Spis Minimum Sprzętu Medycznego MV NAWIGATOR XXI
                     </h1>
                     <button className="absolute right-32 rounded-3xl bg-slate-900 text-white font-bold text-lg p-3"
                             onClick={handleAddEquipmentOpen}
@@ -236,7 +236,7 @@ function MainEquipmentList() {
                                     className="border rounded-md p-2 w-full"
                                 >
                                     <option value="">Wybierz termin</option>
-                                    {ConstantsEquipment.StatusOptions.map(option => (
+                                    {ConstantsEquipment.EquipmentStatusOptions.map(option => (
                                         <option key={option.value} value={option.value}>
                                             {option.label}
                                         </option>
@@ -254,7 +254,7 @@ function MainEquipmentList() {
                                     className="border rounded-md p-2 w-full"
                                 >
                                     <option value="">Wybierz Ilość/Termin</option>
-                                    {ConstantsEquipment.EquipmentStatusOptions.map(option => (
+                                    {ConstantsEquipment.StatusOptions.map(option => (
                                         <option key={option.value} value={option.value}>
                                             {option.label}
                                         </option>
@@ -356,15 +356,17 @@ function MainEquipmentList() {
                     <SiteChange isOpen={siteChange} onClose={handleSiteChangeClose} />
                 </div>
 
-                <h2 className="text-center text-xl text-red-800 font-bold pt-4">
-                    Stan na dzień: {currentDate}
-                </h2>
-                <h3 className="text-center font-semibold p-4 text-lg">
-                    Zalogowany jako {username}
-                </h3>
+                <div className="sticky top-[80px] bg-white z-20 border-b-2 border-gray-300">
+                    <h2 className="text-center text-xl text-red-800 font-bold pt-2">
+                        Stan na dzień : {currentDate}
+                    </h2>
+                    <h3 className="text-center font-semibold p-2 text-lg">
+                        Zalogowany jako {username}
+                    </h3>
+                </div>
 
                 <table className="w-full">
-                    <thead className="text-left">
+                    <thead className="text-left sticky top-[156px] z-10">
                     <tr className="bg-gray-200 text-gray-700 uppercase text-sm tracking-wide">
                         <th className="px-2 py-4">Wyroby Medyczne</th>
                         <th className="px-2 py-4">Ilość Wymagana</th>
@@ -381,7 +383,7 @@ function MainEquipmentList() {
                     {Object.keys(equipments).map((category, categoryIndex) => (
                         <React.Fragment key={category}>
                             <tr className="bg-gray-300 text-xl">
-                                <td colSpan="13" className="font-bold p-4 hover:bg-pink-300">
+                                <td colSpan="13" className="font-bold p-4 bg-slate-400">
                                     {categoryIndex + 1}. {category}
                                 </td>
                             </tr>
@@ -391,18 +393,15 @@ function MainEquipmentList() {
                                     <React.Fragment key={subcategory}>
                                         {showSubcategoryName && (
                                             <tr className="bg-gray-200">
-                                                <td colSpan="13" className="p-2 pl-4 font-semibold text-lg">
+                                                <td colSpan="13" className="p-2 pl-4 font-semibold text-lg bg-slate-300">
                                                     {subcategoryIndex + 1}. {subcategory}
                                                 </td>
                                             </tr>
                                         )}
                                         {equipments[category][subcategory].map(equipment => (
                                             <tr key={equipment.sprzet_id}
-                                                className={`border border-gray-700 ${equipment.sprzet_na_statku !== "true" ? "bg-green-200" : ""}`}>
+                                                className={`border border-gray-700 ${equipment.sprzet_torba_ratownika === "true" ? "bg-green-200" : ""} ${equipment.sprzet_na_statku !== "true" ? "text-red-500" : ""}`}>
                                                 <td className="pl-6 px-2 py-4 border-r border-l border-gray-700 max-w-3xl">
-                                                    {equipment.sprzet_torba_ratownika === "true" && (
-                                                        <div className="w-2 h-2 rounded-full bg-red-600 mr-2 ml-[-16px] inline-block"></div>
-                                                    )}
                                                     {editMode[equipment.sprzet_id] ? (
                                                         <>
                                                             <input
@@ -526,7 +525,7 @@ function MainEquipmentList() {
                                                         equipment.sprzet_status
                                                     )}
                                                 </td>
-                                                <td className="px-2 py-4 border-r border-l border-gray-700">
+                                                <td className={`${equipment.sprzet_termin !== "Ważny" ? "font-bold text-red-700" : ""} px-2 py-4 border-r border-l border-gray-700`}>
                                                     {editMode[equipment.sprzet_id] ? (
                                                         <select
                                                             value={editedEquipment[equipment.sprzet_id]?.sprzet_termin || ""}

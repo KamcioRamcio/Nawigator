@@ -147,6 +147,7 @@ export async function createTables() {
             id               INTEGER PRIMARY KEY AUTOINCREMENT,
             nazwa            TEXT,
             ilosc            INTEGER,
+            opakowanie       TEXT,
             data_waznosci    DATE,
             ilosc_nominalna  TEXT,
             grupa            TEXT,
@@ -311,70 +312,91 @@ export async function createTables() {
                     WHERE k.id_leku = NEW.id
                     LIMIT 1
                 ),
-                id_pod_kategorii = (
-                    SELECT p.id_pod_kategorii 
-                    FROM Leki_pod_kategorie p 
-                    WHERE p.id_leku = NEW.id
-                    LIMIT 1
-                ),
-                id_pod_pod_kategorii = (
-                    SELECT pp.id_pod_pod_kategorii 
-                    FROM Leki_pod_pod_kategorie pp 
-                    WHERE pp.id_leku = NEW.id
-                    LIMIT 1
-                )
+                -- Use CASE expressions to check if the relationships exist
+                id_pod_kategorii = CASE
+                    WHEN NOT EXISTS (SELECT 1 FROM Leki_pod_kategorie WHERE id_leku = NEW.id) 
+                    THEN NULL
+                    ELSE (
+                        SELECT p.id_pod_kategorii 
+                        FROM Leki_pod_kategorie p 
+                        WHERE p.id_leku = NEW.id
+                        LIMIT 1
+                    )
+                END,
+                id_pod_pod_kategorii = CASE
+                    WHEN NOT EXISTS (SELECT 1 FROM Leki_pod_pod_kategorie WHERE id_leku = NEW.id) 
+                    THEN NULL
+                    ELSE (
+                        SELECT pp.id_pod_pod_kategorii 
+                        FROM Leki_pod_pod_kategorie pp 
+                        WHERE pp.id_leku = NEW.id
+                        LIMIT 1
+                    )
+                END
             WHERE nazwa_leku = NEW.nazwa_leku;
         END;
-        
+                
         DROP TRIGGER IF EXISTS sync_categories_on_leki_kategorie_change;
         CREATE TRIGGER IF NOT EXISTS sync_categories_on_leki_kategorie_change
         AFTER UPDATE ON Leki_kategorie
         BEGIN
             UPDATE Leki_spis_min
-            SET id_kategorii = (
-                SELECT k.id_kategorii 
-                FROM Leki_kategorie k 
-                WHERE k.id_leku = 
-                    CASE
-                        WHEN OLD.id_leku IS NULL THEN NEW.id_leku
-                        ELSE OLD.id_leku
-                    END
-                LIMIT 1
-            )
+            SET id_kategorii = NEW.id_kategorii,
+                -- If category changes, we should reset subcategories if they don't exist
+                id_pod_kategorii = CASE
+                    WHEN NOT EXISTS (SELECT 1 FROM Leki_pod_kategorie WHERE id_leku = NEW.id_leku) 
+                    THEN NULL
+                    ELSE (
+                        SELECT p.id_pod_kategorii
+                        FROM Leki_pod_kategorie p
+                        WHERE p.id_leku = NEW.id_leku
+                        LIMIT 1
+                    )
+                END,
+                id_pod_pod_kategorii = CASE
+                    WHEN NOT EXISTS (SELECT 1 FROM Leki_pod_pod_kategorie WHERE id_leku = NEW.id_leku) 
+                    THEN NULL
+                    ELSE (
+                        SELECT pp.id_pod_pod_kategorii
+                        FROM Leki_pod_pod_kategorie pp
+                        WHERE pp.id_leku = NEW.id_leku
+                        LIMIT 1
+                    )
+                END
             WHERE nazwa_leku = (
                 SELECT l.nazwa_leku 
                 FROM Leki l 
-                WHERE l.id = 
-                    CASE
-                        WHEN OLD.id_leku IS NULL THEN NEW.id_leku
-                        ELSE OLD.id_leku
-                    END
+                WHERE l.id = NEW.id_leku
             );
         END;
         
-        DROP TRIGGER IF EXISTS sync_categories_on_leki_pod_kategorie_change;
-        CREATE TRIGGER IF NOT EXISTS sync_categories_on_leki_pod_kategorie_change
-        AFTER UPDATE ON Leki_pod_kategorie
+        -- Trigger to handle when subcategory association is deleted
+        DROP TRIGGER IF EXISTS handle_subcategory_deletion;
+        CREATE TRIGGER IF NOT EXISTS handle_subcategory_deletion
+        AFTER DELETE ON Leki_pod_kategorie
         BEGIN
             UPDATE Leki_spis_min
-            SET id_pod_kategorii = (
-                SELECT p.id_pod_kategorii 
-                FROM Leki_pod_kategorie p 
-                WHERE p.id_leku = 
-                    CASE
-                        WHEN OLD.id_leku IS NULL THEN NEW.id_leku
-                        ELSE OLD.id_leku
-                    END
-                LIMIT 1
-            )
+            SET id_pod_kategorii = NULL,
+                -- Also clear sub-subcategory as it depends on subcategory
+                id_pod_pod_kategorii = NULL
             WHERE nazwa_leku = (
                 SELECT l.nazwa_leku 
                 FROM Leki l 
-                WHERE l.id = 
-                    CASE
-                        WHEN OLD.id_leku IS NULL THEN NEW.id_leku
-                        ELSE OLD.id_leku
-                    END
+                WHERE l.id = OLD.id_leku
+            );
+        END;
+        
+        -- Trigger to handle when sub-subcategory association is deleted
+        DROP TRIGGER IF EXISTS handle_subsubcategory_deletion;
+        CREATE TRIGGER IF NOT EXISTS handle_subsubcategory_deletion
+        AFTER DELETE ON Leki_pod_pod_kategorie
+        BEGIN
+            UPDATE Leki_spis_min
+            SET id_pod_pod_kategorii = NULL
+            WHERE nazwa_leku = (
+                SELECT l.nazwa_leku 
+                FROM Leki l 
+                WHERE l.id = OLD.id_leku
             );
         END;
         
@@ -405,7 +427,6 @@ export async function createTables() {
         END;
                 
         
-        -- Fixed trigger: Update Leki when Leki_spis_min is updated
         DROP TRIGGER IF EXISTS update_main_leki_from_min;
         CREATE TRIGGER IF NOT EXISTS update_main_leki_from_min
         AFTER UPDATE ON Leki_spis_min
@@ -423,48 +444,53 @@ export async function createTables() {
             INSERT INTO last_ids_temp (id)
             SELECT id FROM Leki WHERE nazwa_leku = NEW.nazwa_leku;
             
-            -- Update category associations - only if they exist
+            -- FIRST: Clean up any associations that should be removed
+            -- Delete subcategory associations if subcategory is NULL or category changed
+            DELETE FROM Leki_pod_kategorie
+            WHERE id_leku IN (SELECT id FROM last_ids_temp)
+            AND (NEW.id_pod_kategorii IS NULL OR NEW.id_kategorii != OLD.id_kategorii);
+            
+            -- Delete sub-subcategory associations if sub-subcategory is NULL, subcategory changed, or category changed
+            DELETE FROM Leki_pod_pod_kategorie
+            WHERE id_leku IN (SELECT id FROM last_ids_temp)
+            AND (NEW.id_pod_pod_kategorii IS NULL OR NEW.id_pod_kategorii != OLD.id_pod_kategorii 
+                OR NEW.id_kategorii != OLD.id_kategorii);
+            
+            -- SECOND: Update or insert category associations
+            -- Update category if it exists
             UPDATE Leki_kategorie
             SET id_kategorii = NEW.id_kategorii
             WHERE id_leku IN (SELECT id FROM last_ids_temp)
             AND NEW.id_kategorii IS NOT NULL;
             
-            -- If no category association exists but one is provided, insert it
+            -- Insert category if it doesn't exist and is not NULL
             INSERT OR IGNORE INTO Leki_kategorie (id_leku, id_kategorii)
             SELECT id, NEW.id_kategorii
             FROM last_ids_temp
             WHERE NEW.id_kategorii IS NOT NULL
             AND NOT EXISTS (SELECT 1 FROM Leki_kategorie WHERE id_leku = last_ids_temp.id);
             
-            -- Update subcategory associations
-            UPDATE Leki_pod_kategorie
-            SET id_pod_kategorii = NEW.id_pod_kategorii
+            -- Delete category if it should be NULL
+            DELETE FROM Leki_kategorie
             WHERE id_leku IN (SELECT id FROM last_ids_temp)
-            AND NEW.id_pod_kategorii IS NOT NULL;
+            AND NEW.id_kategorii IS NULL;
             
-            -- If no subcategory association exists but one is provided, insert it
+            -- THIRD: Add subcategory associations if needed
             INSERT OR IGNORE INTO Leki_pod_kategorie (id_leku, id_pod_kategorii)
             SELECT id, NEW.id_pod_kategorii
             FROM last_ids_temp
-            WHERE NEW.id_pod_kategorii IS NOT NULL
-            AND NOT EXISTS (SELECT 1 FROM Leki_pod_kategorie WHERE id_leku = last_ids_temp.id);
+            WHERE NEW.id_pod_kategorii IS NOT NULL;
             
-            -- Update sub-subcategory associations
-            UPDATE Leki_pod_pod_kategorie
-            SET id_pod_pod_kategorii = NEW.id_pod_pod_kategorii
-            WHERE id_leku IN (SELECT id FROM last_ids_temp)
-            AND NEW.id_pod_pod_kategorii IS NOT NULL;
-            
-            -- If no sub-subcategory association exists but one is provided, insert it
+            -- FOURTH: Add sub-subcategory associations if needed
             INSERT OR IGNORE INTO Leki_pod_pod_kategorie (id_leku, id_pod_pod_kategorii)
             SELECT id, NEW.id_pod_pod_kategorii
             FROM last_ids_temp
-            WHERE NEW.id_pod_pod_kategorii IS NOT NULL
-            AND NOT EXISTS (SELECT 1 FROM Leki_pod_pod_kategorie WHERE id_leku = last_ids_temp.id);
+            WHERE NEW.id_pod_pod_kategorii IS NOT NULL;
             
             -- Clean up temp table
             DELETE FROM last_ids_temp;
         END;
+
         
         -- Fixed delete triggers
         DROP TRIGGER IF EXISTS delete_main_leki_from_min;

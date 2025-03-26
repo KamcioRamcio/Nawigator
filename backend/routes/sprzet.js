@@ -28,7 +28,6 @@ router.post('/sprzet-all', [
     body('eq_nazwa').notEmpty().withMessage('Nazwa sprzętu jest wymagana'),
     body('eq_ilosc_wymagana').optional().isNumeric().withMessage('Ilość wymagana musi być liczbą'),
     body('eq_ilosc_aktualna').optional().isNumeric().withMessage('Ilość aktualna musi być liczbą'),
-    body('eq_data').optional().isDate().withMessage('Data musi być w formacie YYYY-MM-DD')
 ], async (req, res, next) => {
     try {
         const errors = validationResult(req);
@@ -84,7 +83,6 @@ router.get('/sprzet-zgrany-kategorie', async (req, res, next) => {
 router.post('/sprzet-zgrany-all', [
     body('nazwa_sprzetu').notEmpty().withMessage('Nazwa sprzętu jest wymagana'),
     body('ilosc').optional().isNumeric().withMessage('Ilość aktualna musi być liczbą'),
-    body('data_waznosci').optional().isDate().withMessage('Data musi być w formacie YYYY-MM-DD')
 ], async (req, res, next) => {
     try {
         const errors = validationResult(req);
@@ -102,7 +100,6 @@ router.post('/sprzet-zgrany-all', [
 router.put('/sprzet-zgrany/:id', [
     body('nazwa_sprzetu').notEmpty().withMessage('Nazwa sprzętu jest wymagana'),
     body('ilosc').optional().isNumeric().withMessage('Ilość wymagana musi być liczbą'),
-    body('data_waznosci').optional().isDate().withMessage('Data musi być w formacie YYYY-MM-DD')
 ], async (req, res, next) => {
     try {
         const errors = validationResult(req);

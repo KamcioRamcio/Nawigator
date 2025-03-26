@@ -1,9 +1,9 @@
-// src/pages/medicine/MinMedicine.jsx
 import React, { useEffect, useState } from "react";
 import apiUrl from "../../constants/api.js";
 import MedicineAdd from "../../components/MedicineAdd.jsx";
 import SiteChange from "../../components/SiteChange.jsx";
 import ConstantsMedicine from "../../constants/constantsMedicine.js";
+
 
 function MinMedicine() {
     const username = localStorage.getItem("username");
@@ -112,7 +112,6 @@ function MinMedicine() {
         try {
             const payload = {
                 ...newMedicine,
-                // Ensure null is sent instead of empty string for optional foreign keys
                 id_pod_kategorii: newMedicine.id_pod_kategorii || null,
                 id_pod_pod_kategorii: newMedicine.id_pod_pod_kategorii || null
             };
@@ -139,15 +138,34 @@ function MinMedicine() {
     };
 
     const handleEdit = (medicineId, field, value) => {
-        setEditedValues(prev => ({
-            ...prev,
-            [medicineId]: {
-                ...prev[medicineId],
-                [field]: ["id_kategorii", "id_pod_kategorii", "id_pod_pod_kategorii"].includes(field)
-                    ? (value ? parseInt(value, 10) : null)
-                    : value
-            }
-        }));
+        if (field === 'id_kategorii') {
+            setEditedValues(prev => ({
+                ...prev,
+                [medicineId]: {
+                    ...prev[medicineId],
+                    [field]: value,
+                    id_pod_kategorii: null,
+                    id_pod_pod_kategorii: null,
+                }
+            }));
+        } else if (field === 'id_pod_kategorii') {
+            setEditedValues(prev => ({
+                ...prev,
+                [medicineId]: {
+                    ...prev[medicineId],
+                    [field]: value,
+                    id_pod_pod_kategorii: null,
+                }
+            }));
+        } else {
+            setEditedValues(prev => ({
+                ...prev,
+                [medicineId]: {
+                    ...prev[medicineId],
+                    [field]: value,
+                }
+            }));
+        }
     };
 
     const validateEdit = (medicineId) => {
@@ -167,19 +185,43 @@ function MinMedicine() {
         }
 
         try {
-            const payload = {
-                ...editedValues[medicineId],
-                // Ensure null is sent instead of empty string for optional foreign keys
-                id_pod_kategorii: editedValues[medicineId].id_pod_kategorii || null,
-                id_pod_pod_kategorii: editedValues[medicineId].id_pod_pod_kategorii || null
+            const medicine = Object.values(medicines)
+                .flatMap(category => Object.values(category))
+                .flatMap(subcategory => Object.values(subcategory))
+                .flatMap(subsubcategory => subsubcategory)
+                .find(med => med.lek_min_id === medicineId);
+
+            const dataToSend = {
+                nazwa_leku: editedValues[medicineId]?.nazwa_leku || medicine.lek_min_nazwa,
+                pakowanie: editedValues[medicineId]?.pakowanie || medicine.lek_min_pakowanie,
+                w_opakowaniu: editedValues[medicineId]?.w_opakowaniu || medicine.lek_min_w_opakowaniu,
+                przechowywanie: editedValues[medicineId]?.przechowywanie !== undefined ?
+                    editedValues[medicineId].przechowywanie :
+                    medicine.leki_min_przechowywanie,
+                na_statku_spis_podstawowy: editedValues[medicineId]?.na_statku_spis_podstawowy !== undefined ?
+                    editedValues[medicineId].na_statku_spis_podstawowy :
+                    medicine.leki_min_na_statku_spis_podstawowy,
+                id_kategorii: editedValues[medicineId]?.id_kategorii !== undefined ?
+                    (editedValues[medicineId].id_kategorii === "" ? null : editedValues[medicineId].id_kategorii) :
+                    medicine.id_kategorii,
+
+                id_pod_kategorii: editedValues[medicineId]?.id_pod_kategorii !== undefined ?
+                    (editedValues[medicineId].id_pod_kategorii === "" ? null : editedValues[medicineId].id_pod_kategorii) :
+                    medicine.id_pod_kategorii,
+
+                id_pod_pod_kategorii: editedValues[medicineId]?.id_pod_pod_kategorii !== undefined ?
+                    (editedValues[medicineId].id_pod_pod_kategorii === "" ? null : editedValues[medicineId].id_pod_pod_kategorii) :
+                    medicine.id_pod_pod_kategorii
             };
+
+            console.log("Complete data being sent:", dataToSend);
 
             const response = await fetch(apiUrl + "leki-min/" + medicineId, {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify(payload),
+                body: JSON.stringify(dataToSend),
             });
 
             if (!response.ok) {
@@ -198,6 +240,8 @@ function MinMedicine() {
             alert(`Failed to update medicine: ${error.message}`);
         }
     };
+
+
 
     const handleDelete = async (medicineId) => {
         if (!confirm("Czy na pewno chcesz usunąć tę pozycję? Ta operacja jest nieodwracalna.")) {
@@ -230,22 +274,17 @@ function MinMedicine() {
 
     return (
         <div className="bg-gray-100 min-h-screen py-10">
-            <div className="mx-auto bg-white shadow-lg rounded-lg overflow-hidden">
-                <div className="flex justify-between items-center py-6 border-b bg-gray-200">
-                    <h1 className="text-2xl font-bold text-gray-800 text-center flex-grow">
-                        Minimalna Lista Leków MV Nawigator XXI
+            <div className="mx-auto bg-white shadow-lg rounded-lg ">
+                <div className="flex justify-between items-center py-6 border-b bg-gray-200 sticky top-0 z-30">
+                    <h1 className="text-2xl font-bold text-gray-800 text-center flex-grow p-2">
+                        Spis Minimum Leków MV Nawigator XXI
                     </h1>
-                    <button
-                        className="absolute right-32 rounded-3xl bg-slate-900 text-white font-bold text-lg p-3"
-                        onClick={handleAddMedicineOpen}
-                    >
-                        Dodaj Pozycję
-                    </button>
-                    <button
-                        className="absolute left-32 rounded-3xl bg-slate-900 text-white font-bold text-lg p-3"
-                        onClick={handleSiteChangeOpen}
-                    >
-                        Zmiana Arkusza
+                    <button className="absolute right-32 rounded-3xl bg-slate-900 text-white font-bold text-lg p-3"
+                            onClick={handleAddMedicineOpen}
+                    >Dodaj Pozycję</button>
+                    <button className="absolute left-32 rounded-3xl bg-slate-900 text-white font-bold text-lg p-3"
+                            onClick={handleSiteChangeOpen}
+                    > Zmiana Arkusza
                     </button>
 
                     <MedicineAdd isOpen={medicineAdd} onClose={handleAddMedicineClose}>
@@ -392,16 +431,17 @@ function MinMedicine() {
 
                     <SiteChange isOpen={siteChange} onClose={handleSiteChangeClose} />
                 </div>
-                <div className="">
-                    <h2 className="text-center text-xl text-red-800 font-bold pt-4">
-                        Stan na dzień : {currentDate.toLocaleDateString()}
-                    </h2>
-                    <h3 className="text-center font-semibold p-4 text-lg">
-                        Zalogowany jako {username}
-                    </h3>
+                    <div className="sticky top-[88px] bg-white z-20 border-b-2 border-gray-300">
+                        <h2 className="text-center text-xl text-red-800 font-bold pt-4">
+                            Stan na dzień : {currentDate.toLocaleDateString()}
+                        </h2>
+                        <h3 className="text-center font-semibold p-4 text-lg">
+                            Zalogowany jako {username}
+                        </h3>
+                    </div>
 
                     <table className="w-full border-collapse">
-                        <thead>
+                        <thead className="text-left sticky top-[188px] z-10">
                         <tr className="bg-gray-200 text-gray-700 uppercase text-sm tracking-wide text-left">
                             <th className="px-4 py-3 border">Nazwa Leku</th>
                             <th className="px-4 py-3 border">Pakowanie</th>
@@ -413,7 +453,7 @@ function MinMedicine() {
                         {Object.keys(medicines).map((category, categoryIndex) => (
                             <React.Fragment key={category}>
                                 <tr className="bg-gray-300 text-xl">
-                                    <td colSpan="4" className="font-bold p-4 hover:bg-pink-300">
+                                    <td colSpan="4" className="font-bold p-4 bg-slate-500">
                                         {categoryIndex + 1}. {category}
                                     </td>
                                 </tr>
@@ -423,7 +463,7 @@ function MinMedicine() {
                                         <React.Fragment key={subcategory}>
                                             {showSubcategoryName && (
                                                 <tr className="bg-gray-200">
-                                                    <td colSpan="4" className="p-2 pl-8 font-semibold text-lg">
+                                                    <td colSpan="4" className="p-2 pl-8 font-semibold text-lg bg-slate-400">
                                                         {subcategoryIndex + 1}. {subcategory}
                                                     </td>
                                                 </tr>
@@ -434,13 +474,13 @@ function MinMedicine() {
                                                     <React.Fragment key={subsubcategory}>
                                                         {showSubsubcategoryName && (
                                                             <tr className="bg-gray-100">
-                                                                <td colSpan="4" className="pl-12 text-lg">
+                                                                <td colSpan="4" className="pl-12 text-lg bg-slate-300">
                                                                     {subcategoryIndex + 1}.{indexToLetter(subsubcategoryIndex)}. {subsubcategory}
                                                                 </td>
                                                             </tr>
                                                         )}
                                                         {medicines[category][subcategory][subsubcategory].map(medicine => (
-                                                            <tr key={medicine.lek_min_id} className="border border-gray-700">
+                                                            <tr key={medicine.lek_min_id} className={`${medicine.leki_min_przechowywanie === "freezer" ? "bg-blue-200": ""} ${medicine.leki_min_na_statku_spis_podstawowy === 1 ? "text-red-600": ""} border border-gray-700`}>
                                                                 <td className="pl-16 px-4 py-3 border-r border-l border-gray-700">
                                                                     {editMode[medicine.lek_min_id] ? (
                                                                         <>
@@ -516,6 +556,29 @@ function MinMedicine() {
                                                                                     ))
                                                                                 }
                                                                             </select>
+                                                                            <select
+                                                                                name="przechowywanie"
+                                                                                value={editedValues[medicine.lek_min_id]?.przechowywanie || medicine.leki_min_przechowywanie || ""}
+                                                                                onChange={(e) => handleEdit(medicine.lek_min_id, "przechowywanie", e.target.value)}
+                                                                                className="border px-2 py-1 my-1 w-full"
+                                                                            >
+                                                                                <option value="">Wybierz przechowywanie</option>
+                                                                                {ConstantsMedicine.StoringOptions.map(option => (
+                                                                                    <option key={option.value} value={option.value}>
+                                                                                        {option.label}
+                                                                                    </option>
+                                                                                ))}
+                                                                            </select>
+                                                                            <select
+                                                                                name="na_statku_spis_podstawowy"
+                                                                                value={editedValues[medicine.lek_min_id]?.na_statku_spis_podstawowy || medicine.leki_min_na_statku_spis_podstawowy || ""}
+                                                                                onChange={(e) => handleEdit(medicine.lek_min_id, "na_statku_spis_podstawowy", e.target.value)}
+                                                                                className="border px-2 py-1 w-full"
+                                                                            >
+                                                                                <option value="">Spis Podstawowy Brak na statku</option>
+                                                                                <option value="1">Tak</option>
+                                                                                <option value="0">Nie</option>
+                                                                            </select>
                                                                         </>
                                                                     ) : (
                                                                         medicine.lek_min_nazwa
@@ -585,27 +648,16 @@ function MinMedicine() {
                                                                                         ...prev,
                                                                                         [medicine.lek_min_id]: true,
                                                                                     }));
-                                                                                    // Initialize with current values including category IDs
                                                                                     setEditedValues(prev => ({
                                                                                         ...prev,
                                                                                         [medicine.lek_min_id]: {
                                                                                             nazwa_leku: medicine.lek_min_nazwa,
                                                                                             pakowanie: medicine.lek_min_pakowanie,
                                                                                             w_opakowaniu: medicine.lek_min_w_opakowaniu,
-                                                                                            id_kategorii: medicine.id_kategorii,
-                                                                                            id_pod_kategorii: medicine.id_pod_kategorii,
-                                                                                            id_pod_pod_kategorii: medicine.id_pod_pod_kategorii
+                                                                                            przechowywanie: medicine.leki_min_przechowywanie,
+                                                                                            na_statku_spis_podstawowy: medicine.leki_min_na_statku_spis_podstawowy,
                                                                                         }
                                                                                     }));
-                                                                                    // Set edit category state to correctly initialize dropdowns
-                                                                                    setEditSelectedCategory({
-                                                                                        ...editSelectedCategory,
-                                                                                        [medicine.lek_min_id]: medicine.id_kategorii
-                                                                                    });
-                                                                                    setEditSelectedSubCategory({
-                                                                                        ...editSelectedSubCategory,
-                                                                                        [medicine.lek_min_id]: medicine.id_pod_kategorii
-                                                                                    });
                                                                                 }}
                                                                                 className="text-blue-600 font-semibold mr-2"
                                                                             >
@@ -629,7 +681,6 @@ function MinMedicine() {
                     </table>
                 </div>
             </div>
-        </div>
     );
 }
 

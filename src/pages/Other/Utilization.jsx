@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import apiUrl from "../../constants/api.js";
 import SiteChange from "../../components/SiteChange.jsx";
 import UtilizationAdd from "../../components/UtilizationAdd.jsx";
+import constantsMedicine from "../../constants/constantsMedicine.js";
 
 function Utilization() {
     const [utilizations, setUtilizations] = useState([]);
@@ -121,7 +122,7 @@ function Utilization() {
         }
 
         try {
-            const response = await fetch(apiUrl + `utylizacja/${id}`, {
+            const response = await fetch(apiUrl + `utylizacja/delete/${id}`, {
                 method: 'DELETE',
             });
 
@@ -185,8 +186,9 @@ function Utilization() {
     }
 
     // Filter utilizations by group
-    const sprzętUtilizations = utilizations.filter(item => item.grupa === 'S');
-    const lekiUtilizations = utilizations.filter(item => item.grupa === 'L');
+    const sGroupUtilizations = utilizations.filter(item => item.grupa === 'S');
+    const lGroupUtilizations = utilizations.filter(item => item.grupa === 'L');
+    const otherGroupUtilizations = utilizations.filter(item => item.grupa !== 'S' && item.grupa !== 'L');
 
     // Render table function for reusability
     const renderTable = (items, title) => (
@@ -197,6 +199,7 @@ function Utilization() {
                 <tr>
                     <th className="px-2 py-4">Nazwa</th>
                     <th className="px-2 py-4">Ilość</th>
+                    <th className="px-2 py-4">Opakowanie</th>
                     <th className="px-2 py-4">Data ważności</th>
                     <th className="px-2 py-4">Ilość nominalna</th>
                     <th className="px-2 py-4">Grupa</th>
@@ -208,7 +211,7 @@ function Utilization() {
                 <tbody className="text-left">
                 {items.map(utilization => (
                     <tr key={utilization.id} className="border border-gray-700 hover:bg-gray-50">
-                        <td className="pl-6 px-2 py-4 border-r border-l border-gray-700">
+                        <td className="pl-6 px-2 py-4 border-r border-l border-gray-700 max-w-72">
                             {editMode[utilization.id] ? (
                                 <input
                                     type="text"
@@ -230,6 +233,24 @@ function Utilization() {
                                 />
                             ) : (
                                 utilization.ilosc
+                            )}
+                        </td>
+                        <td className="pl-6 px-2 py-4 border-r border-l border-gray-700">
+                            {editMode[utilization.id] ? (
+                                <select
+                                    value={editedValues[utilization.id]?.opakowanie || ""}
+                                    onChange={(e) => handleEdit(utilization.id, "opakowanie", e.target.value)}
+                                    className="w-full"
+                                >
+                                    <option>
+                                        Wybierz opakowanie
+                                    </option>
+                                    {constantsMedicine.BoxTypeOptions.map((option, index) => (
+                                        <option key={index} value={option.value}>{option.label}</option>
+                                    ))}
+                                </select>
+                            ) : (
+                                utilization.opakowanie
                             )}
                         </td>
                         <td className="pl-6 px-2 py-4 border-r border-l border-gray-700">
@@ -266,8 +287,9 @@ function Utilization() {
                                     <option>
                                         Wybierz grupę
                                     </option>
-                                    <option value="S">Sprzęt</option>
-                                    <option value="L">Lek</option>
+                                    <option value="S">S</option>
+                                    <option value="L">L</option>
+                                    <option value="Other">Inna</option>
                                 </select>
 
                             ) : (
@@ -343,7 +365,7 @@ function Utilization() {
         <div className="bg-gray-100 min-h-screen py-10">
             <div>
                 <div>
-                    <h1 className="text-2xl text-center font-bold flex-grow">Zestawienie Utylizacji MV NAWIGATOR
+                    <h1 className="text-2xl text-center font-bold flex-grow">Utylizacja MV NAWIGATOR
                         XXI</h1>
                     <button className="absolute left-32 rounded-3xl bg-slate-900 text-white font-bold text-lg p-3"
                             onClick={handleSiteChangeOpen}
@@ -392,76 +414,98 @@ function Utilization() {
                     </h3>
 
                     <div className="mt-6">
-                        {sprzętUtilizations.length > 0 && renderTable(sprzętUtilizations, "Sprzęt")}
-                        {lekiUtilizations.length > 0 && renderTable(lekiUtilizations, "Lek")}
+                        {sGroupUtilizations.length > 0 && renderTable(sGroupUtilizations, "S")}
+                        {lGroupUtilizations.length > 0 && renderTable(lGroupUtilizations, "L")}
+                        {otherGroupUtilizations.length > 0 && renderTable(otherGroupUtilizations, "Inne")}
                     </div>
                 </div>
             </div>
 
             <UtilizationAdd isOpen={utilizationAdd} onClose={handleAddUtilizationClose}>
-                <h2>ADD UTILIZATION</h2>
-                <table>
-                    <thead>
-                    <tr>
-                        <th className="px-12 py-4">Nazwa</th>
-                        <th className="px-12 py-4">Ilość</th>
-                        <th className="px-12 py-4">Data ważności</th>
-                        <th className="px-12 py-4">Ilość nominalna</th>
-                        <th className="px-12 py-4">Grupa</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <tr>
-                        <td>
-                            <input
-                                type="text"
-                                name="nazwa"
-                                value={newUtilization.nazwa}
-                                onChange={handleInputUtilization}
-                                placeholder="Nazwa"
-                            />
-                        </td>
-                        <td>
-                            <input
-                                type="number"
-                                name="ilosc"
-                                value={newUtilization.ilosc}
-                                onChange={handleInputUtilization}
-                                placeholder="Ilość"
-                            />
-                        </td>
-                        <td>
+                <div className="grid grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-ms font-medium text-gray-700 mb-1">
+                            Nazwa
+                        </label>
+                        <input
+                            type="text"
+                            name="nazwa"
+                            value={newUtilization.nazwa}
+                            onChange={handleInputUtilization}
+                            className="border rounded-md p-2 w-full"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-ms font-medium text-gray-700 mb-1">
+                            Ilość
+                        </label>
+                        <input
+                            type="number"
+                            name="ilosc"
+                            value={newUtilization.ilosc}
+                            onChange={handleInputUtilization}
+                            className="border rounded-md p-2 w-full"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-ms font-medium text-gray-700 mb-1">
+                            Opakowanie
+                        </label>
+                        <select
+                            name="opakowanie"
+                            value={newUtilization.opakowanie}
+                            onChange={handleInputUtilization}
+                            className="border rounded-md p-2 w-full"
+                        >
+                            <option value="">Wybierz opakowanie</option>
+                            {constantsMedicine.BoxTypeOptions.map((option, index) => (
+                                <option key={index} value={option.value}>{option.label}</option>
+                            ))}
+
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block text-ms font-medium text-gray-700 mb-1">
+                            Data ważności
+                        </label>
                             <input
                                 type="date"
                                 name="data_waznosci"
                                 value={newUtilization.data_waznosci}
                                 onChange={handleInputUtilization}
+                                className="border rounded-md p-2 w-full"
                             />
-                        </td>
-                        <td>
-                            <input
-                                type="number"
-                                name="ilosc_nominalna"
-                                value={newUtilization.ilosc_nominalna}
-                                onChange={handleInputUtilization}
-                                placeholder="Ilość nominalna"
-                            />
-                        </td>
-                        <td>
-                            <select
-                                name="grupa"
-                                value={newUtilization.grupa}
-                                onChange={handleInputUtilization}
-                                className="border rounded-md p-2"
-                            >
-                                <option value="">Wybierz grupę</option>
-                                <option value="S">Sprzęt</option>
-                                <option value="L">Lek</option>
-                            </select>
-                        </td>
-                    </tr>
-                    </tbody>
-                </table>
+                    </div>
+                    <div>
+                        <label className="block text-ms font-medium text-gray-700 mb-1">
+                            Ilość nominalna
+                        </label>
+                        <input
+                            type="text"
+                            name="ilosc_nominalna"
+                            value={newUtilization.ilosc_nominalna}
+                            onChange={handleInputUtilization}
+                            className="border rounded-md p-2 w-full"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-ms font-medium text-gray-700 mb-1">
+                            Grupa S/L
+                        </label>
+                        <select
+                            name="grupa"
+                            value={newUtilization.grupa}
+                            onChange={handleInputUtilization}
+                            className="border rounded-md p-2 w-full"
+                        >
+                            <option value="">Wybierz grupę</option>
+                            <option value="S">Sprzęt</option>
+                            <option value="L">Lek</option>
+                        </select>
+                    </div>
+
+                </div>
+
                 <div className="mt-4">
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                         Powód utylizacji
@@ -475,12 +519,20 @@ function Utilization() {
                         required
                     />
                 </div>
-                <button className="p-4 bg-slate-700 rounded-3xl text-white mt-4" onClick={() => {
-                    handleAddUtilization();
-                    handleAddUtilizationClose();
-                }}>
-                    Dodaj
-                </button>
+                <div className="mt-6 flex justify-end">
+                    <button
+                        className="mr-2 px-4 py-2 bg-gray-300 rounded-md"
+                        onClick={handleAddUtilizationClose}
+                    >Anuluj
+                    </button>
+                    <button
+                        className="px-4 py-2 bg-blue-500 rounded-md"
+                        onClick={handleAddUtilization}
+                    >Dodaj
+
+                    </button>
+
+                </div>
             </UtilizationAdd>
             <SiteChange isOpen={siteChange} onClose={handleSiteChangeClose}/>
         </div>

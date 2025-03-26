@@ -15,12 +15,7 @@ function OrganizedEquipment() {
     const [selectedSubCategory, setSelectedSubCategory] = useState(0);
     const [addEquipment, setAddEquipment] = useState(false);
     const [newEquipment, setNewEquipment] = useState({
-        nazwa_sprzetu: "",
-        data_waznosci: "",
-        ilosc: "",
-        na_statku: true,
-        id_kategorii: "",
-        id_pod_kategorii: "",
+        nazwa_sprzetu: "", data_waznosci: "", ilosc: "", na_statku: true, id_kategorii: "", id_pod_kategorii: "",
     });
 
     useEffect(() => {
@@ -43,16 +38,11 @@ function OrganizedEquipment() {
     }
 
     const handleEdit = (equipmentId, field, value) => {
-        setEditedEquipment(prev => (
-            {
-                ...prev,
-                [equipmentId]: {
-                    ...prev[equipmentId],
-                    [field]: value,
-                    kto_zmienil: username
+        setEditedEquipment(prev => ({
+                ...prev, [equipmentId]: {
+                    ...prev[equipmentId], [field]: value, kto_zmienil: username
                 }
-            }
-        ));
+            }));
     }
 
     const handleSave = async (equipmentId) => {
@@ -61,9 +51,7 @@ function OrganizedEquipment() {
 
             for (const category in equipments) {
                 for (const subcategory in equipments[category]) {
-                    const found = equipments[category][subcategory].find(
-                        item => item.sprzet_zgrany_id === equipmentId
-                    );
+                    const found = equipments[category][subcategory].find(item => item.sprzet_zgrany_id === equipmentId);
                     if (found) {
                         originalEquipment = found;
                         break;
@@ -78,20 +66,14 @@ function OrganizedEquipment() {
                 ilosc: editedEquipment[equipmentId].sprzet_zgrany_ilosc,
                 na_statku: editedEquipment[equipmentId].sprzet_zgrany_na_statku,
                 kto_zmienil: editedEquipment[equipmentId].sprzet_zgrany_kto_zmienil || username,
-                id_kategorii: editedEquipment[equipmentId].id_kategorii !== undefined
-                    ? editedEquipment[equipmentId].id_kategorii
-                    : originalEquipment?.id_kategorii,
-                id_pod_kategorii: editedEquipment[equipmentId].id_pod_kategorii !== undefined
-                    ? editedEquipment[equipmentId].id_pod_kategorii
-                    : originalEquipment?.id_pod_kategorii,
+                id_kategorii: editedEquipment[equipmentId].id_kategorii !== undefined ? editedEquipment[equipmentId].id_kategorii : originalEquipment?.id_kategorii,
+                id_pod_kategorii: editedEquipment[equipmentId].id_pod_kategorii !== undefined ? editedEquipment[equipmentId].id_pod_kategorii : originalEquipment?.id_pod_kategorii,
             };
 
             const response = await fetch(apiUrl + "sprzet-zgrany/" + equipmentId, {
-                method: "PUT",
-                headers: {
+                method: "PUT", headers: {
                     "Content-Type": "application/json",
-                },
-                body: JSON.stringify(dataToSend)
+                }, body: JSON.stringify(dataToSend)
             });
 
             if (!response.ok) {
@@ -143,19 +125,16 @@ function OrganizedEquipment() {
     const handleInputEquipment = (e) => {
         const {name, value} = e.target;
         setNewEquipment(prev => ({
-            ...prev,
-            [name]: ["id_kategorii", "id_pod_kategorii"].includes(name) ? parseInt(value, 10) : value
+            ...prev, [name]: ["id_kategorii", "id_pod_kategorii"].includes(name) ? parseInt(value, 10) : value
         }))
     }
 
     const handleAddEquipment = async () => {
         try {
             const response = await fetch(apiUrl + "/sprzet-zgrany-all", {
-                method: "POST",
-                headers: {
+                method: "POST", headers: {
                     "Content-Type": "application/json",
-                },
-                body: JSON.stringify(newEquipment)
+                }, body: JSON.stringify(newEquipment)
             });
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -176,12 +155,11 @@ function OrganizedEquipment() {
         }
     }
 
-    return (
-        <div className="bg-gray-100 min-h-screen py-10">
-            <div className="mx-auto bg-white shadow-lg rounded-lg overflow-hidden">
-                <div className="flex justify-between items-center py-6 border-b bg-gray-200">
+    return (<div className="bg-gray-100 min-h-screen py-10">
+            <div className="mx-auto bg-white shadow-lg rounded-lg">
+                <div className="flex justify-between items-center py-6 border-b bg-gray-200 sticky top-0 z-30">
                     <h1 className="text-2xl text-center font-bold text-gray-800 flex-grow">
-                        Zorganizowany Spis Sprzętu MV NAWIGATOR XXI
+                        Zgrany Spis Sprzętu MV NAWIGATOR XXI
                     </h1>
                     <button className="absolute right-32 rounded-3xl bg-slate-900 text-white font-bold text-lg p-3"
                             onClick={handleAddEquipmentOpen}
@@ -244,8 +222,9 @@ function OrganizedEquipment() {
                                     onChange={handleInputEquipment}
                                     className="border rounded-md p-2 w-full"
                                 >
-                                    <option value={true}>Tak</option>
-                                    <option value={false}>Nie</option>
+                                    <option value="">Na statku spis podstawowy?</option>
+                                    <option value="true">Tak</option>
+                                    <option value="false">Nie</option>
                                 </select>
                             </div>
                             <div>
@@ -266,8 +245,7 @@ function OrganizedEquipment() {
                                     {ConstantsEquipment.CategoryOptions.map(option => (
                                         <option key={option.value} value={option.value}>
                                             {option.label}
-                                        </option>
-                                    ))}
+                                        </option>))}
                                 </select>
                             </div>
                             <div>
@@ -285,8 +263,7 @@ function OrganizedEquipment() {
                                     {ConstantsEquipment.SubCategoryOptions[selectedCategory]?.map(option => (
                                         <option key={option.value} value={option.value}>
                                             {option.label}
-                                        </option>
-                                    ))}
+                                        </option>))}
                                 </select>
                             </div>
                         </div>
@@ -308,45 +285,43 @@ function OrganizedEquipment() {
 
                     <SiteChange isOpen={siteChange} onClose={handleSiteChangeClose}/>
                 </div>
-                <h2 className="text-center text-xl text-red-800 font-bold pt-4 ">
-                    Data: {currentDate}
-                </h2>
-                <h3 className="text-center font-semibold p-4 text-lg">
-                    Zalogowany jako {username}
-                </h3>
+                <div className="sticky top-[80px] bg-white z-20 border-b-2 border-gray-300">
+                    <h2 className="text-center text-xl text-red-800 font-bold pt-2">
+                        Stan na dzień : {currentDate}
+                    </h2>
+                    <h3 className="text-center font-semibold p-2 text-lg">
+                        Zalogowany jako {username}
+                    </h3>
+                </div>
+
                 <table className="w-full">
-                    <thead className="text-left">
+                    <thead className="text-left sticky top-[154px] z-10 bg-gray-200">
                     <tr>
                         <th className="px-2 py-4">Nazwa Sprzętu</th>
                         <th className="px-2 py-4">Data Ważności</th>
                         <th className="px-2 py-4">Ilość</th>
-                        <th className="px-2 py-4">Na Statku</th>
                         <th className="px-2 py-4">Kto Zmienił</th>
                         <th className="px-2 py-4">Akcje</th>
                     </tr>
                     </thead>
                     <tbody className="text-left">
-                    {Object.keys(equipments).map((category, categoryIndex) => (
-                        <React.Fragment key={category}>
+                    {Object.keys(equipments).map((category, categoryIndex) => (<React.Fragment key={category}>
                             <tr className="bg-gray-300 text-xl">
                                 <td colSpan="13"
-                                    className="font-bold p-4 hover:bg-pink-300">{categoryIndex + 1}. {category}</td>
+                                    className="font-bold p-4 bg-slate-400">{categoryIndex + 1}. {category}</td>
                             </tr>
                             {Object.keys(equipments[category]).map((subcategory, subcategoryIndex) => {
                                 const showSubcategoryName = subcategory !== "null";
-                                return (
-                                    <React.Fragment key={subcategory}>
-                                        {showSubcategoryName && (
-                                            <tr className="bg-gray-200">
+                                return (<React.Fragment key={subcategory}>
+                                        {showSubcategoryName && (<tr className="bg-gray-200">
                                                 <td colSpan="13"
-                                                    className="font-semibold p-4 hover:bg-pink-300">{subcategoryIndex + 1}. {subcategory}</td>
-                                            </tr>
-                                        )}
+                                                    className="font-semibold p-4 bg-slate-300">{subcategoryIndex + 1}. {subcategory}</td>
+                                            </tr>)}
                                         {equipments[category][subcategory].map(equipment => (
-                                            <tr key={equipment.sprzet_zgrany_id} className={`${equipment.sprzet_zgrany_na_statku !== 0 ? "text-black" : "text-red-600"} border border-gray-700`}>
+                                            <tr key={equipment.sprzet_zgrany_id}
+                                                className={`${equipment.sprzet_zgrany_na_statku === "true" || equipment.sprzet_zgrany_na_statku === 1 ? "text-black" : "text-red-600"} border border-gray-700`}>
                                                 <td className="pl-6 px-2 py-4 max-w-[500px] border-r border-l border-gray-700">
-                                                    {editMode[equipment.sprzet_zgrany_id] ? (
-                                                        <>
+                                                    {editMode[equipment.sprzet_zgrany_id] ? (<>
                                                             <input
                                                                 type="text"
                                                                 value={editedEquipment[equipment.sprzet_zgrany_id]?.sprzet_zgrany_nazwa || ""}
@@ -366,8 +341,7 @@ function OrganizedEquipment() {
                                                                 {ConstantsEquipment.CategoryOptions.map(option => (
                                                                     <option key={option.value} value={option.value}>
                                                                         {option.label}
-                                                                    </option>
-                                                                ))}
+                                                                    </option>))}
                                                             </select>
                                                             <select
                                                                 name="id_pod_kategorii"
@@ -380,58 +354,42 @@ function OrganizedEquipment() {
                                                                 {ConstantsEquipment.SubCategoryOptions[selectedCategory]?.map(option => (
                                                                     <option key={option.value} value={option.value}>
                                                                         {option.label}
-                                                                    </option>
-                                                                ))}
+                                                                    </option>))}
                                                             </select>
-                                                        </>
-                                                    ) : (
-                                                        equipment.sprzet_zgrany_nazwa
-                                                    )}
+                                                            <select
+                                                                name="na_statku"
+                                                                value={editedEquipment[equipment.sprzet_zgrany_id]?.sprzet_zgrany_na_statku || ""}
+                                                                onChange={(e) => handleEdit(equipment.sprzet_zgrany_id, "sprzet_zgrany_na_statku", e.target.value)}
+                                                                className="border px-2 my-1 w-5/6"
+                                                            >
+                                                                <option value="">Na statku spis podstawowy?</option>
+                                                                <option value="true">Tak</option>
+                                                                <option value="false">Nie</option>
+
+                                                            </select>
+                                                        </>) : (equipment.sprzet_zgrany_nazwa)}
                                                 </td>
                                                 <td className="pl-6 px-2 py-4 border-r border-l border-gray-700">
-                                                    {editMode[equipment.sprzet_zgrany_id] ? (
-                                                        <input
+                                                    {editMode[equipment.sprzet_zgrany_id] ? (<input
                                                             type="date"
                                                             value={editedEquipment[equipment.sprzet_zgrany_id]?.sprzet_zgrany_data_waznosci || ""}
                                                             onChange={(e) => handleEdit(equipment.sprzet_zgrany_id, "sprzet_zgrany_data_waznosci", e.target.value)}
                                                             className="w-full"
-                                                        />
-                                                    ) : (
-                                                        equipment.sprzet_zgrany_data_waznosci
-                                                    )}
+                                                        />) : (equipment.sprzet_zgrany_data_waznosci)}
                                                 </td>
                                                 <td className="pl-6 px-2 py-4 border-r border-l border-gray-700">
-                                                    {editMode[equipment.sprzet_zgrany_id] ? (
-                                                        <input
+                                                    {editMode[equipment.sprzet_zgrany_id] ? (<input
                                                             type="number"
                                                             value={editedEquipment[equipment.sprzet_zgrany_id]?.sprzet_zgrany_ilosc || ""}
                                                             onChange={(e) => handleEdit(equipment.sprzet_zgrany_id, "sprzet_zgrany_ilosc", e.target.value)}
                                                             className="w-full"
-                                                        />
-                                                    ) : (
-                                                        equipment.sprzet_zgrany_ilosc
-                                                    )}
-                                                </td>
-                                                <td className="pl-6 px-2 py-4 border-r border-l border-gray-700">
-                                                    {editMode[equipment.sprzet_zgrany_id] ? (
-                                                        <select
-                                                            value={editedEquipment[equipment.sprzet_zgrany_id]?.sprzet_zgrany_na_statku?.toString() || ""}
-                                                            onChange={(e) => handleEdit(equipment.sprzet_zgrany_id, "sprzet_zgrany_na_statku", e.target.value === "true")}
-                                                            className="w-full"
-                                                        >   <option value="">Na statku</option>
-                                                            <option value="true">Tak</option>
-                                                            <option value="false">Nie</option>
-                                                        </select>
-                                                    ) : (
-                                                        equipment.sprzet_zgrany_na_statku ? "Tak" : "Nie"
-                                                    )}
+                                                        />) : (equipment.sprzet_zgrany_ilosc)}
                                                 </td>
                                                 <td className="pl-6 px-2 py-4 border-r border-l border-gray-700">
                                                     {equipment.sprzet_zgrany_kto_zmienil}
                                                 </td>
                                                 <td>
-                                                    {editMode[equipment.sprzet_zgrany_id] ? (
-                                                        <>
+                                                    {editMode[equipment.sprzet_zgrany_id] ? (<>
                                                             <button
                                                                 onClick={() => handleSave(equipment.sprzet_zgrany_id)}
                                                                 className="text-green-500 font-semibold m-2"
@@ -440,8 +398,7 @@ function OrganizedEquipment() {
                                                             </button>
                                                             <button
                                                                 onClick={() => setEditMode(prev => ({
-                                                                    ...prev,
-                                                                    [equipment.sprzet_zgrany_id]: false
+                                                                    ...prev, [equipment.sprzet_zgrany_id]: false
                                                                 }))}
                                                                 className="text-gray-950 m-2 font-semibold"
                                                             >
@@ -453,13 +410,10 @@ function OrganizedEquipment() {
                                                             >
                                                                 Usuń
                                                             </button>
-                                                        </>
-                                                    ) : (
-                                                        <button
+                                                        </>) : (<button
                                                             onClick={() => {
                                                                 setEditMode(prev => ({
-                                                                    ...prev,
-                                                                    [equipment.sprzet_zgrany_id]: true,
+                                                                    ...prev, [equipment.sprzet_zgrany_id]: true,
                                                                 }));
                                                                 setEditedEquipment(prev => ({
                                                                     ...prev,
@@ -473,18 +427,14 @@ function OrganizedEquipment() {
 
                                                     )}
                                                 </td>
-                                            </tr>
-                                        ))}
-                                    </React.Fragment>
-                                )
+                                            </tr>))}
+                                    </React.Fragment>)
                             })}
-                        </React.Fragment>
-                    ))}
+                        </React.Fragment>))}
                     </tbody>
                 </table>
             </div>
-        </div>
-    )
+        </div>)
 }
 
 export default OrganizedEquipment;

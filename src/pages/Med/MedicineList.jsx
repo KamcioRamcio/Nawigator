@@ -155,9 +155,9 @@ function MedicineList() {
 
     return (
         <div className="bg-gray-100 min-h-screen py-10">
-            <div className="mx-auto bg-white shadow-lg rounded-lg overflow-hidden">
-                <div className="flex justify-between items-center py-6 border-b bg-gray-200">
-                    <h1 className="text-2xl font-bold text-gray-800 text-center flex-grow">
+            <div className="mx-auto bg-white shadow-lg rounded-lg ">
+                <div className="flex justify-between items-center py-6 border-b bg-gray-200 sticky top-0 z-30">
+                    <h1 className="text-2xl font-bold text-gray-800 text-center flex-grow p-2">
                         Zestawienie Leków MV Nawigator XXI
                     </h1>
                     <button className="absolute right-32 rounded-3xl bg-slate-900 text-white font-bold text-lg p-3"
@@ -343,14 +343,16 @@ function MedicineList() {
                     </MedicineAdd>
                     <SiteChange isOpen={siteChange} onClose={handleSiteChangeClose}/>
                 </div>
-                <h2 className="text-center text-xl text-red-800 font-bold pt-4 ">
-                    Stan na dzień : {currentDate.toLocaleDateString()}
-                </h2>
-                <h3 className="text-center font-semibold p-4 text-lg">
-                    Zalogowany jako {username}
-                </h3>
+                <div className="sticky top-[88px] bg-white z-20 border-b-2 border-gray-300">
+                    <h2 className="text-center text-xl text-red-800 font-bold pt-4">
+                        Stan na dzień : {currentDate.toLocaleDateString()}
+                    </h2>
+                    <h3 className="text-center font-semibold p-4 text-lg">
+                        Zalogowany jako {username}
+                    </h3>
+                </div>
                 <table className="w-full">
-                    <thead className="text-left">
+                    <thead className="text-left sticky top-[176px] z-10">
                     <tr className="bg-gray-200 text-gray-700 uppercase text-sm tracking-wide">
                         <th className="px-2 py-4">Nazwa Leku</th>
                         <th className="px-2 py-4">Aktualnie na statku</th>
@@ -365,7 +367,7 @@ function MedicineList() {
                     {Object.keys(medicines).map((category, categoryIndex) => (
                         <React.Fragment key={category}>
                             <tr className="bg-gray-300 text-xl">
-                                <td colSpan="13" className="font-bold p-4 hover:bg-pink-300">{categoryIndex +1}. {category}</td>
+                                <td colSpan="13" className="font-bold p-4 bg-slate-500">{categoryIndex +1}. {category}</td>
                             </tr>
                             {Object.keys(medicines[category]).map((subcategory, subcategoryIndex) => {
                                     const showSubcategoryName = subcategory !== "null";
@@ -373,7 +375,7 @@ function MedicineList() {
                                         <React.Fragment key={subcategory}>
                                             {showSubcategoryName && (
                                                 <tr className="bg-gray-200">
-                                                    <td colSpan="13" className="p-2 pl-4 font-semibold text-lg">{subcategoryIndex+1}. {subcategory}</td>
+                                                    <td colSpan="13" className="p-2 pl-4 bg-slate-400 font-semibold text-lg">{subcategoryIndex+1}. {subcategory}</td>
                                                 </tr>)}
                                             {Object.keys(medicines[category][subcategory]).map((subsubcategory, subsubcategoryIndex) => {
                                                 const showSubsubcategoryName = subsubcategory !== "null";
@@ -382,13 +384,13 @@ function MedicineList() {
                                                     <React.Fragment key={subsubcategory}>
                                                         {showSubsubcategoryName && (
                                                             <tr className="bg-gray-100">
-                                                                <td colSpan="13" className="pl-6 text-lg">
+                                                                <td colSpan="13" className="pl-6 text-lg bg-slate-300">
                                                                     {subcategoryIndex + 1}.{indexToLetter(subsubcategoryIndex)}. {subsubcategory}
                                                                 </td>
                                                             </tr>
                                                         )}
                                                         {medicines[category][subcategory][subsubcategory].map(medicine => (
-                                                            <tr key={medicine.lek_id} className={`${medicine.lek_przechowywanie !== "freezer" ? "bg-blue-200" : ""} border border-gray-700`}>
+                                                            <tr key={medicine.lek_id} className={`${medicine.lek_przechowywanie === "freezer" ? "bg-blue-200" : ""} border border-gray-700`}>
                                                                 <td className="pl-6 px-2 py-4 border-r border-l border-gray-700">
                                                                     {editMode[medicine.lek_id] ? (
                                                                         <>
@@ -396,7 +398,7 @@ function MedicineList() {
                                                                                 type="text"
                                                                                 value={editedValues[medicine.lek_id]?.lek_nazwa || ""}
                                                                                 onChange={(e) =>
-                                                                                    handleEdit(medicine.lek_id, "lek_min_nazwa", e.target.value)
+                                                                                    handleEdit(medicine.lek_id, "lek_nazwa", e.target.value)
                                                                                 }
                                                                                 className="border px-2 py-1 w-5/6"
                                                                             />
@@ -497,7 +499,7 @@ function MedicineList() {
                                                                         medicine.lek_data
                                                                     )}
                                                                 </td>
-                                                                <td className="px-2 py-4 border-r border-l border-gray-700">
+                                                                <td className={`${medicine.lek_status !== "Ważny" ? "font-bold text-red-700" : ""} px-2 py-4 border-r border-l border-gray-700`}>
                                                                     {editMode[medicine.lek_id] ? (
                                                                         <select
                                                                             value={editedValues[medicine.lek_id]?.lek_status || ""}

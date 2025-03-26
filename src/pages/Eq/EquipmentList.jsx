@@ -157,10 +157,10 @@ function EquipmentList() {
 
     return (
         <div className="bg-gray-100 min-h-screen py-10">
-            <div className="mx-auto bg-white shadow-lg rounded-lg overflow-hidden">
-                <div className="flex justify-between items-center py-6 border-b bg-gray-200">
+            <div className="mx-auto bg-white shadow-lg rounded-lg">
+                <div className="flex justify-between items-center py-6 border-b bg-gray-200 sticky top-0 z-30">
                     <h1 className="text-2xl text-center font-bold text-gray-800 flex-grow">
-                        Spis minimum sprzętu medycznego MV NAWIGATOR XXI
+                        Spis Sprzętu Medycznego MV NAWIGATOR XXI
                     </h1>
                     <button className="absolute right-32 rounded-3xl bg-slate-900 text-white font-bold text-lg p-3"
                             onClick={handleAddEquipmentOpen}
@@ -325,14 +325,16 @@ function EquipmentList() {
 
                     <SiteChange isOpen={siteChange} onClose={handleSiteChangeClose} />
                 </div>
-                    <h2 className="text-center text-xl text-red-800 font-bold pt-4 ">
-                        Data: {currentDate}
+                <div className="sticky top-[78px] bg-white z-20 border-b-2 border-gray-300">
+                    <h2 className="text-center text-xl text-red-800 font-bold pt-2">
+                        Stan na dzień : {currentDate}
                     </h2>
-                    <h3 className="text-center font-semibold p-4 text-lg">
+                    <h3 className="text-center font-semibold p-2 text-lg">
                         Zalogowany jako {username}
                     </h3>
+                </div>
                     <table className="w-full">
-                        <thead className="text-left">
+                        <thead className="text-left sticky top-[154px] z-10 bg-gray-200">
                         <tr>
                             <th className="px-2 py-4">Wyroby Medyczne</th>
                             <th className="px-2 py-4">Data Ważności</th>
@@ -347,7 +349,7 @@ function EquipmentList() {
                             <React.Fragment key={category}>
                                 <tr className="bg-gray-300 text-xl">
                                     <td colSpan="13"
-                                        className="font-bold p-4 hover:bg-pink-300">{categoryIndex + 1}. {category}</td>
+                                        className="font-bold p-4 bg-slate-500">{categoryIndex + 1}. {category}</td>
                                 </tr>
                                 {Object.keys(equipments[category]).map((subcategory, subcategoryIndex) => {
                                     const showSubcategoryName = subcategory !== "null";
@@ -356,7 +358,7 @@ function EquipmentList() {
                                             {showSubcategoryName && (
                                                 <tr className="bg-gray-200">
                                                     <td colSpan="13"
-                                                        className="font-semibold p-4 hover:bg-pink-300">{subcategoryIndex + 1}. {subcategory}</td>
+                                                        className="font-semibold p-4 bg-slate-400">{subcategoryIndex + 1}. {subcategory}</td>
                                                 </tr>
                                             )}
                                             {equipments[category][subcategory].map(equipment => (
@@ -433,7 +435,7 @@ function EquipmentList() {
                                                             equipment.sprzet_ilosc_aktualna
                                                         )}
                                                     </td>
-                                                    <td className="pl-6 px-2 py-4 border-r border-l border-gray-700">
+                                                    <td className={`${equipment.sprzet_termin !== "Ważny" ? "font-bold text-red-700" : ""} pl-6 px-2 py-4 border-r border-l border-gray-700 `}>
                                                         {editMode[equipment.sprzet_id] ? (
                                                             <select
                                                                 value={editedEquipment[equipment.sprzet_id]?.sprzet_termin || ""}

@@ -31,12 +31,13 @@ function UtilizationAdd({ isOpen, onClose, children}) {
                         {/* Modal Header */}
                         <div className="border-b border-gray-200 px-6 py-4 flex items-center justify-between">
                             <h2 className="text-xl font-semibold text-gray-900">
-                                Dodaj Nowy Lek
+                                Dodaj Pozycję
                             </h2>
                             <button
                                 onClick={onClose}
                                 className="rounded-full p-2 hover:bg-gray-100 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
                             >
+                                <span className="sr-only">Zamknij</span>
                                 <svg
                                     className="h-6 w-6 text-gray-500"
                                     fill="none"

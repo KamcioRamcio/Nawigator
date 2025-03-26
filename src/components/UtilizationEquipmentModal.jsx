@@ -6,6 +6,7 @@ import apiUrl from "../constants/api.js";
 const UtilizationEquipmentModal = ({ isOpen, onClose, equipment, onUtilizationComplete }) => {
     const [formData, setFormData] = useState({
         grupa: '',
+        ilosc_nominalna: '',
         powod_utylizacji: ''
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -31,8 +32,9 @@ const UtilizationEquipmentModal = ({ isOpen, onClose, equipment, onUtilizationCo
             const utilizationData = {
                 nazwa: equipment.sprzet_nazwa,
                 ilosc: equipment.sprzet_ilosc_aktualna,
+                opakowanie: "",
                 data_waznosci: equipment.sprzet_data_waznosci,
-                ilosc_nominalna: equipment.sprzet_ilosc_wymagana,
+                ilosc_nominalna: formData.ilosc_nominalna,
                 grupa: formData.grupa,
                 powod_utylizacji: formData.powod_utylizacji
             };
@@ -73,14 +75,32 @@ const UtilizationEquipmentModal = ({ isOpen, onClose, equipment, onUtilizationCo
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                             Grupa*
                         </label>
-                        <input
-                            type="text"
+                        <select
                             name="grupa"
                             value={formData.grupa}
                             onChange={handleChange}
                             className="border rounded-md p-2 w-full"
                             required
+                        >
+                            <option value="">Wybierz grupę</option>
+                            <option value="S">S</option>
+                            <option value="L">L</option>
+                            <option value="Other">Inna</option>
+                        </select>
+                    </div>
+                    <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Ilość nominalna*
+                        </label>
+                        <input
+                            type="text"
+                            name="ilosc_nominalna"
+                            value={formData.ilosc_nominalna}
+                            onChange={handleChange}
+                            className="border rounded-md p-2 w-full"
+                            required
                         />
+
                     </div>
 
                     <div className="mb-4">

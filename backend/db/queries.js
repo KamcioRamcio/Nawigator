@@ -502,17 +502,18 @@ export async function fetchAllUtylizacja() {
 
 export async function addUtylizacja(utilizationData) {
     const db = await getDb();
-    const {nazwa, ilosc, data_waznosci, ilosc_nominalna, grupa, powod_utylizacji} = utilizationData;
+    const {nazwa, ilosc, opakowanie, data_waznosci, ilosc_nominalna, grupa, powod_utylizacji} = utilizationData;
 
     const result = await db.run(
         `INSERT INTO Utylizacja (nazwa,
                                  ilosc,
+                                 opakowanie,
                                  data_waznosci,
                                  ilosc_nominalna,
                                  grupa,
                                  powod_utylizacji)
-         VALUES (?, ?, ?, ?, ?, ?)`,
-        [nazwa, ilosc, data_waznosci, ilosc_nominalna, grupa, powod_utylizacji]
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [nazwa, ilosc, opakowanie, data_waznosci, ilosc_nominalna, grupa, powod_utylizacji]
     );
 
     return result.lastID;
@@ -522,8 +523,8 @@ export async function updateUtylizacja(id, data) {
     const db = await getDb();
 
     await db.run(
-        'UPDATE Utylizacja SET nazwa = ?, ilosc = ?, data_waznosci = ?, ilosc_nominalna = ?, grupa = ?, powod_utylizacji = ? WHERE id = ?',
-        [data.nazwa, data.ilosc, data.data_waznosci, data.ilosc_nominalna, data.grupa, data.powod_utylizacji, id]
+        'UPDATE Utylizacja SET nazwa = ?, ilosc = ?, opakowanie = ?, data_waznosci = ?, ilosc_nominalna = ?, grupa = ?, powod_utylizacji = ? WHERE id = ?',
+        [data.nazwa, data.ilosc, data.opakowanie, data.data_waznosci, data.ilosc_nominalna, data.grupa, data.powod_utylizacji, id]
     );
 
     return id;
@@ -552,13 +553,50 @@ export async function addMinMedicine(data) {
 export async function updateMinMedicine(id, data) {
     const db = await getDb();
 
+    const currentMedicine = await db.get('SELECT * FROM Leki_spis_min WHERE id = ?', [id]);
+
+    const processedData = {
+        nazwa_leku: data.nazwa_leku || currentMedicine.nazwa_leku,
+        pakowanie: data.pakowanie || currentMedicine.pakowanie,
+        w_opakowaniu: data.w_opakowaniu || currentMedicine.w_opakowaniu,
+        przechowywanie: data.przechowywanie !== undefined ? data.przechowywanie : currentMedicine.przechowywanie,
+        na_statku_spis_podstawowy: data.na_statku_spis_podstawowy !== undefined ?
+            data.na_statku_spis_podstawowy : currentMedicine.na_statku_spis_podstawowy,
+
+        id_kategorii: 'id_kategorii' in data ?
+            (data.id_kategorii === "" ? null : data.id_kategorii) :
+            currentMedicine.id_kategorii,
+
+        id_pod_kategorii: 'id_pod_kategorii' in data ?
+            (data.id_pod_kategorii === "" ? null : data.id_pod_kategorii) :
+            currentMedicine.id_pod_kategorii,
+
+        id_pod_pod_kategorii: 'id_pod_pod_kategorii' in data ?
+            (data.id_pod_pod_kategorii === "" ? null : data.id_pod_pod_kategorii) :
+            currentMedicine.id_pod_pod_kategorii
+    };
+
+    console.log('Update data:', processedData);
+
     await db.run(
-        'UPDATE Leki_spis_min SET nazwa_leku = ?, pakowanie = ?, w_opakowaniu = ?, przechowywanie = ?, na_statku_spis_podstawowy = ?, id_kategorii = ?, id_pod_kategorii = ?, id_pod_pod_kategorii = ? WHERE id = ?',
-        [data.nazwa_leku, data.pakowanie, data.w_opakowaniu, data.przechowywanie, data.na_statku_spis_podstawowy, data.id_kategorii, data.id_pod_kategorii, data.id_pod_pod_kategorii, id]
+        'UPDATE Leki_spis_min SET nazwa_leku = ?, pakowanie = ?, w_opakowaniu = ?, przechowywanie = ?, ' +
+        'na_statku_spis_podstawowy = ?, id_kategorii = ?, id_pod_kategorii = ?, id_pod_pod_kategorii = ? WHERE id = ?',
+        [
+            processedData.nazwa_leku,
+            processedData.pakowanie,
+            processedData.w_opakowaniu,
+            processedData.przechowywanie,
+            processedData.na_statku_spis_podstawowy,
+            processedData.id_kategorii,
+            processedData.id_pod_kategorii,
+            processedData.id_pod_pod_kategorii,
+            id
+        ]
     );
 
     return id;
 }
+
 
 export async function deleteMinMedicine(id) {
     const db = await getDb();

@@ -7,6 +7,7 @@ const Documentation = () => {
     // Documentation sections
     const sections = [
         { id: 'introduction', title: 'Wprowadzenie' },
+        { id: 'starting_info', title: 'Ważne informacje' },
         { id: 'equipment', title: 'Zarządzanie sprzętem' },
         { id: 'medicines', title: 'Zarządzanie lekami' },
         { id: 'utilization', title: 'Utylizacja' },
@@ -36,6 +37,43 @@ const Documentation = () => {
                     </ol>
                 </div>
             </div>
+        ),
+        starting_info: (
+            <div>
+                <h2 className="text-2xl font-bold mb-4">Informacje o budowie aplikacji.</h2>
+                <p className="text-xl font-bold mb-4">
+                    Tabele
+                </p>
+                <p className="font-semibold mb-2">
+                    W aplikacji znajduje się siedem głównych tabel:
+                </p>
+                <ul className="list-disc pl-5 mb-4 space-y-1">
+                    <li>Leki - spis ogólny leków, używany do: Głównego spisu leków i Zestawienia leków </li>
+                    <li>Rozchód - zawiera informacje o rozchodzie danego leku używany do: Głównego spisu leków</li>
+                    <li>Stan Magazynowy - zawiera informacje o aktualnym stanie magazyowym leków używany do: Głównego spisu leków</li>
+                    <li>Minimum Leki - spis zawierający wymagania minimalne używany do: Spis mimimum leki</li>
+                    <li>Sprzęt - spis ogólny sprzętu używany do: Spis minimum sprzęt i Spis sprzętu</li>
+                    <li>Zgrany Sprzęt - spis zawierający zgrany spis sprzętu używany od: Zgrany spis sprzętu</li>
+                    <li>Utylizacja - spis pozycji do utylizacji używany do: Utylizacja</li>
+                </ul>
+                <p className="font-bold text-xl mt-2 mb-2">Operacje między tabelami</p>
+                <ul className="list-disc pl-5 mb-4 space-y-1"><p className="font-semibold">Leki</p>
+                    <li>Dodawanie leku nie dodaje jego aktualnego stanu magazynowego oraz rozchodu trzeba go wprowadzić ręcznie</li>
+                    <li>Dodawanie/Usuwanie/Edytowanie leku w którym kolwiek z arkuszy powoduje zmiane w pozostałych w którch się znajdował</li>
+                    <li>Utylizowanie pozycji dodaje ją automatycznie do arkusza "Utylizacja" oraz usuwa pozostałe wystąpienia tego leku(można zmienić)</li>
+                    <p className="font-semibold">Sprzęt</p>
+                    <li>Dodany/Usunięty/Edytowany sprzęt w arkuszu "Spis minimum sprzętu"/"Spis sprzętu", dodany/usunięty/edytowany zostanie w obu z nich, ale zmiana nie pojawi się w "Zgrany spis sprzętu"</li>
+                    <li>Utylizowanie pozycji dodaje ją automatycznie do arkusza "Utylizacja" oraz usuwa wystąpienie tej pozycji w arkuszach "Spis minimum sprzętu"/"Spis sprzętu" (można zmienić)</li>
+                    <li>Jakiekolwiek zmiany w arkuszu "Zgrany Spis Sprzętu" nie wpływają na pozostałe arkusze</li>
+                </ul>
+                <p className="font-bold text-xl mt-2 mb-2">Import/Export/Backup Bazy danych</p>
+                <ul className="list-disc pl-5 mb-4 space-y-1">
+                    <li>W arkuszu "Utylizacja" znajdują się przycisku umożliwiające export/import bazy danych, w razie potrzeby zmian w aplikacji należy pobrać baze danych i zapisać w bezpiecznym miejscu</li>
+                    <li>Po dokonaniu zmian przez developera należy dodać poprzednio zapisaną baze danych używając przycisku import</li>
+                    <li>Backup bazy danych tworzy się automatyczne w wyznaczonym miejscu i w razie ewentualnych problemów zostaje automatycznei wczytana poprzednia wersja</li>
+                    <li>Każdego dnia o godzinie 23:59 (jeżeli urządzenie jest włączone) tworzony jest na pulpicie dzienny backup bazy danych. Zapisane wersje sięgają do 7 dni wstecz, każdy kolejny zapis powoduje usunięcie najstarszego z poprzednich</li>
+                </ul>
+                </div>
         ),
         equipment: (
             <div>
@@ -166,15 +204,29 @@ const Documentation = () => {
                     Arkusz "Spis Minimum Sprzętu" zawiera listę z informacjami o sprzęcie medycznym wraz z dodatkowymi informacjami.
                 </p>
                 <p>Zielone wypełnienie oznacza - wyposażenie torby ratownika</p>
-                <p>Czerwona kropka oznacza - sprzęt ze spisu podstawowego brak na satku</p>
+                <p>Czerwony tekst oznacza - sprzęt ze spisu podstawowego brak na satku</p>
                 <a href="/main/sprzet" key="main-sprzet" className="text-blue-600 font-bold">Kliknij by przejść do arkusza</a>
 
 
                 <h3 className="text-xl font-semibold mt-6 mb-3">Spis Sprzętu</h3>
                 <p className="mb-3">
-                    Arkusz "Spis Sprzętu" zawiera minimalistyczną listę z informacjami: nazwa, dataważności, ilość na statku.
+                    Arkusz "Spis Sprzętu" zawiera minimalistyczną listę z informacjami: nazwa, data ważności, ilość na statku.
                 </p>
+
                 <a href="/zestawienie-sprzetu" key="zestawienie-sprzetu" className="text-blue-600 font-bold">Kliknij by przejść do arkusza</a>
+
+                <h3 className="text-xl font-semibold mt-6 mb-3">Zgrany Spis Sprzętu</h3>
+                <p className="mb-3">
+                    Arkusz "Zgrany Spis Sprzętu" zawiera zgrany spis sprzętu.
+                </p>
+                <p className="mb-3">Czerwony tekst oznacza - sprzęt ze spisu podstawowego brak na statku</p>
+                <a href="/zgrany-sprzet" key="zgrany-sprzet" className="text-blue-600 font-bold">Kliknij by przejść do arkusza</a>
+
+                <h3 className="text-xl font-semibold mt-6 mb-3">Utylizacja</h3>
+                <p className="mb-3">
+                    Arkusz "Utylizacja" zawiera pozycje do utylizacji z podziałem na grupy.
+                </p>
+                <a href="/utylizacja" key="utylizacja" className="text-blue-600 font-bold">Kliknij by przejść do arkusza</a>
             </div>
         )
 

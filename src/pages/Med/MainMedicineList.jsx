@@ -113,8 +113,6 @@ function MainMedicineList() {
         try {
             const dataToSend = { ...editedValues[medicineId] };
 
-            // Ensure explicit null values are sent for empty category fields
-            // This ensures the backend can distinguish between "don't change" and "set to null"
             if (dataToSend.id_kategorii === '') dataToSend.id_kategorii = null;
             if (dataToSend.id_pod_kategorii === '') dataToSend.id_pod_kategorii = null;
             if (dataToSend.id_pod_pod_kategorii === '') dataToSend.id_pod_pod_kategorii = null;
@@ -241,16 +239,16 @@ function MainMedicineList() {
 
     return (
         <div className="bg-gray-100 min-h-screen py-10">
-            <div className="mx-auto bg-white shadow-lg rounded-lg overflow-hidden">
-                <div className="flex justify-between items-center py-6 border-b bg-gray-200">
-                    <h1 className="text-2xl font-bold text-gray-800 text-center flex-grow">
-                        Zestawienie Leków MV Nawigator XXI
+            <div className="mx-auto bg-white shadow-lg rounded-lg">
+                <div className="flex justify-between items-center py-6 border-b bg-gray-200 sticky top-0 z-30">
+                    <h1 className="text-2xl font-bold text-gray-800 text-center flex-grow p-2">
+                        Główny Spis Leków MV Nawigator XXI
                     </h1>
                     <button className="absolute right-32 rounded-3xl bg-slate-900 text-white font-bold text-lg p-3"
                             onClick={handleAddMedicineOpen}
                     >Dodaj Pozycję</button>
                     <button className="absolute left-32 rounded-3xl bg-slate-900 text-white font-bold text-lg p-3"
-                        onClick={handleSiteChangeOpen}
+                            onClick={handleSiteChangeOpen}
                     > Zmiana Arkusza
                     </button>
 
@@ -472,14 +470,16 @@ function MainMedicineList() {
 
                     <SiteChange isOpen={siteChange} onClose={handleSiteChangeClose} />
                 </div>
-                <h2 className="text-center text-xl text-red-800 font-bold pt-4 ">
-                    Stan na dzień : {currentDate.toLocaleDateString()}
-                </h2>
-                <h3 className="text-center font-semibold p-4 text-lg">
-                    Zalogowany jako {username}
-                </h3>
+                <div className="sticky top-[88px] bg-white z-20 border-b-2 border-gray-300">
+                    <h2 className="text-center text-xl text-red-800 font-bold pt-4">
+                        Stan na dzień : {currentDate.toLocaleDateString()}
+                    </h2>
+                    <h3 className="text-center font-semibold p-4 text-lg">
+                        Zalogowany jako {username}
+                    </h3>
+                </div>
                 <table className="w-full">
-                    <thead className="text-left">
+                    <thead className="text-left sticky top-[176px] z-10">
                     <tr className="bg-gray-200 text-gray-700 uppercase text-sm tracking-wide ">
                         <th className="px-2 py-4 ">Nazwa Leku</th>
                         <th className="px-2 py-4">Ilość</th>
@@ -523,7 +523,7 @@ function MainMedicineList() {
                                                 )}
                                                 {medicines[category][subcategory][subsubcategory].map(medicine => (
                                                     <tr key={medicine.lek_id}
-                                                        className={`${medicine.lek_przechowywanie === "freezer" ? "bg-blue-200" : ""} border border-gray-700`}>
+                                                        className={`${medicine.lek_przechowywanie === "freezer" ? "bg-blue-200" : ""} ${medicine.lek_na_statku_spis_podstawowy === 1 ? "text-red-600" : ""} border border-gray-700`}>
                                                     <td className="pl-6 px-2 py-4 border-r border-l border-gray-700">
                                                         {editMode[medicine.lek_id] ? (
                                                             <>
@@ -623,6 +623,16 @@ function MainMedicineList() {
                                                                             {option.label}
                                                                         </option>
                                                                     ))}
+                                                                </select>
+                                                                <select
+                                                                    name="na_statku_spis_podstawowy"
+                                                                    value={editedValues[medicine.lek_id]?.lek_na_statku_spis_podstawowy || medicine.lek_na_statku_spis_podstawowy || ""}
+                                                                    onChange={(e) => handleEdit(medicine.lek_id, "lek_na_statku_spis_podstawowy", e.target.value)}
+                                                                    className="border px-2 py-1 w-5/6 my-1"
+                                                                >
+                                                                    <option value="">Spis Podstawowy Brak na statku</option>
+                                                                    <option value="1">Tak</option>
+                                                                    <option value="0">Nie</option>
                                                                 </select>
                                                             </>
 
@@ -810,9 +820,6 @@ function MainMedicineList() {
                                                                             ...prev,
                                                                             [medicine.lek_id]: {
                                                                                 ...medicine,
-                                                                                id_kategorii: medicine.id_kategorii || null,
-                                                                                id_pod_kategorii: medicine.id_pod_kategorii || null,
-                                                                                id_pod_pod_kategorii: medicine.id_pod_pod_kategorii || null
                                                                             }
                                                                         }));
                                                                     }}

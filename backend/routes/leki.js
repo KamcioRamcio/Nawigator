@@ -27,7 +27,6 @@ router.get('/leki-kategorie', async (req, res, next) => {
 router.post('/leki-all', [
     body('lek_nazwa').notEmpty().withMessage('Nazwa leku jest wymagana'),
     body('lek_ilosc').optional().isNumeric().withMessage('Ilość musi być liczbą'),
-    body('lek_data').optional().isDate().withMessage('Data musi być w formacie YYYY-MM-DD')
 ], async (req, res, next) => {
     try {
         const errors = validationResult(req);
@@ -45,7 +44,6 @@ router.post('/leki-all', [
 router.put('/leki/:id', [
     body('lek_nazwa').notEmpty().withMessage('Nazwa leku jest wymagana'),
     body('lek_ilosc').optional().isNumeric().withMessage('Ilość musi być liczbą'),
-    body('lek_data').optional().isDate().withMessage('Data musi być w formacie YYYY-MM-DD')
 ], async (req, res, next) => {
     try {
         const errors = validationResult(req);
