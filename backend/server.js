@@ -2,14 +2,21 @@ import express from 'express';
 import cors from 'cors';
 import schedule from 'node-schedule';
 import { getDb } from './db/index.js';
-import { createTables } from './db/schema.js';
+import {
+    createTables,
+    addExpiryStatusTrigger,
+    addStatusMedicineTrigger,
+    updateExpiryStatusTrigger,
+    updateStatusTrigger
+} from './db/schema.js';
 import lekiRoutes from './routes/leki.js';
 import sprzetRoutes from './routes/sprzet.js';
 import utylizacjaRoutes from './routes/utylizacja.js';
 import backupRoutes from './routes/backup.js';
+import adminRoutes from './routes/admin.js';
 import { backupMiddleware } from './middleware/backup.js';
 import { errorHandler } from './middleware/errorHandler.js';
-import { createDailyBackup } from './utils/helpers.js';
+import { createDailyBackup} from './utils/helpers.js';
 
 const app = express();
 const port = 3333;
@@ -23,7 +30,13 @@ async function initializeDatabase() {
     try {
         const db = await getDb();
         await createTables();
+        await updateExpiryStatusTrigger();
+        await updateStatusTrigger();
         console.log('Database initialized successfully');
+        await addExpiryStatusTrigger();
+        console.log('Expiry status trigger added successfully');
+        await addStatusMedicineTrigger();
+        console.log('Status medicine trigger added successfully');
     } catch (error) {
         console.error('Database initialization error:', error);
         process.exit(1);
@@ -36,6 +49,7 @@ app.use('/api', lekiRoutes);
 app.use('/api', sprzetRoutes);
 app.use('/api/utylizacja', utylizacjaRoutes);
 app.use('/api', backupRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Error handling
 app.use(errorHandler);
@@ -67,8 +81,10 @@ app.get('/api/leki-min/:id/associations', async (req, res) => {
 
 // Schedule daily backup at 23:59
 schedule.scheduleJob('59 23 * * *', createDailyBackup);
+schedule.scheduleJob('59 23 * * *', updateExpiryStatusTrigger);
+schedule.scheduleJob('59 23 * * *', updateStatusTrigger);
 
-// Start the server
+// Schedule tasks
 initializeDatabase().then(() => {
     app.listen(port, () => {
         console.log(`Server is listening on port ${port}`);

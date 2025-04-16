@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, {useState} from 'react';
 import UtilizationModal from './UtilizationModal';
 
-const UtilizationButton = ({ medicine, onUtilizationComplete }) => {
+const UtilizationButton = ({medicine, onUtilizationComplete}) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     const handleUtilize = () => {

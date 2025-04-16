@@ -3,6 +3,8 @@ import apiUrl from "../../constants/api.js";
 import EquipmentAdd from "../../components/EquipmentAdd.jsx";
 import SiteChange from "../../components/SiteChange.jsx";
 import ConstantsEquipment from "../../constants/constantsEquipment.js";
+import {showEditButtonNoMain, showAddButton} from "../../constants/permisions.js";
+import toastService from '../../utils/toast.js';
 
 function OrganizedEquipment() {
     const [equipments, setEquipments] = useState([]);
@@ -10,6 +12,8 @@ function OrganizedEquipment() {
     const [editedEquipment, setEditedEquipment] = useState({});
     const [currentDate, setCurrentDate] = useState("");
     const username = localStorage.getItem("username");
+    const user = JSON.parse(localStorage.getItem("user"));
+    const userPosition = user.position || "viewer";
     const [siteChange, setSiteChange] = useState(false)
     const [selectedCategory, setSelectedCategory] = useState(0);
     const [selectedSubCategory, setSelectedSubCategory] = useState(0);
@@ -39,10 +43,10 @@ function OrganizedEquipment() {
 
     const handleEdit = (equipmentId, field, value) => {
         setEditedEquipment(prev => ({
-                ...prev, [equipmentId]: {
-                    ...prev[equipmentId], [field]: value, kto_zmienil: username
-                }
-            }));
+            ...prev, [equipmentId]: {
+                ...prev[equipmentId], [field]: value, kto_zmienil: username
+            }
+        }));
     }
 
     const handleSave = async (equipmentId) => {
@@ -80,9 +84,10 @@ function OrganizedEquipment() {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             setEditMode(prev => ({...prev, [equipmentId]: false}));
-            console.log('Equipment updated', dataToSend);
+            toastService.success('Sprzęt został zaktualizowany pomyślnie');
         } catch (error) {
             console.error('Fetch error:', error);
+            toastService.error(`Błąd podczas aktualizacji sprzętu: ${error.message}`);
         }
         fetchEquipment();
     }
@@ -99,9 +104,10 @@ function OrganizedEquipment() {
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
-            console.log("Equipment deleted:", equipmentId)
+            toastService.info('Sprzęt został usunięty');
         } catch (error) {
-            console.log("Error deleting equipment:", error)
+            console.log("Error deleting equipment:", error);
+            toastService.error(`Błąd podczas usuwania sprzętu: ${error.message}`);
         }
         fetchEquipment()
     }
@@ -139,7 +145,7 @@ function OrganizedEquipment() {
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
-            console.log('Equipment added', newEquipment);
+            toastService.success(`Sprzęt "${newEquipment.nazwa_sprzetu}" został dodany pomyślnie`);
             setNewEquipment({
                 nazwa_sprzetu: "",
                 data_waznosci: "",
@@ -152,289 +158,323 @@ function OrganizedEquipment() {
             setAddEquipment(false);
         } catch (error) {
             console.error('Fetch error:', error);
+            toastService.error(`Błąd podczas dodawania sprzętu: ${error.message}`);
         }
     }
 
-    return (<div className="bg-gray-100 min-h-screen py-10">
-            <div className="mx-auto bg-white shadow-lg rounded-lg">
-                <div className="flex justify-between items-center py-6 border-b bg-gray-200 sticky top-0 z-30">
-                    <h1 className="text-2xl text-center font-bold text-gray-800 flex-grow">
-                        Zgrany Spis Sprzętu MV NAWIGATOR XXI
-                    </h1>
-                    <button className="absolute right-32 rounded-3xl bg-slate-900 text-white font-bold text-lg p-3"
-                            onClick={handleAddEquipmentOpen}
-                    >
-                        Dodaj Pozycję
-                    </button>
-                    <button className="absolute left-32 rounded-3xl bg-slate-900 text-white font-bold text-lg p-3"
-                            onClick={handleSiteChangeOpen}
-                    >
-                        Zmiana Arkusza
-                    </button>
+    const [searchQuery, setSearchQuery] = useState("");
+    const matchesSearch = (equipment) => {
+        const searchLower = searchQuery.toLowerCase();
+        return equipment.sprzet_zgrany_nazwa.toLowerCase().includes(searchLower)
+    }
 
-                    <EquipmentAdd isOpen={addEquipment} onClose={handleAddEquipmentClose}>
-                        <h2 className="text-xl font-bold mb-4">Dodaj Wyposażenie</h2>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Nazwa Sprzętu*
-                                </label>
-                                <input
-                                    type="text"
-                                    name="nazwa_sprzetu"
-                                    value={newEquipment.nazwa_sprzetu}
-                                    onChange={handleInputEquipment}
-                                    className="border rounded-md p-2 w-full"
-                                    required
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Data Ważności
-                                </label>
-                                <input
-                                    type="date"
-                                    name="data_waznosci"
-                                    value={newEquipment.data_waznosci}
-                                    onChange={handleInputEquipment}
-                                    className="border rounded-md p-2 w-full"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Ilość
-                                </label>
-                                <input
-                                    type="number"
-                                    name="ilosc"
-                                    value={newEquipment.ilosc}
-                                    onChange={handleInputEquipment}
-                                    className="border rounded-md p-2 w-full"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Na Statku
-                                </label>
-                                <select
-                                    name="na_statku"
-                                    value={newEquipment.na_statku}
-                                    onChange={handleInputEquipment}
-                                    className="border rounded-md p-2 w-full"
-                                >
-                                    <option value="">Na statku spis podstawowy?</option>
-                                    <option value="true">Tak</option>
-                                    <option value="false">Nie</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Kategoria*
-                                </label>
-                                <select
-                                    name="id_kategorii"
-                                    value={newEquipment.id_kategorii}
-                                    onChange={(e) => {
-                                        handleInputEquipment(e);
-                                        setSelectedCategory(parseInt(e.target.value, 10))
-                                    }}
-                                    className="border rounded-md p-2 w-full"
-                                    required
-                                >
-                                    <option value="">Wybierz kategorię</option>
-                                    {ConstantsEquipment.CategoryOptions.map(option => (
-                                        <option key={option.value} value={option.value}>
-                                            {option.label}
-                                        </option>))}
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Podkategoria
-                                </label>
-                                <select
-                                    name="id_pod_kategorii"
-                                    value={newEquipment.id_pod_kategorii}
-                                    onChange={handleInputEquipment}
-                                    className="border rounded-md p-2 w-full"
-                                    disabled={!selectedCategory}
-                                >
-                                    <option value="">Wybierz podkategorię</option>
-                                    {ConstantsEquipment.SubCategoryOptions[selectedCategory]?.map(option => (
-                                        <option key={option.value} value={option.value}>
-                                            {option.label}
-                                        </option>))}
-                                </select>
-                            </div>
-                        </div>
-                        <div className="mt-6 flex justify-end">
-                            <button
-                                className="mr-2 px-4 py-2 bg-gray-300 rounded-md"
-                                onClick={handleAddEquipmentClose}
-                            >
-                                Anuluj
-                            </button>
-                            <button
-                                className="px-4 py-2 bg-blue-500 text-white rounded-md"
-                                onClick={handleAddEquipment}
-                            >
-                                Dodaj
-                            </button>
-                        </div>
-                    </EquipmentAdd>
+    return (<div className="bg-gray-100 min-h-screen pb-10">
+        <div className="mx-auto bg-white shadow-lg rounded-lg">
+            <div className="flex justify-between items-center py-6 border-b bg-gray-200 sticky top-0 z-30">
+                <button className="rounded-3xl bg-slate-900 text-white font-bold text-lg p-3 ml-8 z-10"
+                        onClick={handleSiteChangeOpen}>
+                    Zmiana Arkusza
+                </button>
 
-                    <SiteChange isOpen={siteChange} onClose={handleSiteChangeClose}/>
-                </div>
-                <div className="sticky top-[80px] bg-white z-20 border-b-2 border-gray-300">
-                    <h2 className="text-center text-xl text-red-800 font-bold pt-2">
-                        Stan na dzień : {currentDate}
-                    </h2>
-                    <h3 className="text-center font-semibold p-2 text-lg">
-                        Zalogowany jako {username}
-                    </h3>
+                <h1 className="text-2xl font-bold text-gray-800 p-2 text-center mx-auto absolute left-0 right-0">
+                    Zgrany Spis Sprzętu
+                </h1>
+
+                <div className="flex items-center">
+                    <div className="flex flex-col items-end mr-6 text-sm">
+                        <p className="text-red-800 font-semibold">
+                            Stan na dzień: {currentDate}
+                        </p>
+                        <p className="font-medium">
+                            Zalogowany jako {username}
+                        </p>
+                    </div>
+
+                    {showAddButton(userPosition) && (
+                        <button className="rounded-3xl bg-slate-900 text-white font-bold text-lg p-3 mr-10 z-10"
+                                onClick={handleAddEquipmentOpen}>
+                            Dodaj Pozycję
+                        </button>
+                    )}
                 </div>
 
-                <table className="w-full">
-                    <thead className="text-left sticky top-[154px] z-10 bg-gray-200">
-                    <tr>
-                        <th className="px-2 py-4">Nazwa Sprzętu</th>
-                        <th className="px-2 py-4">Data Ważności</th>
-                        <th className="px-2 py-4">Ilość</th>
-                        <th className="px-2 py-4">Kto Zmienił</th>
-                        <th className="px-2 py-4">Akcje</th>
-                    </tr>
-                    </thead>
-                    <tbody className="text-left">
-                    {Object.keys(equipments).map((category, categoryIndex) => (<React.Fragment key={category}>
-                            <tr className="bg-gray-300 text-xl">
-                                <td colSpan="13"
-                                    className="font-bold p-4 bg-slate-400">{categoryIndex + 1}. {category}</td>
-                            </tr>
-                            {Object.keys(equipments[category]).map((subcategory, subcategoryIndex) => {
-                                const showSubcategoryName = subcategory !== "null";
-                                return (<React.Fragment key={subcategory}>
-                                        {showSubcategoryName && (<tr className="bg-gray-200">
-                                                <td colSpan="13"
-                                                    className="font-semibold p-4 bg-slate-300">{subcategoryIndex + 1}. {subcategory}</td>
-                                            </tr>)}
-                                        {equipments[category][subcategory].map(equipment => (
-                                            <tr key={equipment.sprzet_zgrany_id}
-                                                className={`${equipment.sprzet_zgrany_na_statku === "true" || equipment.sprzet_zgrany_na_statku === 1 ? "text-black" : "text-red-600"} border border-gray-700`}>
-                                                <td className="pl-6 px-2 py-4 max-w-[500px] border-r border-l border-gray-700">
-                                                    {editMode[equipment.sprzet_zgrany_id] ? (<>
-                                                            <input
-                                                                type="text"
-                                                                value={editedEquipment[equipment.sprzet_zgrany_id]?.sprzet_zgrany_nazwa || ""}
-                                                                onChange={(e) => handleEdit(equipment.sprzet_zgrany_id, "sprzet_zgrany_nazwa", e.target.value)}
-                                                                className="border px-2 py-1 w-5/6"
-                                                            />
-                                                            <select
-                                                                name="id_kategorii"
-                                                                value={editedEquipment[equipment.sprzet_zgrany_id]?.id_kategorii || ""}
-                                                                onChange={(e) => {
-                                                                    handleEdit(equipment.sprzet_zgrany_id, "id_kategorii", e.target.value);
-                                                                    setSelectedCategory(parseInt(e.target.value, 10));
-                                                                }}
-                                                                className="border px-2 my-1 w-5/6"
-                                                            >
-                                                                <option value="">Wybierz Kategorie</option>
-                                                                {ConstantsEquipment.CategoryOptions.map(option => (
-                                                                    <option key={option.value} value={option.value}>
-                                                                        {option.label}
-                                                                    </option>))}
-                                                            </select>
-                                                            <select
-                                                                name="id_pod_kategorii"
-                                                                value={editedEquipment[equipment.sprzet_zgrany_id]?.id_pod_kategorii || ""}
-                                                                onChange={(e) => handleEdit(equipment.sprzet_zgrany_id, "id_pod_kategorii", e.target.value)}
-                                                                className="border px-2 my-1 w-5/6"
-                                                                disabled={!selectedCategory}
-                                                            >
-                                                                <option value="">Wybierz Podkategorie</option>
-                                                                {ConstantsEquipment.SubCategoryOptions[selectedCategory]?.map(option => (
-                                                                    <option key={option.value} value={option.value}>
-                                                                        {option.label}
-                                                                    </option>))}
-                                                            </select>
-                                                            <select
-                                                                name="na_statku"
-                                                                value={editedEquipment[equipment.sprzet_zgrany_id]?.sprzet_zgrany_na_statku || ""}
-                                                                onChange={(e) => handleEdit(equipment.sprzet_zgrany_id, "sprzet_zgrany_na_statku", e.target.value)}
-                                                                className="border px-2 my-1 w-5/6"
-                                                            >
-                                                                <option value="">Na statku spis podstawowy?</option>
-                                                                <option value="true">Tak</option>
-                                                                <option value="false">Nie</option>
+                <EquipmentAdd isOpen={addEquipment} onClose={handleAddEquipmentClose}>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Nazwa Sprzętu*
+                            </label>
+                            <input
+                                type="text"
+                                name="nazwa_sprzetu"
+                                value={newEquipment.nazwa_sprzetu}
+                                onChange={handleInputEquipment}
+                                className="border rounded-md p-2 w-full"
+                                required
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Data Ważności
+                            </label>
+                            <input
+                                type="date"
+                                name="data_waznosci"
+                                value={newEquipment.data_waznosci}
+                                onChange={handleInputEquipment}
+                                className="border rounded-md p-2 w-full"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Ilość
+                            </label>
+                            <input
+                                type="number"
+                                name="ilosc"
+                                value={newEquipment.ilosc}
+                                onChange={handleInputEquipment}
+                                className="border rounded-md p-2 w-full"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Na Statku
+                            </label>
+                            <select
+                                name="na_statku"
+                                value={newEquipment.na_statku}
+                                onChange={handleInputEquipment}
+                                className="border rounded-md p-2 w-full"
+                            >
+                                <option value="">Na statku spis podstawowy?</option>
+                                <option value="true">Tak</option>
+                                <option value="false">Nie</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Kategoria*
+                            </label>
+                            <select
+                                name="id_kategorii"
+                                value={newEquipment.id_kategorii}
+                                onChange={(e) => {
+                                    handleInputEquipment(e);
+                                    setSelectedCategory(parseInt(e.target.value, 10))
+                                }}
+                                className="border rounded-md p-2 w-full"
+                                required
+                            >
+                                <option value="">Wybierz kategorię</option>
+                                {ConstantsEquipment.CategoryOptions.map(option => (
+                                    <option key={option.value} value={option.value}>
+                                        {option.label}
+                                    </option>))}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Podkategoria
+                            </label>
+                            <select
+                                name="id_pod_kategorii"
+                                value={newEquipment.id_pod_kategorii}
+                                onChange={handleInputEquipment}
+                                className="border rounded-md p-2 w-full"
+                                disabled={!selectedCategory}
+                            >
+                                <option value="">Wybierz podkategorię</option>
+                                {ConstantsEquipment.SubCategoryOptions[selectedCategory]?.map(option => (
+                                    <option key={option.value} value={option.value}>
+                                        {option.label}
+                                    </option>))}
+                            </select>
+                        </div>
+                    </div>
+                    <div className="mt-6 flex justify-end">
+                        <button
+                            className="mr-2 px-4 py-2 bg-gray-300 rounded-md"
+                            onClick={handleAddEquipmentClose}
+                        >
+                            Anuluj
+                        </button>
+                        <button
+                            className="px-4 py-2 bg-blue-500 text-white rounded-md"
+                            onClick={handleAddEquipment}
+                        >
+                            Dodaj
+                        </button>
+                    </div>
+                </EquipmentAdd>
 
-                                                            </select>
-                                                        </>) : (equipment.sprzet_zgrany_nazwa)}
-                                                </td>
-                                                <td className="pl-6 px-2 py-4 border-r border-l border-gray-700">
-                                                    {editMode[equipment.sprzet_zgrany_id] ? (<input
-                                                            type="date"
-                                                            value={editedEquipment[equipment.sprzet_zgrany_id]?.sprzet_zgrany_data_waznosci || ""}
-                                                            onChange={(e) => handleEdit(equipment.sprzet_zgrany_id, "sprzet_zgrany_data_waznosci", e.target.value)}
-                                                            className="w-full"
-                                                        />) : (equipment.sprzet_zgrany_data_waznosci)}
-                                                </td>
-                                                <td className="pl-6 px-2 py-4 border-r border-l border-gray-700">
-                                                    {editMode[equipment.sprzet_zgrany_id] ? (<input
-                                                            type="number"
-                                                            value={editedEquipment[equipment.sprzet_zgrany_id]?.sprzet_zgrany_ilosc || ""}
-                                                            onChange={(e) => handleEdit(equipment.sprzet_zgrany_id, "sprzet_zgrany_ilosc", e.target.value)}
-                                                            className="w-full"
-                                                        />) : (equipment.sprzet_zgrany_ilosc)}
-                                                </td>
-                                                <td className="pl-6 px-2 py-4 border-r border-l border-gray-700">
-                                                    {equipment.sprzet_zgrany_kto_zmienil}
-                                                </td>
-                                                <td>
-                                                    {editMode[equipment.sprzet_zgrany_id] ? (<>
-                                                            <button
-                                                                onClick={() => handleSave(equipment.sprzet_zgrany_id)}
-                                                                className="text-green-500 font-semibold m-2"
-                                                            >
-                                                                Zapisz
-                                                            </button>
-                                                            <button
-                                                                onClick={() => setEditMode(prev => ({
-                                                                    ...prev, [equipment.sprzet_zgrany_id]: false
-                                                                }))}
-                                                                className="text-gray-950 m-2 font-semibold"
-                                                            >
-                                                                Anuluj
-                                                            </button>
-                                                            <button
-                                                                onClick={() => handleDelete(equipment.sprzet_zgrany_id)}
-                                                                className="text-red-600 font-semibold m-2"
-                                                            >
-                                                                Usuń
-                                                            </button>
-                                                        </>) : (<button
-                                                            onClick={() => {
-                                                                setEditMode(prev => ({
-                                                                    ...prev, [equipment.sprzet_zgrany_id]: true,
-                                                                }));
-                                                                setEditedEquipment(prev => ({
-                                                                    ...prev,
-                                                                    [equipment.sprzet_zgrany_id]: {...equipment}
-                                                                }))
-                                                            }}
-                                                            className="text-blue-500 font-semibold"
-                                                        >
-                                                            Edytuj
-                                                        </button>
-
-                                                    )}
-                                                </td>
-                                            </tr>))}
-                                    </React.Fragment>)
-                            })}
-                        </React.Fragment>))}
-                    </tbody>
-                </table>
+                <SiteChange isOpen={siteChange} onClose={handleSiteChangeClose}/>
             </div>
-        </div>)
+            <div className="sticky top-[100px] bg-white z-20 p-1">
+                <div className="flex justify-center items-center w-1/2 mx-auto my-4 relative">
+                    <div className="absolute left-3 text-gray-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                             stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        </svg>
+                    </div>
+                    <input
+                        type="text"
+                        placeholder="Szukaj leków..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="border border-gray-300 rounded-md pl-10 pr-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                </div>
+            </div>
+            <table className="w-full">
+                <thead className="text-left sticky top-[180px] z-10 bg-gray-200">
+                <tr>
+                    <th className="px-2 py-4">Nazwa Sprzętu</th>
+                    <th className="px-2 py-4">Data Ważności</th>
+                    <th className="px-2 py-4">Ilość</th>
+                    <th className="px-2 py-4">Kto Zmienił</th>
+                    <th className="px-2 py-4 w-20">Akcje</th>
+                </tr>
+                </thead>
+                <tbody className="text-left">
+                {Object.keys(equipments).map((category, categoryIndex) => (<React.Fragment key={category}>
+                    <tr className="bg-gray-300 text-xl">
+                        <td colSpan="13"
+                            className="font-bold p-4 bg-slate-400">{categoryIndex + 1}. {category}</td>
+                    </tr>
+                    {Object.keys(equipments[category]).map((subcategory, subcategoryIndex) => {
+                        const showSubcategoryName = subcategory !== "null";
+                        return (<React.Fragment key={subcategory}>
+                            {showSubcategoryName && (<tr className="bg-gray-200">
+                                <td colSpan="13"
+                                    className="font-semibold p-4 bg-slate-300">{subcategoryIndex + 1}. {subcategory}</td>
+                            </tr>)}
+                            {equipments[category][subcategory].filter(matchesSearch).map(equipment => (
+                                <tr key={equipment.sprzet_zgrany_id}
+                                    className={`${equipment.sprzet_zgrany_na_statku === "true" || equipment.sprzet_zgrany_na_statku === 1 ? "text-black" : "text-red-600"} border border-gray-700`}>
+                                    <td className="pl-6 px-2 py-4 max-w-[500px] border-r border-l border-gray-700">
+                                        {editMode[equipment.sprzet_zgrany_id] ? (<>
+                                            <input
+                                                type="text"
+                                                value={editedEquipment[equipment.sprzet_zgrany_id]?.sprzet_zgrany_nazwa || ""}
+                                                onChange={(e) => handleEdit(equipment.sprzet_zgrany_id, "sprzet_zgrany_nazwa", e.target.value)}
+                                                className="border px-2 py-1 w-5/6"
+                                            />
+                                            <select
+                                                name="id_kategorii"
+                                                value={editedEquipment[equipment.sprzet_zgrany_id]?.id_kategorii || ""}
+                                                onChange={(e) => {
+                                                    handleEdit(equipment.sprzet_zgrany_id, "id_kategorii", e.target.value);
+                                                    setSelectedCategory(parseInt(e.target.value, 10));
+                                                }}
+                                                className="border px-2 my-1 w-5/6"
+                                            >
+                                                <option value="">Wybierz Kategorie</option>
+                                                {ConstantsEquipment.CategoryOptions.map(option => (
+                                                    <option key={option.value} value={option.value}>
+                                                        {option.label}
+                                                    </option>))}
+                                            </select>
+                                            <select
+                                                name="id_pod_kategorii"
+                                                value={editedEquipment[equipment.sprzet_zgrany_id]?.id_pod_kategorii || ""}
+                                                onChange={(e) => handleEdit(equipment.sprzet_zgrany_id, "id_pod_kategorii", e.target.value)}
+                                                className="border px-2 my-1 w-5/6"
+                                                disabled={!selectedCategory}
+                                            >
+                                                <option value="">Wybierz Podkategorie</option>
+                                                {ConstantsEquipment.SubCategoryOptions[selectedCategory]?.map(option => (
+                                                    <option key={option.value} value={option.value}>
+                                                        {option.label}
+                                                    </option>))}
+                                            </select>
+                                            <select
+                                                name="na_statku"
+                                                value={editedEquipment[equipment.sprzet_zgrany_id]?.sprzet_zgrany_na_statku || ""}
+                                                onChange={(e) => handleEdit(equipment.sprzet_zgrany_id, "sprzet_zgrany_na_statku", e.target.value)}
+                                                className="border px-2 my-1 w-5/6"
+                                            >
+                                                <option value="">Na statku spis podstawowy?</option>
+                                                <option value="true">Tak</option>
+                                                <option value="false">Nie</option>
+
+                                            </select>
+                                        </>) : (equipment.sprzet_zgrany_nazwa)}
+                                    </td>
+                                    <td className="pl-6 px-2 py-4 border-r border-l border-gray-700">
+                                        {editMode[equipment.sprzet_zgrany_id] ? (<input
+                                            type="date"
+                                            value={editedEquipment[equipment.sprzet_zgrany_id]?.sprzet_zgrany_data_waznosci || ""}
+                                            onChange={(e) => handleEdit(equipment.sprzet_zgrany_id, "sprzet_zgrany_data_waznosci", e.target.value)}
+                                            className="w-full"
+                                        />) : (equipment.sprzet_zgrany_data_waznosci)}
+                                    </td>
+                                    <td className="pl-6 px-2 py-4 border-r border-l border-gray-700">
+                                        {editMode[equipment.sprzet_zgrany_id] ? (<input
+                                            type="number"
+                                            value={editedEquipment[equipment.sprzet_zgrany_id]?.sprzet_zgrany_ilosc || ""}
+                                            onChange={(e) => handleEdit(equipment.sprzet_zgrany_id, "sprzet_zgrany_ilosc", e.target.value)}
+                                            className="w-full"
+                                        />) : (equipment.sprzet_zgrany_ilosc)}
+                                    </td>
+                                    <td className="pl-6 px-2 py-4 border-r border-l border-gray-700">
+                                        {equipment.sprzet_zgrany_kto_zmienil}
+                                    </td>
+                                    <td className="w-20 p-2">
+                                        {editMode[equipment.sprzet_zgrany_id] ? (
+                                            <div className="flex flex-col space-y-2">
+                                                <button
+                                                    onClick={() => handleSave(equipment.sprzet_zgrany_id)}
+                                                    className="bg-green-600 hover:bg-green-700 text-white font-semibold py-1 px-1 rounded"
+                                                >
+                                                    Zapisz
+                                                </button>
+                                                <button
+                                                    onClick={() => setEditMode(prev => ({
+                                                        ...prev, [equipment.sprzet_zgrany_id]: false
+                                                    }))}
+                                                    className="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-1 px-3 rounded"
+                                                >
+                                                    Anuluj
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDelete(equipment.sprzet_zgrany_id)}
+                                                    className="bg-red-600 hover:bg-red-700 text-white font-semibold py-1 px-3 rounded"
+                                                >
+                                                    Usuń
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <div className="flex flex-col space-y-2">
+                                                {showEditButtonNoMain(userPosition) && (
+                                                    <button
+                                                        onClick={() => {
+                                                            setEditMode(prev => ({
+                                                                ...prev, [equipment.sprzet_zgrany_id]: true,
+                                                            }));
+                                                            setEditedEquipment(prev => ({
+                                                                ...prev,
+                                                                [equipment.sprzet_zgrany_id]: {...equipment}
+                                                            }))
+                                                        }}
+                                                        className="bg-slate-900 hover:bg-slate-700 text-white font-semibold py-1 px-3 rounded"
+                                                    >
+                                                        Edytuj
+                                                    </button>
+                                                )}
+                                            </div>
+                                        )}
+                                    </td>
+                                </tr>))}
+                        </React.Fragment>)
+                    })}
+                </React.Fragment>))}
+                </tbody>
+            </table>
+        </div>
+    </div>)
 }
 
 export default OrganizedEquipment;

@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, {useState} from 'react';
 import axios from 'axios';
 import apiUrl from "../constants/api.js";
 
 
-const UtilizationModal = ({ isOpen, onClose, medicine, onUtilizationComplete }) => {
+const UtilizationModal = ({isOpen, onClose, medicine, onUtilizationComplete}) => {
     const [formData, setFormData] = useState({
         grupa: '',
         ilosc_nominalna: '',
@@ -15,7 +15,7 @@ const UtilizationModal = ({ isOpen, onClose, medicine, onUtilizationComplete }) 
     if (!isOpen) return null;
 
     const handleChange = (e) => {
-        const { name, value } = e.target;
+        const {name, value} = e.target;
         setFormData(prevState => ({
             ...prevState,
             [name]: value
@@ -33,14 +33,12 @@ const UtilizationModal = ({ isOpen, onClose, medicine, onUtilizationComplete }) 
                 ilosc: medicine.lek_ilosc,
                 opakowanie: medicine.lek_opakowanie,
                 data_waznosci: medicine.lek_data,
-                ilosc_nominalna: form.ilosc_nominalna,
+                ilosc_nominalna: formData.ilosc_nominalna,
                 grupa: formData.grupa,
                 powod_utylizacji: formData.powod_utylizacji
             };
 
             await axios.post(apiUrl + `utylizacja/from-medicine`, utilizationData);
-
-            await axios.delete(apiUrl + `leki/delete/${medicine.lek_id}`);
 
             setIsSubmitting(false);
             onClose();
@@ -54,7 +52,6 @@ const UtilizationModal = ({ isOpen, onClose, medicine, onUtilizationComplete }) 
             console.error('Utilization error:', err);
         }
     };
-
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center">
             <div className="bg-white p-6 rounded-lg shadow-lg w-96 max-w-full">

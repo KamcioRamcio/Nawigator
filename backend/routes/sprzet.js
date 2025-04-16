@@ -6,7 +6,7 @@ import {
     updateEquipment,
     deleteEquipment,
     fetchEquipmentByCategory,
-
+    fetchEquipmentsByDate,
     addOrganizedEquipment,
     updateOrganizedEquipment,
     deleteOrganizedEquipment,
@@ -23,6 +23,17 @@ router.get('/sprzet-kategorie', async (req, res, next) => {
         next(error);
     }
 });
+
+router.get('/sprzet/status-by-date/:date', async (req, res, next) => {
+    try {
+        const { date } = req.params;
+        const equipments = await fetchEquipmentsByDate(date);
+        res.json(equipments);
+    } catch (error) {
+        console.error('Error fetching equipments by date:', error);
+        res.status(500).json({ error: error.message });
+    }
+})
 
 router.post('/sprzet-all', [
     body('eq_nazwa').notEmpty().withMessage('Nazwa sprzętu jest wymagana'),

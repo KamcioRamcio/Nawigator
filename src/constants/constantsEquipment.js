@@ -20,9 +20,9 @@ const constantsEquipment = {
         {value: 7, label: "Sprzęt unieruchamiający i do nastawiania kości"},
         {value: 8, label: "Dezynfekcja, dezynsekcja i zapobieganie"},
         {value: 9, label: "Poza katalogiem minimum "},
-        ],
+    ],
     SubCategoryOptions: {
-        1 :[
+        1: [
             {value: 1, label: "Ręczne urządzenie resuscytacyjne"},
             {value: 2, label: "Urządzenie do podawania tlenu z zaworem redukcyjnym lub butla tlenowa"},
             {value: 3, label: "Mechaniczny aspirator do oczyszczania górnych dróg oddechowych"},

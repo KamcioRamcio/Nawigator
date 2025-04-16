@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, {useState} from 'react';
 
 const Documentation = () => {
     // State to keep track of the active section
@@ -6,274 +6,614 @@ const Documentation = () => {
 
     // Documentation sections
     const sections = [
-        { id: 'introduction', title: 'Wprowadzenie' },
-        { id: 'starting_info', title: 'Ważne informacje' },
-        { id: 'equipment', title: 'Zarządzanie sprzętem' },
-        { id: 'medicines', title: 'Zarządzanie lekami' },
-        { id: 'utilization', title: 'Utylizacja' },
-        { id: 'pages', title: 'Arkusze' },
+        {id: 'introduction', title: 'Wprowadzenie'},
+        {id: 'starting_info', title: 'Ważne informacje'},
+        {id: 'login', title: 'Logowanie i zarządzanie użytkownikami'},
+        {id: 'equipment', title: 'Zarządzanie sprzętem'},
+        {id: 'medicines', title: 'Zarządzanie lekami'},
+        {id: 'utilization', title: 'Utylizacja'},
+        {id: 'database', title: 'Import/Export bazy danych'},
+        {id: 'pages', title: 'Arkusze'},
     ];
 
     // Documentation content for each section
     const documentationContent = {
         introduction: (
-            <div>
-                <h2 className="text-2xl font-bold mb-4">Witamy w dokumentacji Nawigatora</h2>
+            <div className="p-4">
+                <h2 className="text-2xl font-bold mb-4">Wprowadzenie do Systemu Inwentaryzacji Medycznej</h2>
+
                 <p className="mb-4">
-                    Aplikacja Nawigator została zaprojektowana, aby pomóc w zarządzaniu sprzętem oraz lekami.
-                    Ta dokumentacja pomoże Ci zrozumieć, jak korzystać z różnych funkcji aplikacji.
+                    Aplikacja została zaprojektowana, aby pomóc w zarządzaniu sprzętem oraz lekami. Ta dokumentacja
+                    pomoże Ci zrozumieć, jak korzystać z różnych funkcji aplikacji.
                 </p>
+
                 <p className="mb-4">
                     Wybierz sekcję z menu po lewej stronie, aby przejść do odpowiedniej części dokumentacji.
                 </p>
-                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 mb-4">
-                    <h3 className="text-lg font-semibold mb-2">Szybki start</h3>
-                    <ol className="list-decimal pl-5 space-y-2">
-                        <li>Zaloguj się do systemu używając swojego identyfikatora, używamy jest on w celu śledzenia przez kogo zostają dokonane zmiany.
-                        Gdy zmiana dokonywana jest automatycznie autorem będzie "SYSTEM".
-                        </li>
-                        <li>Z głównego panelu wybierz moduł, z którego chcesz korzystać</li>
-                        <li>Zapoznaj się z odpowiednią sekcją dokumentacji, aby uzyskać szczegółowe informacje</li>
-                    </ol>
-                </div>
-            </div>
-        ),
-        starting_info: (
-            <div>
-                <h2 className="text-2xl font-bold mb-4">Informacje o budowie aplikacji.</h2>
-                <p className="text-xl font-bold mb-4">
-                    Tabele
-                </p>
-                <p className="font-semibold mb-2">
-                    W aplikacji znajduje się siedem głównych tabel:
-                </p>
-                <ul className="list-disc pl-5 mb-4 space-y-1">
-                    <li>Leki - spis ogólny leków, używany do: Głównego spisu leków i Zestawienia leków </li>
-                    <li>Rozchód - zawiera informacje o rozchodzie danego leku używany do: Głównego spisu leków</li>
-                    <li>Stan Magazynowy - zawiera informacje o aktualnym stanie magazyowym leków używany do: Głównego spisu leków</li>
-                    <li>Minimum Leki - spis zawierający wymagania minimalne używany do: Spis mimimum leki</li>
-                    <li>Sprzęt - spis ogólny sprzętu używany do: Spis minimum sprzęt i Spis sprzętu</li>
-                    <li>Zgrany Sprzęt - spis zawierający zgrany spis sprzętu używany od: Zgrany spis sprzętu</li>
-                    <li>Utylizacja - spis pozycji do utylizacji używany do: Utylizacja</li>
-                </ul>
-                <p className="font-bold text-xl mt-2 mb-2">Operacje między tabelami</p>
-                <ul className="list-disc pl-5 mb-4 space-y-1"><p className="font-semibold">Leki</p>
-                    <li>Dodawanie leku nie dodaje jego aktualnego stanu magazynowego oraz rozchodu trzeba go wprowadzić ręcznie</li>
-                    <li>Dodawanie/Usuwanie/Edytowanie leku w którym kolwiek z arkuszy powoduje zmiane w pozostałych w którch się znajdował</li>
-                    <li>Utylizowanie pozycji dodaje ją automatycznie do arkusza "Utylizacja" oraz usuwa pozostałe wystąpienia tego leku(można zmienić)</li>
-                    <p className="font-semibold">Sprzęt</p>
-                    <li>Dodany/Usunięty/Edytowany sprzęt w arkuszu "Spis minimum sprzętu"/"Spis sprzętu", dodany/usunięty/edytowany zostanie w obu z nich, ale zmiana nie pojawi się w "Zgrany spis sprzętu"</li>
-                    <li>Utylizowanie pozycji dodaje ją automatycznie do arkusza "Utylizacja" oraz usuwa wystąpienie tej pozycji w arkuszach "Spis minimum sprzętu"/"Spis sprzętu" (można zmienić)</li>
-                    <li>Jakiekolwiek zmiany w arkuszu "Zgrany Spis Sprzętu" nie wpływają na pozostałe arkusze</li>
-                </ul>
-                <p className="font-bold text-xl mt-2 mb-2">Import/Export/Backup Bazy danych</p>
-                <ul className="list-disc pl-5 mb-4 space-y-1">
-                    <li>W arkuszu "Utylizacja" znajdują się przycisku umożliwiające export/import bazy danych, w razie potrzeby zmian w aplikacji należy pobrać baze danych i zapisać w bezpiecznym miejscu</li>
-                    <li>Po dokonaniu zmian przez developera należy dodać poprzednio zapisaną baze danych używając przycisku import</li>
-                    <li>Backup bazy danych tworzy się automatyczne w wyznaczonym miejscu i w razie ewentualnych problemów zostaje automatycznei wczytana poprzednia wersja</li>
-                    <li>Każdego dnia o godzinie 23:59 (jeżeli urządzenie jest włączone) tworzony jest na pulpicie dzienny backup bazy danych. Zapisane wersje sięgają do 7 dni wstecz, każdy kolejny zapis powoduje usunięcie najstarszego z poprzednich</li>
-                </ul>
-                </div>
-        ),
-        equipment: (
-            <div>
-                <h2 className="text-2xl font-bold mb-4">Zarządzanie sprzętem</h2>
+
+                <h3 className="text-xl font-bold mb-2">Tabele</h3>
+
                 <p className="mb-4">
-                    Moduł zarządzania sprzętem pozwala na pełną kontrolę nad inwentarzem, śledzenie statusu i stanu magazynowego.
+                    W aplikacji znajduje się osiem głównych tabel:
                 </p>
 
-                <h3 className="text-xl font-semibold mt-6 mb-3">Dodawanie nowego sprzętu</h3>
-                <p className="mb-3">
+                <ul className="list-disc pl-8 mb-4">
+                    <li>Główny Spis Leków - pełna lista leków z wszystkimi szczegółami</li>
+                    <li>Zestawienie Leków - uproszczona lista leków z kluczowymi informacjami</li>
+                    <li>Spis Minimum Leków - lista minimalnych wymagań dotyczących leków</li>
+                    <li>Spis Minimum Sprzętu - lista minimalnych wymagań dotyczących sprzętu</li>
+                    <li>Spis Sprzętu - uproszczona lista sprzętu</li>
+                    <li>Zgrany Spis Sprzętu - zorganizowana lista sprzętu</li>
+                    <li>Utylizacja - rejestr utylizowanych materiałów</li>
+                    <li>Admin - zarządzanie użytkownikami i uprawnieniami</li>
+                </ul>
+
+                <h3 className="text-xl font-bold mb-2">Operacje między tabelami</h3>
+
+                <p className="mb-4">
+                    System umożliwia wykonywanie operacji, które mogą wpływać na wiele tabel jednocześnie:
+                </p>
+
+                <ul className="list-disc pl-8 mb-4">
+                    <li>Utylizacja leków i sprzętu aktualizuje stan magazynowy</li>
+                    <li>Edycja przedmiotów może być ograniczona w zależności od uprawnień użytkownika</li>
+                    <li>Zmiany są śledzone z informacją o użytkowniku, który dokonał modyfikacji</li>
+                </ul>
+            </div>
+        ),
+
+        starting_info: (
+            <div className="p-4">
+                <h2 className="text-2xl font-bold mb-4">Ważne informacje</h2>
+
+                <h3 className="text-xl font-bold mb-2">Oznaczenia kolorów</h3>
+
+                <ul className="list-disc pl-8 mb-4">
+                    <li><span className="text-blue-500 font-bold">Niebieskie</span> wypełnienie - przedmioty
+                        przechowywane w lodówce
+                    </li>
+                    <li><span className="text-orange-400 font-bold">Pomarańczowe</span> wypełnienie - narkotyki</li>
+                    <li><span className="text-green-500 font-bold">Zielone</span> wypełnienie - wyposażenie torby
+                        ratownika
+                    </li>
+                    <li><span className="text-red-500 font-bold">Czerwony</span> tekst - przedmioty ze spisu
+                        podstawowego, których brak na statku
+                    </li>
+                </ul>
+
+                <h3 className="text-xl font-bold mb-2">Role użytkowników</h3>
+
+                <p className="mb-4">System oferuje trzy poziomy uprawnień użytkowników:</p>
+
+                <ul className="list-disc pl-8 mb-4">
+                    <li><strong>Admin</strong> - pełny dostęp do wszystkich funkcji i możliwość edycji wszystkich pól
+                    </li>
+                    <li><strong>Editor</strong> - możliwość edytowania wybranych pól</li>
+                    <li><strong>Viewer</strong> - dostęp tylko do przeglądania danych bez możliwości wprowadzania zmian
+                    </li>
+                </ul>
+            </div>
+        ),
+
+        login: (
+            <div className="p-4">
+                <h2 className="text-2xl font-bold mb-4">Logowanie i zarządzanie użytkownikami</h2>
+
+                <h3 className="text-xl font-bold mb-2">Logowanie do systemu</h3>
+
+                <p className="mb-4">
+                    Aby uzyskać dostęp do systemu, musisz zalogować się przy użyciu swoich danych uwierzytelniających:
+                </p>
+
+                <ol className="list-decimal pl-8 mb-4">
+                    <li>Na stronie logowania wybierz swoje nazwisko z listy rozwijanej</li>
+                    <li>Wprowadź hasło (jeśli zostało ustawione)</li>
+                    <li>Kliknij przycisk "Zaloguj"</li>
+                </ol>
+
+                <h3 className="text-xl font-bold mb-2">Panel administracyjny</h3>
+
+                <p className="mb-4">
+                    Panel administracyjny jest dostępny tylko dla użytkowników z rolą "admin" i umożliwia:
+                </p>
+
+                <ul className="list-disc pl-8 mb-4">
+                    <li>Dodawanie nowych użytkowników</li>
+                    <li>Edycję istniejących użytkowników</li>
+                    <li>Usuwanie użytkowników</li>
+                    <li>Zarządzanie rolami (admin, editor, viewer)</li>
+                </ul>
+
+                <h3 className="text-xl font-bold mb-2">Dodawanie nowego użytkownika</h3>
+
+                <p className="mb-4">
+                    Aby dodać nowego użytkownika (tylko administrator):
+                </p>
+
+                <ol className="list-decimal pl-8 mb-4">
+                    <li>Przejdź do panelu administracyjnego</li>
+                    <li>Kliknij przycisk "Dodaj użytkownika"</li>
+                    <li>Wypełnij formularz z informacjami o użytkowniku:
+                        <ul className="list-disc pl-8 mt-2">
+                            <li>Nazwa użytkownika</li>
+                            <li>Hasło (opcjonalne)</li>
+                            <li>Rola (admin, editor, viewer)</li>
+                        </ul>
+                    </li>
+                    <li>Kliknij "Zapisz" aby dodać użytkownika</li>
+                </ol>
+
+                <h3 className="text-xl font-bold mb-2">Edycja użytkownika</h3>
+
+                <p className="mb-4">
+                    Aby edytować istniejącego użytkownika:
+                </p>
+
+                <ol className="list-decimal pl-8 mb-4">
+                    <li>W panelu administracyjnym znajdź użytkownika, którego chcesz edytować</li>
+                    <li>Kliknij przycisk "Edytuj" obok tego użytkownika</li>
+                    <li>Zmodyfikuj odpowiednie pola</li>
+                    <li>Kliknij "Zapisz" aby zatwierdzić zmiany</li>
+                </ol>
+            </div>
+        ),
+
+        equipment: (
+            <div className="p-4">
+                <h2 className="text-2xl font-bold mb-4">Zarządzanie sprzętem</h2>
+
+                <p className="mb-4">
+                    Moduł zarządzania sprzętem pozwala na pełną kontrolę nad inwentarzem, śledzenie statusu i stanu
+                    magazynowego.
+                </p>
+
+                <h3 className="text-xl font-bold mb-2">Główne widoki sprzętu</h3>
+
+                <p className="mb-4">
+                    W systemie dostępne są trzy główne widoki dotyczące sprzętu:
+                </p>
+
+                <ul className="list-disc pl-8 mb-4">
+                    <li><strong>Główny Spis Sprzętu</strong> (MainEquipmentList) - pełna lista z wszystkimi szczegółami
+                        i możliwością edycji
+                    </li>
+                    <li><strong>Spis Sprzętu</strong> (EquipmentList) - uproszczony widok z kluczowymi informacjami</li>
+                    <li><strong>Zgrany Spis Sprzętu</strong> (OrganizedEquipment) - widok zorganizowany według kategorii
+                    </li>
+                </ul>
+
+                <h3 className="text-xl font-bold mb-2">Dodawanie nowego sprzętu</h3>
+
+                <p className="mb-4">
                     Aby dodać nowy sprzęt do systemu:
                 </p>
-                <ol className="list-decimal pl-5 mb-4 space-y-1">
-                    <li>Przejdź do dowlonej zakładki odpowiedzialnej za sprzęt</li>
-                    <li>Kliknij przycisk "Dodaj nowy sprzęt"</li>
-                    <li>Wypełnij formularz z danymi sprzętu (nazwa, kategoria, ilość, status)</li>
-                    <li>Kliknij "Zapisz" aby dodać sprzęt do systemu</li>
-                    <li>Czasem zmiany mogą dokonać się z lekkim opóźnieniem lub będą wymagać odświeżenia strony.</li>
+
+                <ol className="list-decimal pl-8 mb-4">
+                    <li>Kliknij przycisk "Dodaj nowy sprzęt" dostępny w głównym widoku sprzętu</li>
+                    <li>Wypełnij formularz z informacjami o sprzęcie:
+                        <ul className="list-disc pl-8 mt-2">
+                            <li>Nazwa sprzętu</li>
+                            <li>Ilość wymagana</li>
+                            <li>Ilość aktualna</li>
+                            <li>Data ważności</li>
+                            <li>Kategoria i podkategoria</li>
+                            <li>Informacja czy jest na statku</li>
+                            <li>Informacja czy jest w torbie ratownika</li>
+                        </ul>
+                    </li>
+                    <li>Kliknij "Dodaj" aby zapisać nowy sprzęt</li>
                 </ol>
 
-                <h3 className="text-xl font-semibold mt-6 mb-3">Edycja sprzętu</h3>
-                <p className="mb-3">
+                <h3 className="text-xl font-bold mb-2">Edycja istniejącego sprzętu</h3>
+
+                <p className="mb-4">
                     Aby edytować istniejący sprzęt:
                 </p>
-                <ol className="list-decimal pl-5 mb-4 space-y-1">
-                    <li>Znajdź sprzęt na liście</li>
-                    <li>Kliknij przycisk "Edytuj" w kolumnie akcji</li>
-                    <li>Zaktualizuj odpowiednie pola</li>
+
+                <ol className="list-decimal pl-8 mb-4">
+                    <li>Znajdź sprzęt, który chcesz edytować</li>
+                    <li>Kliknij przycisk "Edytuj" obok tego sprzętu</li>
+                    <li>Zmodyfikuj odpowiednie pola (dostępność pól zależy od uprawnień użytkownika)</li>
                     <li>Kliknij "Zapisz" aby zatwierdzić zmiany</li>
-                    <li>Czasem zmiany mogą dokonać się z lekkim opóźnieniem lub będą wymagać odświeżenia strony.</li>
+                </ol>
+
+                <h3 className="text-xl font-bold mb-2">Pola specjalne</h3>
+
+                <p className="mb-4">
+                    W widokach sprzętu dostępne są specjalne pola i oznaczenia:
+                </p>
+
+                <ul className="list-disc pl-8 mb-4">
+                    <li><strong>Na statku</strong> - informuje czy przedmiot jest obecnie na statku</li>
+                    <li><strong>Torba ratownika</strong> - oznacza sprzęt, który jest częścią wyposażenia torby
+                        ratownika
+                    </li>
+                    <li><strong>Status</strong> - informuje o stanie przedmiotu (ważny, przeterminowany itp.)</li>
+                    <li><strong>Kto zmienił</strong> - śledzenie ostatniego użytkownika, który modyfikował wpis</li>
+                </ul>
+
+                <h3 className="text-xl font-bold mb-2">Utylizacja sprzętu</h3>
+
+                <p className="mb-4">
+                    Sprzęt, który wymaga utylizacji, może być oznaczony i przeniesiony do rejestru utylizacji:
+                </p>
+
+                <ol className="list-decimal pl-8 mb-4">
+                    <li>Znajdź sprzęt, który chcesz utylizować</li>
+                    <li>Kliknij przycisk "Utylizacja" obok tego sprzętu</li>
+                    <li>Wypełnij formularz utylizacji podając powód i ilość</li>
+                    <li>Kliknij "Potwierdź" aby zatwierdzić utylizację</li>
                 </ol>
             </div>
         ),
-        medicines:(
-            <div>
+
+        medicines: (
+            <div className="p-4">
                 <h2 className="text-2xl font-bold mb-4">Zarządzanie lekami</h2>
+
                 <p className="mb-4">
-                    Moduł zarządzania lekami pozwala na pełną kontrolę nad inwentarzem, śledzenie statusu i stanu magazynowego.
+                    Moduł zarządzania lekami pozwala na pełną kontrolę nad inwentarzem, śledzenie statusu i stanu
+                    magazynowego.
                 </p>
-                <h3 className="text-xl font-semibold mt-6 mb-3">Dodawanie nowego Leku</h3>
-                <p className="mb-3">
+
+                <h3 className="text-xl font-bold mb-2">Główne widoki leków</h3>
+
+                <p className="mb-4">
+                    W systemie dostępne są trzy główne widoki dotyczące leków:
+                </p>
+
+                <ul className="list-disc pl-8 mb-4">
+                    <li><strong>Główny Spis Leków</strong> (MainMedicineList) - pełna lista z wszystkimi szczegółami i
+                        możliwością edycji
+                    </li>
+                    <li><strong>Zestawienie Leków</strong> (MedicineList) - uproszczony widok z kluczowymi informacjami
+                    </li>
+                    <li><strong>Spis Minimum Leków</strong> (MinMedicine) - lista minimalnych wymagań dotyczących leków
+                    </li>
+                </ul>
+
+                <h3 className="text-xl font-bold mb-2">Dodawanie nowego leku</h3>
+
+                <p className="mb-4">
                     Aby dodać nowy lek do systemu:
                 </p>
-                <ol className="list-decimal pl-5 mb-4 space-y-1">
-                    <li>Przejdź do zakładki wybranej zakładki odpowiedzialnej za leki</li>
-                    <li>Kliknij przycisk "Dodaj nowy sprzęt"</li>
-                    <li>Wypełnij formularz z danymi sprzętu (nazwa, kategoria, ilość, status)</li>
-                    <li>Kliknij "Zapisz" aby dodać lek do systemu</li>
-                    <li>Czasem zmiany mogą dokonać się z lekkim opóźnieniem lub będą wymagać odświeżenia strony.</li>
-                    <li>W zależności od arkusza dana ilość informacji odnośnie leku zostanie dodana.</li>
+
+                <ol className="list-decimal pl-8 mb-4">
+                    <li>Kliknij przycisk "Dodaj nowy lek" dostępny w głównym widoku leków</li>
+                    <li>Wypełnij formularz z informacjami o leku:
+                        <ul className="list-disc pl-8 mt-2">
+                            <li>Nazwa leku</li>
+                            <li>Ilość</li>
+                            <li>Opakowanie</li>
+                            <li>Data ważności</li>
+                            <li>Ilość minimalna</li>
+                            <li>Informacja o przechowywaniu (lodówka)</li>
+                            <li>Kategoria, podkategoria i podpodkategoria</li>
+                        </ul>
+                    </li>
+                    <li>Kliknij "Dodaj" aby zapisać nowy lek</li>
                 </ol>
 
-                <h3 className="text-xl font-semibold mt-6 mb-3">Edycja leku</h3>
-                <p className="mb-3">
+                <h3 className="text-xl font-bold mb-2">Edycja istniejącego leku</h3>
+
+                <p className="mb-4">
                     Aby edytować istniejący lek:
                 </p>
-                <ol className="list-decimal pl-5 mb-4 space-y-1">
-                    <li>Znajdź lek na liście</li>
-                    <li>Kliknij przycisk "Edytuj" w kolumnie akcji</li>
-                    <li>Zaktualizuj odpowiednie pola</li>
+
+                <ol className="list-decimal pl-8 mb-4">
+                    <li>Znajdź lek, który chcesz edytować</li>
+                    <li>Kliknij przycisk "Edytuj" obok tego leku</li>
+                    <li>Zmodyfikuj odpowiednie pola (dostępność pól zależy od uprawnień użytkownika)</li>
                     <li>Kliknij "Zapisz" aby zatwierdzić zmiany</li>
-                    <li>Czasem zmiany mogą dokonać się z lekkim opóźnieniem lub będą wymagać odświeżenia strony.</li>
+                </ol>
+
+                <h3 className="text-xl font-bold mb-2">Pola specjalne</h3>
+
+                <p className="mb-4">
+                    W widokach leków dostępne są specjalne pola i oznaczenia:
+                </p>
+
+                <ul className="list-disc pl-8 mb-4">
+                    <li><strong>Rozchód</strong> - ilość leku, która została wykorzystana</li>
+                    <li><strong>Aktualnie na statku</strong> - aktualna ilość leku dostępna na statku automatycznie
+                        wyliczna na podstawie ilości aktualnej oraz rozchodu
+                    </li>
+                    <li><strong>Status</strong> - informuje o stanie leku (ważny, przeterminowany itp.) automatycznie
+                        tworzone na podstawie aktualnej daty oraz ilości na statku
+                    </li>
+                    <li><strong>Ważny Status</strong> - informuje o istotnych uwagach dotyczących leku</li>
+                    <li><strong>Przechowywanie</strong> - informuje o specjalnych warunkach przechowywania</li>
+                    <li><strong>Kto zmienił</strong> - śledzenie ostatniego użytkownika, który modyfikował wpis</li>
+                </ul>
+
+                <h3 className="text-xl font-bold mb-2">Utylizacja leków</h3>
+
+                <p className="mb-4">
+                    Leki, które wymagają utylizacji, mogą być oznaczone i przeniesione do rejestru utylizacji:
+                </p>
+
+                <ol className="list-decimal pl-8 mb-4">
+                    <li>Znajdź lek, który chcesz utylizować</li>
+                    <li>Kliknij przycisk "Utylizacja" obok tego leku</li>
+                    <li>Wypełnij formularz utylizacji podając powód i ilość</li>
+                    <li>Kliknij "Potwierdź" aby zatwierdzić utylizację</li>
                 </ol>
             </div>
-
         ),
-        utilization:(
-            <div>
+
+        utilization: (
+            <div className="p-4">
                 <h2 className="text-2xl font-bold mb-4">Utylizacja</h2>
+
                 <p className="mb-4">
                     W tej sekcji znajdziesz informacje na temat utylizacji sprzętu oraz leków.
                 </p>
 
-                <h3 className="text-xl font-semibold mt-6 mb-3">Utylizacja sprzętu</h3>
-                <p className="mb-3">
-                    Aby utylizować sprzęt:
+                <h3 className="text-xl font-bold mb-2">Widok utylizacji</h3>
+
+                <p className="mb-4">
+                    Widok utylizacji zawiera listę przedmiotów przeznaczonych do utylizacji z podziałem na grupy:
                 </p>
-                <ol className="list-decimal pl-5 mb-4 space-y-1">
-                    <li>Przejdź do zakładki "Sprzęt"</li>
-                    <li>Znajdź sprzęt, który chcesz utylizować</li>
-                    <li>Kliknij przycisk "Utylizuj" w kolumnie akcji</li>
-                    <li>Podaj powód utylizacji</li>
-                    <li>Kliknij "Zatwierdź" aby utylizować sprzęt</li>
+
+                <ul className="list-disc pl-8 mb-4">
+                    <li>Grupa S - sprzęt medyczny</li>
+                    <li>Grupa L - leki</li>
+                    <li>Inne grupy - pozostałe materiały</li>
+                </ul>
+
+                <h3 className="text-xl font-bold mb-2">Dodawanie pozycji do utylizacji</h3>
+
+                <p className="mb-4">
+                    Możesz dodać pozycję do utylizacji na dwa sposoby:
+                </p>
+
+                <ul className="list-disc pl-8 mb-4">
+                    <li><strong>Bezpośrednio z widoku utylizacji</strong>:
+                        <ol className="list-decimal pl-8 mt-2">
+                            <li>Kliknij przycisk "Dodaj nową utylizację"</li>
+                            <li>Wypełnij formularz z informacjami o utylizowanym przedmiocie</li>
+                            <li>Kliknij "Dodaj" aby zapisać</li>
+                        </ol>
+                    </li>
+                    <li><strong>Z widoku leków lub sprzętu</strong>:
+                        <ol className="list-decimal pl-8 mt-2">
+                            <li>Znajdź przedmiot do utylizacji</li>
+                            <li>Kliknij przycisk "Utylizacja" obok tego przedmiotu</li>
+                            <li>Podaj powód i ilość do utylizacji</li>
+                            <li>Potwierdź operację</li>
+                        </ol>
+                    </li>
+                </ul>
+
+                <h3 className="text-xl font-bold mb-2">Edycja pozycji utylizacji</h3>
+
+                <p className="mb-4">
+                    Aby edytować istniejącą pozycję utylizacji:
+                </p>
+
+                <ol className="list-decimal pl-8 mb-4">
+                    <li>Znajdź pozycję, którą chcesz edytować</li>
+                    <li>Kliknij przycisk "Edytuj" obok tej pozycji</li>
+                    <li>Zmodyfikuj odpowiednie pola</li>
+                    <li>Kliknij "Zapisz" aby zatwierdzić zmiany</li>
                 </ol>
 
-                <h3 className="text-xl font-semibold mt-6 mb-3">Utylizacja leków</h3>
-                <p className="mb-3">
-                    Aby utylizować leki:
+                <h3 className="text-xl font-bold mb-2">Usuwanie pozycji utylizacji</h3>
+
+                <p className="mb-4">
+                    Aby usunąć pozycję z listy utylizacji:
                 </p>
-                <ol className="list-decimal pl-5 mb-4 space-y-1">
-                    <li>Przejdź do zakładki "Leki"</li>
-                    <li>Znajdź lek, który chcesz utylizować</li>
-                    <li>Kliknij przycisk "Utylizuj" w kolumnie akcji</li>
-                    <li>Podaj powód utylizacji</li>
-                    <li>Kliknij "Zatwierdź" aby utylizować lek</li>
+
+                <ol className="list-decimal pl-8 mb-4">
+                    <li>Znajdź pozycję, którą chcesz usunąć</li>
+                    <li>Kliknij przycisk "Usuń" obok tej pozycji</li>
+                    <li>Potwierdź chęć usunięcia pozycji</li>
+                </ol>
+
+                <h3 className="text-xl font-bold mb-2">Eksport do PDF</h3>
+
+                <p className="mb-4">
+                    Rejestr utylizacji można wyeksportować do pliku PDF:
+                </p>
+
+                <ol className="list-decimal pl-8 mb-4">
+                    <li>Kliknij przycisk "Eksportuj do PDF" w widoku utylizacji</li>
+                    <li>System wygeneruje plik PDF z aktualnym rejestrem utylizacji</li>
+                    <li>Zapisz lub wydrukuj wygenerowany plik</li>
                 </ol>
             </div>
         ),
+
+        database: (
+            <div className="p-4">
+                <h2 className="text-2xl font-bold mb-4">Import/Export Bazy danych</h2>
+
+                <p className="mb-4">
+                    System umożliwia import i eksport bazy danych, co pozwala na tworzenie kopii zapasowych oraz
+                    przenoszenie danych między instalacjami.
+                </p>
+
+                <h3 className="text-xl font-bold mb-2">Eksport bazy danych</h3>
+
+                <p className="mb-4">
+                    Aby wykonać eksport bazy danych:
+                </p>
+
+                <ol className="list-decimal pl-8 mb-4">
+                    <li>Kliknij przycisk "Eksportuj bazę danych" dostępny w widokach utylizacji lub innych (dla
+                        użytkowników z odpowiednimi uprawnieniami)
+                    </li>
+                    <li>System wygeneruje plik .db zawierający kopię bazy danych</li>
+                    <li>Plik zostanie automatycznie pobrany przez przeglądarkę</li>
+                    <li>Nazwa pliku zawiera datę eksportu dla łatwiejszej identyfikacji</li>
+                </ol>
+
+                <h3 className="text-xl font-bold mb-2">Import bazy danych</h3>
+
+                <p className="mb-4">
+                    Aby zaimportować bazę danych (wymaga uprawnień administratora):
+                </p>
+
+                <ol className="list-decimal pl-8 mb-4">
+                    <li>Kliknij przycisk "Importuj bazę danych"</li>
+                    <li>Wybierz plik .db lub .sqlite zawierający bazę danych do importu</li>
+                    <li>Potwierdź operację importu</li>
+                    <li>System zaimportuje dane i przeładuje stronę po zakończeniu</li>
+                </ol>
+
+                <h3 className="text-xl font-bold mb-2">Uwagi dotyczące importu i eksportu</h3>
+
+                <ul className="list-disc pl-8 mb-4">
+                    <li>Import bazy danych zastępuje wszystkie istniejące dane - przed importem upewnij się, że wykonano
+                        kopię zapasową
+                    </li>
+                    <li>Dostęp do funkcji importu i eksportu jest ograniczony tylko do użytkowników z odpowiednimi
+                        uprawnieniami
+                    </li>
+                    <li>Zaleca się regularne wykonywanie kopii zapasowych poprzez eksport bazy danych</li>
+                    <li>Eksportowany plik bazy danych zawiera kompletny stan systemu, w tym informacje o użytkownikach
+                    </li>
+                </ul>
+            </div>
+        ),
+
         pages: (
-            <div>
+            <div className="p-4">
                 <h2 className="text-2xl font-bold mb-4">Arkusze</h2>
+
                 <p className="mb-4">
                     W tej sekcji znajdziesz informacje na temat arkuszy dostępnych w systemie.
                 </p>
 
-                <h3 className="text-xl font-semibold mt-6 mb-3">Główny Spis Leków</h3>
-                <p className="mb-3">
+                <h3 className="text-xl font-bold mb-2">Główny Spis Leków</h3>
+
+                <p className="mb-4">
                     Arkusz "Główny Spis Leków" zawiera listę leków wraz ze stanem magazynowym oraz rozchodem.
                 </p>
-                <p className="mb-3">Niebieskie wypełnienie oznacza - przechowywany w lodówce</p>
-                <a href="/main/leki" key="leki" className="text-blue-600 font-bold">Kliknij by przejść do arkusza</a>
 
-                <h3 className="text-xl font-semibold mt-6 mb-3">Zestawienie Leków</h3>
-                <p className="mb-3">
-                    Arkusz "Zestawienie Leków" zawiera minimalistyczą listę z ilością produktów (aktualna/minimalna), datę ważności oraz status.
+                <p className="mb-4">
+                    <button className="mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Kliknij by
+                        przejść do arkusza
+                    </button>
                 </p>
-                <p className="mb-3">Niebieskie wypełnienie oznacza - przechowywany w lodówce</p>
-                <a href="/zestawienie-lekow" key="zestawienie-lekow" className="text-blue-600 font-bold">Kliknij by przejść do arkusza</a>
 
-                <h3 className="text-xl font-semibold mt-6 mb-3">Spis Minimum Leków</h3>
-                <p className="mb-3">
+                <h3 className="text-xl font-bold mb-2">Zestawienie Leków</h3>
+
+                <p className="mb-4">
+                    Arkusz "Zestawienie Leków" zawiera minimalistyczą listę z ilością produktów (aktualna/minimalna),
+                    datę ważności oraz status.
+                </p>
+
+                <p className="mb-4">
+                    <button className="mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Kliknij by
+                        przejść do arkusza
+                    </button>
+                </p>
+
+                <h3 className="text-xl font-bold mb-2">Spis Minimum Leków</h3>
+
+                <p className="mb-4">
                     Arkusz "Spis Minimum Leków" zawiera listę z informacjami odnośnie rodzaju opakowania danych leków.
                 </p>
-                <a href="/minimum-lekow" key="minimum-lekow" className="text-blue-600 font-bold">Kliknij by przejść do arkusza</a>
 
-                <h3 className="text-xl font-semibold mt-6 mb-3">Spis Minimum Sprzętu</h3>
-                <p className="mb-3">
-                    Arkusz "Spis Minimum Sprzętu" zawiera listę z informacjami o sprzęcie medycznym wraz z dodatkowymi informacjami.
-                </p>
-                <p>Zielone wypełnienie oznacza - wyposażenie torby ratownika</p>
-                <p>Czerwony tekst oznacza - sprzęt ze spisu podstawowego brak na satku</p>
-                <a href="/main/sprzet" key="main-sprzet" className="text-blue-600 font-bold">Kliknij by przejść do arkusza</a>
-
-
-                <h3 className="text-xl font-semibold mt-6 mb-3">Spis Sprzętu</h3>
-                <p className="mb-3">
-                    Arkusz "Spis Sprzętu" zawiera minimalistyczną listę z informacjami: nazwa, data ważności, ilość na statku.
+                <p className="mb-4">
+                    <button className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Kliknij by przejść do
+                        arkusza
+                    </button>
                 </p>
 
-                <a href="/zestawienie-sprzetu" key="zestawienie-sprzetu" className="text-blue-600 font-bold">Kliknij by przejść do arkusza</a>
+                <h3 className="text-xl font-bold mb-2">Spis Minimum Sprzętu</h3>
 
-                <h3 className="text-xl font-semibold mt-6 mb-3">Zgrany Spis Sprzętu</h3>
-                <p className="mb-3">
+                <p className="mb-4">
+                    Arkusz "Spis Minimum Sprzętu" zawiera listę z informacjami o sprzęcie medycznym wraz z dodatkowymi
+                    informacjami.
+                </p>
+
+                <p className="mb-4">
+                    <button className="mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Kliknij by
+                        przejść do arkusza
+                    </button>
+                </p>
+
+                <h3 className="text-xl font-bold mb-2">Spis Sprzętu</h3>
+
+                <p className="mb-4">
+                    Arkusz "Spis Sprzętu" zawiera minimalistyczną listę z informacjami: nazwa, data ważności, ilość na
+                    statku.
+                </p>
+
+                <p className="mb-4">
+                    <button className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Kliknij by przejść do
+                        arkusza
+                    </button>
+                </p>
+
+                <h3 className="text-xl font-bold mb-2">Zgrany Spis Sprzętu</h3>
+
+                <p className="mb-4">
                     Arkusz "Zgrany Spis Sprzętu" zawiera zgrany spis sprzętu.
                 </p>
-                <p className="mb-3">Czerwony tekst oznacza - sprzęt ze spisu podstawowego brak na statku</p>
-                <a href="/zgrany-sprzet" key="zgrany-sprzet" className="text-blue-600 font-bold">Kliknij by przejść do arkusza</a>
 
-                <h3 className="text-xl font-semibold mt-6 mb-3">Utylizacja</h3>
-                <p className="mb-3">
+                <p className="mb-4">
+                    <button className="mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Kliknij by
+                        przejść do arkusza
+                    </button>
+                </p>
+
+                <h3 className="text-xl font-bold mb-2">Utylizacja</h3>
+
+                <p className="mb-4">
                     Arkusz "Utylizacja" zawiera pozycje do utylizacji z podziałem na grupy.
                 </p>
-                <a href="/utylizacja" key="utylizacja" className="text-blue-600 font-bold">Kliknij by przejść do arkusza</a>
-            </div>
-        )
 
+                <p className="mb-4">
+                    <button className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Kliknij by przejść do
+                        arkusza
+                    </button>
+                </p>
+
+                <h3 className="text-xl font-bold mb-2">Panel Administracyjny</h3>
+
+                <p className="mb-4">
+                    Arkusz "Admin" umożliwia zarządzanie użytkownikami i ich uprawnieniami.
+                </p>
+
+                <p className="mb-4">
+                    <button className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Kliknij by przejść do
+                        arkusza
+                    </button>
+                </p>
+            </div>
+        ),
     };
 
     return (
-        <div className="container mx-auto p-4 max-w-7xl">
-            <h1 className="text-3xl font-bold mb-6 border-b pb-2">Dokumentacja systemu</h1>
-
-            <div className="flex flex-col md:flex-row">
-                {/* Sidebar navigation */}
-                <div className="w-full md:w-1/4 mb-6 md:mb-0 md:pr-6">
-                    <div className="sticky top-4 bg-white rounded-lg shadow p-4">
-                        <h2 className="font-bold text-xl mb-4 border-b pb-2">Spis treści</h2>
-                        <nav>
-                            <ul className="space-y-2">
-                                {sections.map(section => (
-                                    <li key={section.id}>
-                                        <button
-                                            onClick={() => setActiveSection(section.id)}
-                                            className={`w-full text-left px-3 py-2 rounded transition ${
-                                                activeSection === section.id
-                                                    ? 'bg-blue-100 text-blue-700 font-medium'
-                                                    : 'hover:bg-gray-100'
-                                            }`}
-                                        >
-                                            {section.title}
-                                        </button>
-                                    </li>
-                                ))}
-                            </ul>
-                        </nav>
-                    </div>
-                </div>
-
-                {/* Main content */}
-                <div className="w-full md:w-3/4">
-                    <div className="bg-white rounded-lg shadow p-6">
-                        {documentationContent[activeSection]}
-                    </div>
-                </div>
+        <div className="flex">
+            {/* Sidebar navigation */}
+            <div className="w-1/4 bg-gray-100 min-h-screen p-4">
+                <h2 className="text-xl font-bold mb-4">Dokumentacja</h2>
+                <ul>
+                    {sections.map(section => (
+                        <li key={section.id} className="mb-2">
+                            <button
+                                className={`w-full text-left p-2 rounded ${
+                                    activeSection === section.id
+                                        ? 'bg-blue-500 text-white'
+                                        : 'hover:bg-gray-200'
+                                }`}
+                                onClick={() => setActiveSection(section.id)}
+                            >
+                                {section.title}
+                            </button>
+                        </li>
+                    ))}
+                </ul>
             </div>
 
-            <footer className="mt-8 pt-4 border-t text-center text-gray-500">
-                <p>© {new Date().getFullYear()} Dokumentacja Nawigatora. Wszelkie prawa zastrzeżone.</p>
-                <p>Product developer Kamil Łacny</p>
-            </footer>
+            {/* Content area */}
+            <div className="w-3/4 p-4">
+                {documentationContent[activeSection]}
+            </div>
         </div>
     );
 };

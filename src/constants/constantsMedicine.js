@@ -33,6 +33,7 @@ const ConstantsMedicine = {
     StoringOptions: [
         {value: "freezer", label: "freezer"},
         {value: "szafka", label: "szafka"},
+        {value: "narkotyk", label: "narkotyk"},
     ],
 
     CategoryOptions: [
@@ -119,7 +120,7 @@ const ConstantsMedicine = {
                 {value: 7, label: "Oparzenia"},
 
             ],
-            30 :[
+            30: [
                 {value: 8, label: "Z antybiotykami i przeciwzapalne"},
                 {value: 9, label: "Znieczulające"},
                 {value: 10, label: "Zwężające źrenicę i obniżające ciśnienie śródgałkowe"},

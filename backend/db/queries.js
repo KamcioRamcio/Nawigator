@@ -4,14 +4,27 @@ import {getDb} from './index.js';
 // Medicine functions
 export async function addMedicine(medicineData) {
     const db = await getDb();
-    let medicineId = null;
-
-    await db.run('BEGIN TRANSACTION');
 
     try {
-        // Insert into Leki table
-        const lekiResult = await db.run(
-            'INSERT INTO Leki (nazwa_leku, ilosc_wstepna, opakowanie, data_waznosci, status_leku, ilosc_minimalna, przechowywanie, na_statku_spis_podstawowy) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        // Insert into consolidated Leki table
+        const result = await db.run(
+            `INSERT INTO Leki (
+        nazwa_leku, 
+        ilosc_wstepna, 
+        opakowanie, 
+        data_waznosci, 
+        status_leku, 
+        ilosc_minimalna, 
+        rozchod_ilosc,
+        status,
+        important_status,
+        kto_zmienil,
+        id_kategorii,
+        id_pod_kategorii,
+        id_pod_pod_kategorii,
+        przechowywanie,
+        na_statku_spis_podstawowy
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 medicineData.lek_nazwa,
                 medicineData.lek_ilosc,
@@ -19,62 +32,20 @@ export async function addMedicine(medicineData) {
                 medicineData.lek_data,
                 medicineData.lek_status,
                 medicineData.lek_ilosc_minimalna,
-                medicineData.lek_przechowywanie,
-                medicineData.lek_na_statku_spis_podstawowy,
+                medicineData.rozchod_ilosc || 0,
+                medicineData.stan_magazynowy_status || 'W porządku',
+                medicineData.stan_magazynowy_important_status || false,
+                medicineData.rozchod_kto_zmienil || null,
+                medicineData.lek_kategoria || null,
+                medicineData.lek_podkategoria || null,
+                medicineData.lek_podpodkategoria || null,
+                medicineData.lek_przechowywanie || null,
+                medicineData.lek_na_statku_spis_podstawowy || false
             ]
         );
 
-        medicineId = lekiResult.lastID;
-
-        // Insert into Rozchod table
-        await db.run(
-            'INSERT INTO Rozchod (id_leku, ilosc, data, kto_zmienil) VALUES (?, ?, ?, ?)',
-            [
-                medicineId,
-                medicineData.rozchod_ilosc,
-                medicineData.rozchod_data,
-                medicineData.rozchod_kto_zmienil
-            ]
-        );
-
-        // Insert into Stan_magazynowy table
-        await db.run(
-            'INSERT INTO Stan_magazynowy (id_leku, ilosc, data, status, important_status) VALUES (?, ?, ?, ?, ?)',
-            [
-                medicineId,
-                medicineData.stan_magazynowy_ilosc,
-                medicineData.stan_magazynowy_data,
-                medicineData.stan_magazynowy_status,
-                medicineData.stan_magazynowy_important_status
-            ]
-        );
-
-        // Insert category relations
-        if (medicineData.lek_kategoria) {
-            await db.run(
-                'INSERT INTO Leki_kategorie (id_leku, id_kategorii) VALUES (?, ?)',
-                [medicineId, medicineData.lek_kategoria]
-            );
-        }
-
-        if (medicineData.lek_podkategoria) {
-            await db.run(
-                'INSERT INTO Leki_pod_kategorie (id_leku, id_pod_kategorii) VALUES (?, ?)',
-                [medicineId, medicineData.lek_podkategoria]
-            );
-        }
-
-        if (medicineData.lek_podpodkategoria) {
-            await db.run(
-                'INSERT INTO Leki_pod_pod_kategorie (id_leku, id_pod_pod_kategorii) VALUES (?, ?)',
-                [medicineId, medicineData.lek_podpodkategoria]
-            );
-        }
-
-        await db.run('COMMIT');
-        return medicineId;
+        return result.lastID;
     } catch (error) {
-        await db.run('ROLLBACK');
         throw error;
     }
 }
@@ -82,11 +53,25 @@ export async function addMedicine(medicineData) {
 export async function updateMedicine(id, medicineData) {
     const db = await getDb();
 
-    await db.run('BEGIN TRANSACTION');
-
     try {
         await db.run(
-            'UPDATE Leki SET nazwa_leku = ?, ilosc_wstepna = ?, opakowanie = ?, data_waznosci = ?, status_leku = ?, ilosc_minimalna = ?, przechowywanie = ?, na_statku_spis_podstawowy = ? WHERE id = ?',
+            `UPDATE Leki SET 
+        nazwa_leku = ?, 
+        ilosc_wstepna = ?, 
+        opakowanie = ?, 
+        data_waznosci = ?, 
+        status_leku = ?, 
+        ilosc_minimalna = ?, 
+        rozchod_ilosc = ?,
+        status = ?,
+        important_status = ?,
+        kto_zmienil = ?,
+        id_kategorii = ?,
+        id_pod_kategorii = ?,
+        id_pod_pod_kategorii = ?,
+        przechowywanie = ?,
+        na_statku_spis_podstawowy = ?
+      WHERE id = ?`,
             [
                 medicineData.lek_nazwa,
                 medicineData.lek_ilosc,
@@ -94,198 +79,125 @@ export async function updateMedicine(id, medicineData) {
                 medicineData.lek_data,
                 medicineData.lek_status,
                 medicineData.lek_ilosc_minimalna,
-                medicineData.lek_przechowywanie,
-                medicineData.lek_na_statku_spis_podstawowy,
+                medicineData.rozchod_ilosc || 0,
+                medicineData.stan_magazynowy_status || 'W porządku',
+                medicineData.stan_magazynowy_important_status || false,
+                medicineData.rozchod_kto_zmienil || null,
+                medicineData.id_kategorii || null,
+                medicineData.id_pod_kategorii || null,
+                medicineData.id_pod_pod_kategorii || null,
+                medicineData.lek_przechowywanie || null,
+                medicineData.lek_na_statku_spis_podstawowy || false,
                 id
             ]
         );
 
-        await db.run(
-            'UPDATE Rozchod SET ilosc = ?, data = ?, kto_zmienil = ? WHERE id_leku = ?',
-            [
-                medicineData.rozchod_ilosc,
-                medicineData.rozchod_data,
-                medicineData.rozchod_kto_zmienil,
-                id
-            ]
-        );
-
-        await db.run(
-            'UPDATE Stan_magazynowy SET ilosc = ?, data = ?, status = ?, important_status = ? WHERE id_leku = ?',
-            [
-                medicineData.stan_magazynowy_ilosc,
-                medicineData.stan_magazynowy_data,
-                medicineData.stan_magazynowy_status,
-                medicineData.stan_magazynowy_important_status,
-                id
-            ]
-        );
-
-        if ('id_kategorii' in medicineData) {
-            const categoryExists = await db.get(
-                'SELECT id_kategorii FROM Leki_kategorie WHERE id_leku = ?',
-                [id]
-            );
-
-            if (medicineData.id_kategorii) {
-                if (categoryExists) {
-                    await db.run(
-                        'UPDATE Leki_kategorie SET id_kategorii = ? WHERE id_leku = ?',
-                        [medicineData.id_kategorii, id]
-                    );
-                } else {
-                    await db.run(
-                        'INSERT INTO Leki_kategorie (id_leku, id_kategorii) VALUES (?, ?)',
-                        [id, medicineData.id_kategorii]
-                    );
-                }
-            } else if (categoryExists) {
-                await db.run(
-                    'DELETE FROM Leki_kategorie WHERE id_leku = ?',
-                    [id]
-                );
-            }
-
-            if (!categoryExists || categoryExists.id_kategorii !== medicineData.id_kategorii) {
-                await db.run('DELETE FROM Leki_pod_kategorie WHERE id_leku = ?', [id]);
-                await db.run('DELETE FROM Leki_pod_pod_kategorie WHERE id_leku = ?', [id]);
-            }
-        }
-
-        if ('id_pod_kategorii' in medicineData) {
-            const subcategoryExists = await db.get(
-                'SELECT id_pod_kategorii FROM Leki_pod_kategorie WHERE id_leku = ?',
-                [id]
-            );
-
-            if (medicineData.id_pod_kategorii) {
-                if (subcategoryExists) {
-                    await db.run(
-                        'UPDATE Leki_pod_kategorie SET id_pod_kategorii = ? WHERE id_leku = ?',
-                        [medicineData.id_pod_kategorii, id]
-                    );
-                } else {
-                    await db.run(
-                        'INSERT INTO Leki_pod_kategorie (id_leku, id_pod_kategorii) VALUES (?, ?)',
-                        [id, medicineData.id_pod_kategorii]
-                    );
-                }
-            } else if (subcategoryExists) {
-                await db.run(
-                    'DELETE FROM Leki_pod_kategorie WHERE id_leku = ?',
-                    [id]
-                );
-            }
-
-            if (!subcategoryExists || subcategoryExists.id_pod_kategorii !== medicineData.id_pod_kategorii) {
-                await db.run('DELETE FROM Leki_pod_pod_kategorie WHERE id_leku = ?', [id]);
-            }
-        }
-
-        if ('id_pod_pod_kategorii' in medicineData) {
-            const subsubcategoryExists = await db.get(
-                'SELECT id_pod_pod_kategorii FROM Leki_pod_pod_kategorie WHERE id_leku = ?',
-                [id]
-            );
-
-            if (medicineData.id_pod_pod_kategorii) {
-                if (subsubcategoryExists) {
-                    await db.run(
-                        'UPDATE Leki_pod_pod_kategorie SET id_pod_pod_kategorii = ? WHERE id_leku = ?',
-                        [medicineData.id_pod_pod_kategorii, id]
-                    );
-                } else {
-                    await db.run(
-                        'INSERT INTO Leki_pod_pod_kategorie (id_leku, id_pod_pod_kategorii) VALUES (?, ?)',
-                        [id, medicineData.id_pod_pod_kategorii]
-                    );
-                }
-            } else if (subsubcategoryExists) {
-                await db.run(
-                    'DELETE FROM Leki_pod_pod_kategorie WHERE id_leku = ?',
-                    [id]
-                );
-            }
-        }
-
-        await db.run('COMMIT');
         return id;
     } catch (error) {
-        await db.run('ROLLBACK');
         throw error;
     }
-}
-
-
-export async function deleteMedicine(id) {
-    const db = await getDb();
-
-    await db.run('DELETE FROM Leki WHERE id = ?', [id]);
-
-    return {message: 'Medicine deleted successfully'};
 }
 
 export async function fetchMedicinesByCategory() {
     const db = await getDb();
 
     const sql = `
-        SELECT kategorie.id                     AS kategoria_id,
-               kategorie.nazwa                  AS kategoria_nazwa,
-               pod_kategorie.id                 AS podkategoria_id,
-               pod_kategorie.nazwa              AS podkategoria_nazwa,
-               pod_pod_kategorie.id             AS podpodkategoria_id,
-               pod_pod_kategorie.nazwa          AS podpodkategoria_nazwa,
-               leki.id                          AS lek_id,
-               leki.nazwa_leku                  AS lek_nazwa,
-               leki.ilosc_wstepna               AS lek_ilosc,
-               leki.opakowanie                  AS lek_opakowanie,
-               leki.data_waznosci               AS lek_data,
-               leki.status_leku                 AS lek_status,
-               leki.ilosc_minimalna             AS lek_ilosc_minimalna,
-               leki.przechowywanie              AS lek_przechowywanie,
-               leki.na_statku_spis_podstawowy   AS lek_na_statku_spis_podstawowy,
-               rozchod.ilosc                    AS rozchod_ilosc,
-               rozchod.data                     AS rozchod_data,
-               rozchod.kto_zmienil              AS rozchod_kto_zmienil,
-               stan_magazynowy.ilosc            AS stan_magazynowy_ilosc,
-               stan_magazynowy.data             AS stan_magazynowy_data,
-               stan_magazynowy.status           AS stan_magazynowy_status,
-               stan_magazynowy.important_status AS stan_magazynowy_important_status
-        FROM Leki leki
-                 LEFT JOIN Leki_kategorie leki_kategorie ON leki.id = leki_kategorie.id_leku
-                 LEFT JOIN Kategorie kategorie ON leki_kategorie.id_kategorii = kategorie.id
-                 LEFT JOIN Leki_pod_kategorie leki_pod_kategorie ON leki.id = leki_pod_kategorie.id_leku
-                 LEFT JOIN Pod_kategorie pod_kategorie ON leki_pod_kategorie.id_pod_kategorii = pod_kategorie.id
-                 LEFT JOIN Leki_pod_pod_kategorie leki_pod_pod_kategorie ON leki.id = leki_pod_pod_kategorie.id_leku
-                 LEFT JOIN Pod_pod_kategorie pod_pod_kategorie
-                           ON leki_pod_pod_kategorie.id_pod_pod_kategorii = pod_pod_kategorie.id
-                 LEFT JOIN Rozchod rozchod ON leki.id = rozchod.id_leku
-                 LEFT JOIN Stan_magazynowy stan_magazynowy ON leki.id = stan_magazynowy.id_leku
-        ORDER BY kategoria_id, podkategoria_id, podpodkategoria_id, lek_id
-    `;
+    SELECT
+      k.id AS kategoria_id,
+      k.nazwa AS kategoria_nazwa,
+      pk.id AS podkategoria_id,
+      pk.nazwa AS podkategoria_nazwa,
+      ppk.id AS podpodkategoria_id,
+      ppk.nazwa AS podpodkategoria_nazwa,
+      l.id AS lek_id,
+      l.nazwa_leku AS lek_nazwa,
+      l.ilosc_wstepna AS lek_ilosc,
+      l.opakowanie AS lek_opakowanie,
+      l.data_waznosci AS lek_data,
+      l.status_leku AS lek_status,
+      l.ilosc_minimalna AS lek_ilosc_minimalna,
+      l.przechowywanie AS lek_przechowywanie,
+      l.na_statku_spis_podstawowy AS lek_na_statku_spis_podstawowy,
+      l.rozchod_ilosc AS rozchod_ilosc,
+      l.kto_zmienil AS rozchod_kto_zmienil,
+      (l.ilosc_wstepna - l.rozchod_ilosc) AS stan_magazynowy_ilosc,
+      l.status AS stan_magazynowy_status,
+      l.important_status AS stan_magazynowy_important_status
+    FROM Leki l
+    LEFT JOIN Kategorie k ON l.id_kategorii = k.id
+    LEFT JOIN Pod_kategorie pk ON l.id_pod_kategorii = pk.id
+    LEFT JOIN Pod_pod_kategorie ppk ON l.id_pod_pod_kategorii = ppk.id
+    ORDER BY k.id, pk.id, ppk.id, l.id
+  `;
 
     const rows = await db.all(sql);
 
-    const groupedData = rows.reduce((result, row) => {
-        const kategoriaNazwa = row.kategoria_nazwa || 'Uncategorized';
-        const podkategoriaNazwa = row.podkategoria_nazwa || 'null';
-        const podpodkategoriaNazwa = row.podpodkategoria_nazwa || 'null';
+    // First, collect all categories, subcategories, and subsubcategories with their IDs
+    const categories = {};
+    const subcategories = {};
+    const subsubcategories = {};
 
-        if (!result[kategoriaNazwa]) {
-            result[kategoriaNazwa] = {};
-        }
-        if (!result[kategoriaNazwa][podkategoriaNazwa]) {
-            result[kategoriaNazwa][podkategoriaNazwa] = {};
-        }
-        if (!result[kategoriaNazwa][podkategoriaNazwa][podpodkategoriaNazwa]) {
-            result[kategoriaNazwa][podkategoriaNazwa][podpodkategoriaNazwa] = [];
+    rows.forEach(row => {
+        if (row.kategoria_id && !categories[row.kategoria_id]) {
+            categories[row.kategoria_id] = row.kategoria_nazwa || 'Uncategorized';
         }
 
-        const isLekAlreadyAdded = result[kategoriaNazwa][podkategoriaNazwa][podpodkategoriaNazwa]
-            .some(lek => lek.lek_id === row.lek_id);
+        if (row.podkategoria_id) {
+            const key = `${row.kategoria_id}-${row.podkategoria_id}`;
+            if (!subcategories[key]) {
+                subcategories[key] = row.podkategoria_nazwa || 'Uncategorized';
+            }
+        }
 
-        if (!isLekAlreadyAdded && row.lek_id) {
-            result[kategoriaNazwa][podkategoriaNazwa][podpodkategoriaNazwa].push({
+        if (row.podpodkategoria_id) {
+            const key = `${row.kategoria_id}-${row.podkategoria_id}-${row.podpodkategoria_id}`;
+            if (!subsubcategories[key]) {
+                subsubcategories[key] = row.podpodkategoria_nazwa || 'Uncategorized';
+            }
+        }
+    });
+
+    // Create an ordered structure
+    const orderedResult = {};
+
+    // Sort categories by ID and create structure
+    Object.keys(categories)
+        .sort((a, b) => parseInt(a) - parseInt(b))
+        .forEach(catId => {
+            const catName = categories[catId];
+            orderedResult[catName] = {};
+        });
+
+    // Initialize subcategories and subsubcategories
+    rows.forEach(row => {
+        const categoryName = row.kategoria_nazwa || 'Uncategorized';
+        const subcategoryName = row.podkategoria_nazwa || 'null';
+        const subsubcategoryName = row.podpodkategoria_nazwa || 'null';
+
+        // Ensure category exists
+        if (!orderedResult[categoryName]) {
+            orderedResult[categoryName] = {};
+        }
+
+        // Ensure subcategory exists
+        if (!orderedResult[categoryName][subcategoryName]) {
+            orderedResult[categoryName][subcategoryName] = {};
+        }
+
+        // Ensure subsubcategory exists with an empty array
+        if (!orderedResult[categoryName][subcategoryName][subsubcategoryName]) {
+            orderedResult[categoryName][subcategoryName][subsubcategoryName] = [];
+        }
+    });
+
+    // Now populate the structure with medicines
+    rows.forEach(row => {
+        const categoryName = row.kategoria_nazwa || 'Uncategorized';
+        const subcategoryName = row.podkategoria_nazwa || 'null';
+        const subsubcategoryName = row.podpodkategoria_nazwa || 'null';
+
+        if (row.lek_id) {
+            const medicine = {
                 lek_id: row.lek_id,
                 lek_nazwa: row.lek_nazwa,
                 lek_ilosc: row.lek_ilosc,
@@ -294,36 +206,85 @@ export async function fetchMedicinesByCategory() {
                 lek_status: row.lek_status,
                 lek_ilosc_minimalna: row.lek_ilosc_minimalna,
                 lek_przechowywanie: row.lek_przechowywanie,
-                lek_na_statku_spis_podstawowy : row.lek_na_statku_spis_podstawowy,
+                lek_na_statku_spis_podstawowy: row.lek_na_statku_spis_podstawowy,
                 rozchod_ilosc: row.rozchod_ilosc,
-                rozchod_data: row.rozchod_data,
                 rozchod_kto_zmienil: row.rozchod_kto_zmienil,
                 stan_magazynowy_ilosc: row.stan_magazynowy_ilosc,
-                stan_magazynowy_data: row.stan_magazynowy_data,
                 stan_magazynowy_status: row.stan_magazynowy_status,
-                stan_magazynowy_important_status: row.stan_magazynowy_important_status
-            });
+                stan_magazynowy_important_status: row.stan_magazynowy_important_status,
+                id_kategorii: row.kategoria_id,
+                id_pod_kategorii: row.podkategoria_id,
+                id_pod_pod_kategorii: row.podpodkategoria_id
+            };
+
+            // Check if medicine is already added
+            const alreadyExists = orderedResult[categoryName][subcategoryName][subsubcategoryName]
+                .some(lek => lek.lek_id === row.lek_id);
+
+            if (!alreadyExists) {
+                orderedResult[categoryName][subcategoryName][subsubcategoryName].push(medicine);
+            }
         }
+    });
 
-        return result;
-    }, {});
+    return orderedResult;
+}
 
-    return groupedData;
+export async function fetchMedicinesByDate(date) {
+    const db = await getDb();
+
+    const sql = `
+        SELECT
+            l.id,
+            l.nazwa_leku,
+            l.data_waznosci,
+            l.ilosc_minimalna,
+            (l.ilosc_wstepna - l.rozchod_ilosc) AS stan_magazynowy_ilosc,
+            l.status_leku as current_status,
+            CASE 
+                WHEN date(l.data_waznosci) < date(?) THEN 'Przeterminowane'
+                WHEN date(l.data_waznosci) <= date(?, '+1 months') THEN 'Ważność 1 miesiąc'
+                WHEN date(l.data_waznosci) <= date(? , '+3 months') THEN 'Ważność 3 miesiące'
+                ELSE 'Ważny'
+            END AS projected_status
+        FROM Leki l
+        WHERE projected_status != 'Ważny' AND projected_status != current_status
+        ORDER BY l.data_waznosci ASC
+    `;
+    return await db.all(sql, [date, date, date]);
+}
+
+export async function deleteMedicine(id) {
+    const db = await getDb();
+
+    try {
+        await db.run('DELETE FROM Leki WHERE id = ?', [id]);
+        return {message: 'Medicine deleted successfully'};
+    } catch (error) {
+        throw error;
+    }
 }
 
 // Equipment functions
 export async function addEquipment(equipmentData) {
     const db = await getDb();
-    let equipmentId = null;
-
-    await db.run('BEGIN TRANSACTION');
 
     try {
-        // Insert into Sprzet table
-        const sprzetResult = await db.run(
-            `INSERT INTO Sprzet (nazwa, ilosc_wymagana, ilosc_aktualna, data_waznosci, status, termin, ilosc_termin,
-                                 kto_zmienil, na_statku, torba_ratownika)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        const result = await db.run(
+            `INSERT INTO Sprzet (
+                nazwa,
+                ilosc_wymagana,
+                ilosc_aktualna,
+                data_waznosci,
+                status,
+                termin,
+                ilosc_termin,
+                kto_zmienil,
+                id_kategorii,
+                id_pod_kategorii,
+                na_statku,
+                torba_ratownika
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 equipmentData.eq_nazwa,
                 equipmentData.eq_ilosc_wymagana,
@@ -332,127 +293,44 @@ export async function addEquipment(equipmentData) {
                 equipmentData.eq_status,
                 equipmentData.eq_termin,
                 equipmentData.eq_ilosc_termin,
-                equipmentData.eq_kto_zmienil,
-                equipmentData.eq_na_statku,
-                equipmentData.eq_torba_ratownika
+                equipmentData.kto_zmienil || null,
+                equipmentData.eq_kategoria || null,
+                equipmentData.eq_podkategoria || null,
+                equipmentData.eq_na_statku === "true" ? 1 : 0,
+                equipmentData.eq_torba_ratownika === "true" ? 1 : 0
             ]
         );
 
-        equipmentId = sprzetResult.lastID;
-
-        // Insert category relations
-        if (equipmentData.eq_kategoria) {
-            await db.run(
-                'INSERT INTO Sprzet_kategorie (id_sprzet, id_kategorii) VALUES (?, ?)',
-                [equipmentId, equipmentData.eq_kategoria]
-            );
-        }
-
-        if (equipmentData.eq_podkategoria) {
-            await db.run(
-                'INSERT INTO Sprzet_pod_kategorie (id_sprzet, id_pod_kategorii) VALUES (?, ?)',
-                [equipmentId, equipmentData.eq_podkategoria]
-            );
-        }
-
-        await db.run('COMMIT');
-        return equipmentId;
+        return result.lastID;
     } catch (error) {
-        await db.run('ROLLBACK');
         throw error;
     }
 }
-
-export async function updateEquipment(id, equipmentData) {
-    const db = await getDb();
-
-    await db.run('BEGIN TRANSACTION');
-
-    try {
-        // Update Sprzet table
-        await db.run(
-            `UPDATE Sprzet
-             SET nazwa           = ?,
-                 ilosc_wymagana  = ?,
-                 ilosc_aktualna  = ?,
-                 data_waznosci   = ?,
-                 status = ?,
-                 termin = ?,
-                 ilosc_termin = ?,
-                 kto_zmienil = ?,
-                 na_statku = ?,
-                 torba_ratownika = ?
-             WHERE id = ?`,
-            [
-                equipmentData.sprzet_nazwa,
-                equipmentData.sprzet_ilosc_wymagana,
-                equipmentData.sprzet_ilosc_aktualna,
-                equipmentData.sprzet_data_waznosci,
-                equipmentData.sprzet_status,
-                equipmentData.sprzet_termin,
-                equipmentData.sprzet_ilosc_termin,
-                equipmentData.sprzet_kto_zmienil,
-                equipmentData.sprzet_na_statku,
-                equipmentData.sprzet_torba_ratownika,
-                id
-            ]
-        );
-
-        if (equipmentData.id_kategorii) {
-            await db.run(
-                'UPDATE Sprzet_kategorie SET id_kategorii = ? WHERE id_sprzet = ?',
-                [equipmentData.id_kategorii, id]
-            );
-        }
-
-        if (equipmentData.id_pod_kategorii) {
-            await db.run(
-                'UPDATE Sprzet_pod_kategorie SET id_pod_kategorii = ? WHERE id_sprzet = ?',
-                [equipmentData.id_pod_kategorii, id]
-            );
-        }
-
-        await db.run('COMMIT');
-        return id;
-    } catch (error) {
-        await db.run('ROLLBACK');
-        throw error;
-    }
-}
-
-export async function deleteEquipment(id) {
-    const db = await getDb();
-
-    await db.run('DELETE FROM Sprzet WHERE id = ?', [id]);
-
-    return {message: 'Equipment deleted successfully'};
-}
-
 export async function fetchEquipmentByCategory() {
     const db = await getDb();
 
     const sql = `
-        SELECT kategorie_sprzet.id        AS kategoria_sprzet_id,
-               kategorie_sprzet.nazwa     AS kategoria_sprzet_nazwa,
-               pod_kategorie_sprzet.id    AS podkategoria_sprzet_id,
-               pod_kategorie_sprzet.nazwa AS podkategoria_sprzet_nazwa,
-               sprzet.id                  AS sprzet_id,
-               sprzet.nazwa               AS sprzet_nazwa,
-               sprzet.ilosc_wymagana      AS sprzet_ilosc_wymagana,
-               sprzet.ilosc_aktualna      AS sprzet_ilosc_aktualna,
-               sprzet.data_waznosci       AS sprzet_data_waznosci,
-               sprzet.status              AS sprzet_status,
-               sprzet.termin              AS sprzet_termin,
-               sprzet.ilosc_termin        AS sprzet_ilosc_termin,
-               sprzet.kto_zmienil         AS sprzet_kto_zmienil,
-               sprzet.na_statku           AS sprzet_na_statku,
-               sprzet.torba_ratownika     AS sprzet_torba_ratownika
-        FROM Sprzet sprzet
-                 LEFT JOIN Sprzet_kategorie sprzet_kategorie ON sprzet.id = sprzet_kategorie.id_sprzet
-                 LEFT JOIN Kategorie_sprzet kategorie_sprzet ON sprzet_kategorie.id_kategorii = kategorie_sprzet.id
-                 LEFT JOIN Sprzet_pod_kategorie sprzet_pod_kategorie ON sprzet.id = sprzet_pod_kategorie.id_sprzet
-                 LEFT JOIN Pod_kategorie_sprzet pod_kategorie_sprzet
-                           ON sprzet_pod_kategorie.id_pod_kategorii = pod_kategorie_sprzet.id
+        SELECT
+            ks.id AS kategoria_sprzet_id,
+            ks.nazwa AS kategoria_sprzet_nazwa,
+            pks.id AS podkategoria_sprzet_id,
+            pks.nazwa AS podkategoria_sprzet_nazwa,
+            s.id AS sprzet_id,
+            s.nazwa AS sprzet_nazwa,
+            s.ilosc_wymagana AS sprzet_ilosc_wymagana,
+            s.ilosc_aktualna AS sprzet_ilosc_aktualna,
+            s.data_waznosci AS sprzet_data_waznosci,
+            s.status AS sprzet_status,
+            s.termin AS sprzet_termin,
+            s.ilosc_termin AS sprzet_ilosc_termin,
+            s.kto_zmienil AS sprzet_kto_zmienil,
+            s.na_statku AS sprzet_na_statku,
+            s.torba_ratownika AS sprzet_torba_ratownika,
+            s.id_kategorii,
+            s.id_pod_kategorii
+        FROM Sprzet s
+                 LEFT JOIN Kategorie_sprzet ks ON s.id_kategorii = ks.id
+                 LEFT JOIN Pod_kategorie_sprzet pks ON s.id_pod_kategorii = pks.id
         ORDER BY kategoria_sprzet_id, podkategoria_sprzet_id, sprzet_id
     `;
 
@@ -465,6 +343,7 @@ export async function fetchEquipmentByCategory() {
         if (!result[kategoriaNazwa]) {
             result[kategoriaNazwa] = {};
         }
+
         if (!result[kategoriaNazwa][podkategoriaNazwa]) {
             result[kategoriaNazwa][podkategoriaNazwa] = [];
         }
@@ -484,7 +363,9 @@ export async function fetchEquipmentByCategory() {
                 sprzet_ilosc_termin: row.sprzet_ilosc_termin,
                 sprzet_kto_zmienil: row.sprzet_kto_zmienil,
                 sprzet_na_statku: row.sprzet_na_statku,
-                sprzet_torba_ratownika: row.sprzet_torba_ratownika
+                sprzet_torba_ratownika: row.sprzet_torba_ratownika,
+                id_kategorii: row.id_kategorii,
+                id_pod_kategorii: row.id_pod_kategorii
             });
         }
 
@@ -492,6 +373,94 @@ export async function fetchEquipmentByCategory() {
     }, {});
 
     return groupedData;
+}
+
+export async function fetchEquipmentsByDate(date) {
+    const db = await getDb();
+
+    const sql = `
+        SELECT
+            e.id,
+            e.nazwa,
+            e.data_waznosci,
+            e.ilosc_wymagana,
+            e.ilosc_aktualna,
+            e.termin as current_termin,
+            CASE
+                WHEN date(e.data_waznosci) < date(?) THEN 'Przeterminowane'
+                WHEN date(e.data_waznosci) <= date(?, '+1 months') THEN 'Ważność 1 miesiąc'
+                WHEN date(e.data_waznosci) <= date(?, '+3 months') THEN 'Ważność 3 miesiące'
+                ELSE 'Ważny'
+            END AS projected_termin
+            FROM Sprzet e
+            WHERE projected_termin != 'Ważny' AND projected_termin != current_termin
+            ORDER BY e.data_waznosci ASC
+    `;
+    return await  db.all(sql, [date, date, date]);
+} 
+export async function updateEquipment(id, equipmentData) {
+    const db = await getDb();
+
+    try {
+        // First get the current data
+        const currentEquipment = await db.get('SELECT * FROM Sprzet WHERE id = ?', [id]);
+
+        // Handle boolean values - preserve existing ones unless explicitly changed
+        const na_statku = equipmentData.sprzet_na_statku !== undefined
+            ? (equipmentData.sprzet_na_statku === true || equipmentData.sprzet_na_statku === "true" ? 1 : 0)
+            : currentEquipment.na_statku;
+
+        const torba_ratownika = equipmentData.sprzet_torba_ratownika !== undefined
+            ? (equipmentData.sprzet_torba_ratownika === true || equipmentData.sprzet_torba_ratownika === "true" ? 1 : 0)
+            : currentEquipment.torba_ratownika;
+
+        await db.run(
+            `UPDATE Sprzet SET
+                               nazwa = ?,
+                               ilosc_wymagana = ?,
+                               ilosc_aktualna = ?,
+                               data_waznosci = ?,
+                               status = ?,
+                               termin = ?,
+                               ilosc_termin = ?,
+                               kto_zmienil = ?,
+                               id_kategorii = ?,
+                               id_pod_kategorii = ?,
+                               na_statku = ?,
+                               torba_ratownika = ?
+             WHERE id = ?`,
+            [
+                equipmentData.sprzet_nazwa || currentEquipment.nazwa,
+                equipmentData.sprzet_ilosc_wymagana || currentEquipment.ilosc_wymagana,
+                equipmentData.sprzet_ilosc_aktualna || currentEquipment.ilosc_aktualna,
+                equipmentData.sprzet_data_waznosci || currentEquipment.data_waznosci,
+                equipmentData.sprzet_status || currentEquipment.status,
+                equipmentData.sprzet_termin || currentEquipment.termin,
+                equipmentData.sprzet_ilosc_termin || currentEquipment.ilosc_termin,
+                equipmentData.sprzet_kto_zmienil || currentEquipment.kto_zmienil,
+                equipmentData.id_kategorii !== undefined ? equipmentData.id_kategorii : currentEquipment.id_kategorii,
+                equipmentData.id_pod_kategorii !== undefined ? equipmentData.id_pod_kategorii : currentEquipment.id_pod_kategorii,
+                na_statku,
+                torba_ratownika,
+                id
+            ]
+        );
+
+        return id;
+    } catch (error) {
+        throw error;
+    }
+}
+
+export async function deleteEquipment(id) {
+    const db = await getDb();
+
+    try {
+        await db.run('DELETE FROM Sprzet WHERE id = ?', [id]);
+        return {message: 'Equipment deleted successfully'};
+    } catch (error) {
+        throw error;
+    }
 }
 
 // Disposal (Utylizacja) functions
@@ -761,4 +730,50 @@ export async function fetchOrganizedEquipmentByCategory() {
     }, {});
 
     return groupedData;
+}
+
+// Add these functions to db/queries.js
+
+export async function fetchUsers() {
+    const db = await getDb();
+    return await db.all('SELECT * FROM users');
+}
+
+export async function addUser(userData) {
+    const db = await getDb();
+    const { username, password, position } = userData;
+
+    const result = await db.run(
+        'INSERT INTO users (username, password, position) VALUES (?, ?, ?)',
+        [username, password || null, position]
+    );
+
+    return result.lastID;
+}
+
+export async function updateUser(id, userData) {
+    const db = await getDb();
+    const { username, password, position } = userData;
+
+    // Check if we're updating the password
+    if (password !== undefined) {
+        await db.run(
+            'UPDATE users SET username = ?, password = ?, position = ? WHERE id = ?',
+            [username, password, position, id]
+        );
+    } else {
+        // If not updating password, only update other fields
+        await db.run(
+            'UPDATE users SET username = ?, position = ? WHERE id = ?',
+            [username, position, id]
+        );
+    }
+
+    return id;
+}
+
+export async function deleteUser(id) {
+    const db = await getDb();
+    await db.run('DELETE FROM users WHERE id = ?', [id]);
+    return { message: 'User deleted successfully' };
 }

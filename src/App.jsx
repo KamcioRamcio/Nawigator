@@ -9,8 +9,11 @@ import MinMedicine from "./pages/Med/MinMedicine.jsx";
 import Utilization from "./pages/Other/Utilization.jsx";
 import Documentation from "./pages/Other/Documentation.jsx";
 import OrganizedEquipment from "./pages/Eq/OrganizedEquipment.jsx";
-
+import Admin from "./pages/Other/Admin.jsx";
+import ProtectedAdminRoute from "./components/ProtectedAdminRoute.jsx";
 import './index.css';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 
 function App(){
@@ -19,6 +22,9 @@ function App(){
             <BrowserRouter>
                 <Routes>
                     <Route path="/" element={<Login />} />
+                    <Route element={<ProtectedAdminRoute />}>
+                        <Route path="/admin" element={<Admin />} />
+                    </Route>
                     <Route path="/Main/Leki" element={<MainMedicineList />} />
                     <Route path="/Main/Sprzet" element={<MainEquipmentList/>}/>
                     <Route path="/zestawienie-lekow" element={<MedicineList/>}></Route>
@@ -30,6 +36,7 @@ function App(){
                     <Route path="*" element={<Navigate to="/" />} />
                 </Routes>
             </BrowserRouter>
+            <ToastContainer/>
         </div>
     );
 }
