@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, {useState} from 'react';
 import axios from 'axios';
 import apiUrl from "../constants/api.js";
 
 
-const UtilizationEquipmentModal = ({ isOpen, onClose, equipment, onUtilizationComplete }) => {
+const UtilizationEquipmentModal = ({isOpen, onClose, equipment, onUtilizationComplete}) => {
     const [formData, setFormData] = useState({
         grupa: '',
         ilosc_nominalna: '',
@@ -15,7 +15,7 @@ const UtilizationEquipmentModal = ({ isOpen, onClose, equipment, onUtilizationCo
     if (!isOpen) return null;
 
     const handleChange = (e) => {
-        const { name, value } = e.target;
+        const {name, value} = e.target;
         setFormData(prevState => ({
             ...prevState,
             [name]: value
@@ -43,7 +43,6 @@ const UtilizationEquipmentModal = ({ isOpen, onClose, equipment, onUtilizationCo
             await axios.post(apiUrl + 'utylizacja/from-medicine', utilizationData);
 
             // Delete the original equipment record
-            await axios.delete(apiUrl + `sprzet/delete/${equipment.sprzet_id}`);
 
             setIsSubmitting(false);
             onClose();

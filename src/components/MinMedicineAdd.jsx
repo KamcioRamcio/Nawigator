@@ -1,6 +1,6 @@
-import React, { useEffect } from "react";
+import React, {useEffect} from "react";
 
-function MinMedicineAdd({ isOpen, onClose, children}) {
+function MinMedicineAdd({isOpen, onClose, children}) {
     useEffect(() => {
         const handleEscape = (e) => {
             if (e.key === 'Escape') onClose();
@@ -30,7 +30,8 @@ function MinMedicineAdd({ isOpen, onClose, children}) {
             {/* Modal Container */}
             <div className="fixed inset-0 overflow-y-auto">
                 <div className="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
-                    <div className="relative transform rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-3xl">
+                    <div
+                        className="relative transform rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-3xl">
                         {/* Modal Header */}
                         <div className="border-b border-gray-200 px-6 py-4 flex items-center justify-between">
                             <h2 className="text-xl font-semibold text-gray-900">

@@ -24,3 +24,4 @@ export async function closeDb() {
         console.log('Database connection close');
     }
 }
+

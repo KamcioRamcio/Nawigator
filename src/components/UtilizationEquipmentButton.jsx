@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, {useState} from 'react';
 import UtilizationEquipmentModal from './UtilizationEquipmentModal';
 
-const UtilizationEquipmentButton = ({ equipment, onUtilizationComplete }) => {
+const UtilizationEquipmentButton = ({equipment, onUtilizationComplete}) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     const handleUtilize = () => {

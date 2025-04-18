@@ -19,10 +19,14 @@
     "@vitejs/plugin-react": "^4.3.3",
     "axios": "^1.8.4",
     "cors": "^2.8.5",
+    "jspdf": "^3.0.1",
+    "jspdf-autotable": "^5.0.2",
+    "jspdf-font": "^1.0.7",
     "prop-types": "^15.8.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.28.0",
+    "react-toastify": "^11.0.5",
     "sqlite3": "^5.1.7"
   }
 }

@@ -6,6 +6,7 @@ import {
     updateMedicine,
     deleteMedicine,
     fetchMedicinesByCategory,
+    fetchMedicinesByDate,
     addMinMedicine,
     updateMinMedicine,
     deleteMinMedicine,
@@ -23,6 +24,17 @@ router.get('/leki-kategorie', async (req, res, next) => {
         next(error);
     }
 });
+
+router.get('/leki/status-by-date/:date', async (req, res, next) => {
+    try {
+        const { date } = req.params;
+        const medicines = await fetchMedicinesByDate(date);
+        res.json(medicines);
+    } catch (error) {
+        console.error('Error fetching medicines by date:', error);
+        res.status(500).json({ error: error.message });
+    }
+})
 
 router.post('/leki-all', [
     body('lek_nazwa').notEmpty().withMessage('Nazwa leku jest wymagana'),

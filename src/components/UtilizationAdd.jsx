@@ -1,7 +1,7 @@
-import React, { useEffect } from "react";
+import React, {useEffect} from "react";
 
-function UtilizationAdd({ isOpen, onClose, children}) {
-     useEffect(() => {
+function UtilizationAdd({isOpen, onClose, children}) {
+    useEffect(() => {
         const handleEscape = (e) => {
             if (e.key === 'Escape') onClose();
         };
@@ -22,7 +22,7 @@ function UtilizationAdd({ isOpen, onClose, children}) {
     return (
         <div className="fixed inset-0 z-50" role="dialog" aria-modal="true">
             <div className="fixed inset-0 bg-gray-900 bg-opacity-75 transation-opacity background-blur-sm"
-                onClick={onClose}
+                 onClick={onClose}
             />
             <div className="fixed inset-0 overflow-y-auto">
                 <div className="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
@@ -66,4 +66,5 @@ function UtilizationAdd({ isOpen, onClose, children}) {
         </div>
     );
 }
+
 export default UtilizationAdd;
