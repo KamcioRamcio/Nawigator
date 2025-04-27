@@ -337,7 +337,7 @@ function MinMedicine() {
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Pakowanie
+                                    Jednostki
                                 </label>
                                 <select
                                     name="pakowanie"
@@ -345,7 +345,7 @@ function MinMedicine() {
                                     onChange={handleInputMedicine}
                                     className="border rounded-md p-2 w-full"
                                 >
-                                    <option value="">Wybierz opakowanie</option>
+                                    <option value="">Wybierz jednostki</option>
                                     {ConstantsMedicine.BoxTypeOptions.map(option => (
                                         <option key={option.value} value={option.value}>
                                             {option.label}
@@ -484,7 +484,7 @@ function MinMedicine() {
                     <thead className="text-left sticky top-[182px] z-10">
                     <tr className="bg-gray-200 text-gray-700 uppercase text-sm tracking-wide text-left">
                         <th className="px-4 py-3">Nazwa Leku</th>
-                        <th className="px-4 py-3">Pakowanie</th>
+                        <th className="px-4 py-3">Jednostki</th>
                         <th className="px-4 py-3">W Opakowaniu</th>
                         <th className="px-4 py-3 w-20">Akcje</th>
                     </tr>

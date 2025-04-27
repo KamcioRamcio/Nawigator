@@ -458,8 +458,8 @@ function MainEquipmentList() {
                         <th className="px-2 py-4">Ilość Aktualna</th>
                         <th className="px-2 py-4">Data Ważności</th>
                         <th className="px-2 py-4">Uwagi</th>
-                        <th className="px-2 py-4 text-red-600">Termin</th>
-                        <th className="px-2 py-4 text-red-600">Ilość/Termin</th>
+                        <th className="px-2 py-4 ">Termin</th>
+                        <th className="px-2 py-4 ">Ilość/Termin</th>
                         <th className="px-2 py-4">Kto Zmienił</th>
                         <th className="px-2 py-4 w-20">Akcje</th>
                     </tr>

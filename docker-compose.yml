@@ -5,9 +5,11 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      platforms:
+        - "linux/amd64"
     image: weatherme/navigator-backend:latest
     ports:
-      - "3000:3000"
+      - "3333:3333"
     networks:
       - navigator
 
@@ -17,6 +19,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      platforms:
+        - "linux/amd64"
     image: weatherme/navigator-frontend:latest
     ports:
       - "8888:8888"
