@@ -306,7 +306,7 @@ export async function addExpiryStatusTrigger() {
     const db = await getDb();
 
     await db.exec(`
-        -- Trigger to automatically update status_leku based on expiration date
+        -- Update medicine status trigger for changes
         DROP TRIGGER IF EXISTS update_medicine_status_on_change;
         CREATE TRIGGER IF NOT EXISTS update_medicine_status_on_change
         AFTER UPDATE OF data_waznosci ON Leki
@@ -314,57 +314,60 @@ export async function addExpiryStatusTrigger() {
         BEGIN
             UPDATE Leki
             SET status_leku = CASE
-                WHEN date(NEW.data_waznosci) < date('now') THEN 'Przeterminowane'
-                WHEN date(NEW.data_waznosci) <= date('now', '+1 month') THEN 'Ważność 1 miesiąc'
-                WHEN date(NEW.data_waznosci) <= date('now', '+3 month') THEN 'Ważność 3 miesiące'
+                WHEN datetime(substr(NEW.data_waznosci, 7, 4) || '-' || substr(NEW.data_waznosci, 4, 2) || '-' || substr(NEW.data_waznosci, 1, 2)) < datetime('now') THEN 'Przeterminowane'
+                WHEN datetime(substr(NEW.data_waznosci, 7, 4) || '-' || substr(NEW.data_waznosci, 4, 2) || '-' || substr(NEW.data_waznosci, 1, 2)) <= datetime('now', '+1 month') THEN 'Ważność 1 miesiąc'
+                WHEN datetime(substr(NEW.data_waznosci, 7, 4) || '-' || substr(NEW.data_waznosci, 4, 2) || '-' || substr(NEW.data_waznosci, 1, 2)) <= datetime('now', '+3 month') THEN 'Ważność 3 miesiące'
                 ELSE 'Ważny'
             END
             WHERE id = NEW.id;
         END;
         
-        -- Trigger for new inserts
+        -- Update medicine status trigger for inserts
         DROP TRIGGER IF EXISTS update_medicine_status_on_insert;
         CREATE TRIGGER IF NOT EXISTS update_medicine_status_on_insert
         AFTER INSERT ON Leki
         FOR EACH ROW
+        WHEN NEW.data_waznosci IS NOT NULL AND NEW.data_waznosci != ''
         BEGIN
             UPDATE Leki
             SET status_leku = CASE
-                WHEN date(NEW.data_waznosci) < date('now') THEN 'Przeterminowane'
-                WHEN date(NEW.data_waznosci) <= date('now', '+1 month') THEN 'Ważność 1 miesiąc'
-                WHEN date(NEW.data_waznosci) <= date('now', '+3 month') THEN 'Ważność 3 miesiące'
+                WHEN datetime(substr(NEW.data_waznosci, 7, 4) || '-' || substr(NEW.data_waznosci, 4, 2) || '-' || substr(NEW.data_waznosci, 1, 2)) < datetime('now') THEN 'Przeterminowane'
+                WHEN datetime(substr(NEW.data_waznosci, 7, 4) || '-' || substr(NEW.data_waznosci, 4, 2) || '-' || substr(NEW.data_waznosci, 1, 2)) <= datetime('now', '+1 month') THEN 'Ważność 1 miesiąc'
+                WHEN datetime(substr(NEW.data_waznosci, 7, 4) || '-' || substr(NEW.data_waznosci, 4, 2) || '-' || substr(NEW.data_waznosci, 1, 2)) <= datetime('now', '+3 month') THEN 'Ważność 3 miesiące'
                 ELSE 'Ważny'
             END
             WHERE id = NEW.id;
         END;
         
-        -- Trigger to automatically update sprzet_termin based on expiration date
+        -- Update equipment expiry triggers
         DROP TRIGGER IF EXISTS update_sprzet_termin_on_change;
         CREATE TRIGGER IF NOT EXISTS update_sprzet_termin_on_change
         AFTER UPDATE OF data_waznosci ON Sprzet
         FOR EACH ROW
+        WHEN NEW.data_waznosci IS NOT NULL AND NEW.data_waznosci != ''
         BEGIN
             UPDATE Sprzet
             SET termin = CASE
-                WHEN date(NEW.data_waznosci) < date('now') THEN 'Przeterminowane'
-                WHEN date(NEW.data_waznosci) <= date('now', '+1 month') THEN 'Ważność 1 miesiąc'
-                WHEN date(NEW.data_waznosci) <= date('now', '+3 month') THEN 'Ważność 3 miesiące'
+                WHEN datetime(substr(NEW.data_waznosci, 7, 4) || '-' || substr(NEW.data_waznosci, 4, 2) || '-' || substr(NEW.data_waznosci, 1, 2)) < datetime('now') THEN 'Przeterminowane'
+                WHEN datetime(substr(NEW.data_waznosci, 7, 4) || '-' || substr(NEW.data_waznosci, 4, 2) || '-' || substr(NEW.data_waznosci, 1, 2)) <= datetime('now', '+1 month') THEN 'Ważność 1 miesiąc'
+                WHEN datetime(substr(NEW.data_waznosci, 7, 4) || '-' || substr(NEW.data_waznosci, 4, 2) || '-' || substr(NEW.data_waznosci, 1, 2)) <= datetime('now', '+3 month') THEN 'Ważność 3 miesiące'
                 ELSE 'Ważny'
             END
             WHERE id = NEW.id;
         END;
         
-        -- Trigger for new inserts
+        -- Update equipment status trigger for inserts
         DROP TRIGGER IF EXISTS update_sprzet_termin_on_insert;
         CREATE TRIGGER IF NOT EXISTS update_sprzet_termin_on_insert
         AFTER INSERT ON Sprzet
         FOR EACH ROW
+        WHEN NEW.data_waznosci IS NOT NULL AND NEW.data_waznosci != ''
         BEGIN
             UPDATE Sprzet
             SET termin = CASE
-                WHEN date(NEW.data_waznosci) < date('now') THEN 'Przeterminowane'
-                WHEN date(NEW.data_waznosci) <= date('now', '+1 month') THEN 'Ważność 1 miesiąc'
-                WHEN date(NEW.data_waznosci) <= date('now', '+3 month') THEN 'Ważność 3 miesiące'
+                WHEN datetime(substr(NEW.data_waznosci, 7, 4) || '-' || substr(NEW.data_waznosci, 4, 2) || '-' || substr(NEW.data_waznosci, 1, 2)) < datetime('now') THEN 'Przeterminowane'
+                WHEN datetime(substr(NEW.data_waznosci, 7, 4) || '-' || substr(NEW.data_waznosci, 4, 2) || '-' || substr(NEW.data_waznosci, 1, 2)) <= datetime('now', '+1 month') THEN 'Ważność 1 miesiąc'
+                WHEN datetime(substr(NEW.data_waznosci, 7, 4) || '-' || substr(NEW.data_waznosci, 4, 2) || '-' || substr(NEW.data_waznosci, 1, 2)) <= datetime('now', '+3 month') THEN 'Ważność 3 miesiące'
                 ELSE 'Ważny'
             END
             WHERE id = NEW.id;
@@ -380,21 +383,23 @@ export async function updateExpiryStatusTrigger() {
     await db.run(`
         UPDATE Leki
         SET status_leku = CASE
-            WHEN date(data_waznosci) < date('now') THEN 'Przeterminowane'
-            WHEN date(data_waznosci) <= date('now', '+1 month') THEN 'Ważność 1 miesiąc'
-            WHEN date(data_waznosci) <= date('now', '+3 month') THEN 'Ważność 3 miesiące'
-            ELSE 'Ważny'
-        END
+                              WHEN data_waznosci IS NULL OR data_waznosci = '' THEN 'Przeterminowane'
+                              WHEN datetime(substr(data_waznosci, 7, 4) || '-' || substr(data_waznosci, 4, 2) || '-' || substr(data_waznosci, 1, 2)) < datetime('now') THEN 'Przeterminowane'
+                              WHEN datetime(substr(data_waznosci, 7, 4) || '-' || substr(data_waznosci, 4, 2) || '-' || substr(data_waznosci, 1, 2)) <= datetime('now', '+1 month') THEN 'Ważność 1 miesiąc'
+                              WHEN datetime(substr(data_waznosci, 7, 4) || '-' || substr(data_waznosci, 4, 2) || '-' || substr(data_waznosci, 1, 2)) <= datetime('now', '+3 month') THEN 'Ważność 3 miesiące'
+                              ELSE 'Ważny'
+            END
     `);
 
     await db.run(`
         UPDATE Sprzet
         SET termin = CASE
-            WHEN date(data_waznosci) < date('now') THEN 'Przeterminowane'
-            WHEN date(data_waznosci) <= date('now', '+1 month') THEN 'Ważność 1 miesiąc'
-            WHEN date(data_waznosci) <= date('now', '+3 month') THEN 'Ważność 3 miesiące'
-            ELSE 'Ważny'
-        END
+                         WHEN data_waznosci IS NULL OR data_waznosci = '' THEN 'Przeterminowane'
+                         WHEN datetime(substr(data_waznosci, 7, 4) || '-' || substr(data_waznosci, 4, 2) || '-' || substr(data_waznosci, 1, 2)) < datetime('now') THEN 'Przeterminowane'
+                         WHEN datetime(substr(data_waznosci, 7, 4) || '-' || substr(data_waznosci, 4, 2) || '-' || substr(data_waznosci, 1, 2)) <= datetime('now', '+1 month') THEN 'Ważność 1 miesiąc'
+                         WHEN datetime(substr(data_waznosci, 7, 4) || '-' || substr(data_waznosci, 4, 2) || '-' || substr(data_waznosci, 1, 2)) <= datetime('now', '+3 month') THEN 'Ważność 3 miesiące'
+                         ELSE 'Ważny'
+            END
     `);
 
     console.log('Expiry status triggers updated successfully');
@@ -412,8 +417,9 @@ export async function addStatusMedicineTrigger() {
         BEGIN
             UPDATE Leki
             SET status = CASE
-                WHEN ((ilosc_wstepna - rozchod_ilosc) < ilosc_minimalna AND status_leku != 'Ważny') THEN 'Do zamówienia'
-                WHEN ((ilosc_wstepna - rozchod_ilosc) < ilosc_minimalna AND status_leku = 'Ważny') THEN 'Uwaga Ilość'
+                WHEN (ilosc_wstepna - rozchod_ilosc) = 0 THEN 'Do zamówienia'
+                WHEN (ilosc_wstepna - rozchod_ilosc) < ilosc_minimalna AND status_leku != 'Ważny' THEN 'Do zamówienia'
+                WHEN (ilosc_wstepna - rozchod_ilosc) < ilosc_minimalna AND status_leku = 'Ważny' THEN 'Uwaga Ilość'
                 WHEN (status_leku = 'Przeterminowane' OR status_leku = 'Ważność 1 miesiąc' OR status_leku = 'Ważność 3 miesiące') THEN 'Do zamówienia'
                 ELSE 'W porządku'
             END
@@ -429,8 +435,9 @@ export async function addStatusMedicineTrigger() {
         BEGIN
             UPDATE Leki
             SET status = CASE
-                WHEN ((ilosc_wstepna - rozchod_ilosc) < ilosc_minimalna AND status_leku != 'Ważny') THEN 'Do zamówienia'
-                WHEN ((ilosc_wstepna - rozchod_ilosc) < ilosc_minimalna AND status_leku = 'Ważny') THEN 'Uwaga Ilość'
+                WHEN (ilosc_wstepna - rozchod_ilosc) < ilosc_minimalna AND status_leku != 'Ważny' THEN 'Do zamówienia'
+                WHEN (ilosc_wstepna - rozchod_ilosc) < ilosc_minimalna AND status_leku = 'Ważny' THEN 'Uwaga Ilość'
+                WHEN (ilosc_wstepna - rozchod_ilosc) <= 0 THEN 'Do zamówienia'
                 WHEN (status_leku = 'Przeterminowane' OR status_leku = 'Ważność 1 miesiąc' OR status_leku = 'Ważność 3 miesiące') THEN 'Do zamówienia'
                 ELSE 'W porządku'
             END
@@ -446,8 +453,9 @@ export async function addStatusMedicineTrigger() {
         BEGIN
             UPDATE Sprzet
             SET ilosc_termin = CASE
-                WHEN ((ilosc_wymagana - ilosc_aktualna) < ilosc_aktualna AND termin != 'Ważny') THEN 'Do zamówienia'
-                WHEN ((ilosc_wymagana - ilosc_aktualna) < ilosc_aktualna AND termin = 'Ważny') THEN 'Uwaga Ilość'
+                WHEN ilosc_wymagana > ilosc_aktualna AND termin != 'Ważny' THEN 'Do zamówienia'
+                WHEN ilosc_wymagana > ilosc_aktualna AND termin = 'Ważny' THEN 'Uwaga Ilość'
+                WHEN ilosc_aktualna <= 0 THEN 'Do zamówienia'
                 WHEN (termin = 'Przeterminowane' OR termin = 'Ważność 1 miesiąc' OR termin = 'Ważność 3 miesiące') THEN 'Do zamówienia'
                 ELSE 'W porządku'
             END
@@ -463,8 +471,9 @@ export async function addStatusMedicineTrigger() {
         BEGIN
             UPDATE Sprzet
             SET ilosc_termin = CASE
-                WHEN ((ilosc_wymagana - ilosc_aktualna) < ilosc_aktualna AND termin != 'Ważny') THEN 'Do zamówienia'
-                WHEN ((ilosc_wymagana - ilosc_aktualna) < ilosc_aktualna AND termin = 'Ważny') THEN 'Uwaga Ilość'
+                WHEN ilosc_aktualna <= 0 THEN 'Do zamówienia'
+                WHEN ilosc_wymagana > ilosc_aktualna AND termin != 'Ważny' THEN 'Do zamówienia'
+                WHEN ilosc_wymagana > ilosc_aktualna AND termin = 'Ważny' THEN 'Uwaga Ilość'
                 WHEN (termin = 'Przeterminowane' OR termin = 'Ważność 1 miesiąc' OR termin = 'Ważność 3 miesiące') THEN 'Do zamówienia'
                 ELSE 'W porządku'
             END
@@ -481,8 +490,9 @@ export async function updateStatusTrigger() {
     await db.exec(`
         UPDATE Leki
         SET status = CASE
-                         WHEN ((ilosc_wstepna - rozchod_ilosc) < ilosc_minimalna AND status_leku != 'Ważny') THEN 'Do zamówienia'
-                         WHEN ((ilosc_wstepna - rozchod_ilosc) < ilosc_minimalna AND status_leku = 'Ważny') THEN 'Uwaga Ilość'
+                         WHEN (ilosc_wstepna - rozchod_ilosc) <= 0 THEN 'Do zamówienia'
+                         WHEN (ilosc_wstepna - rozchod_ilosc) < ilosc_minimalna AND status_leku != 'Ważny' THEN 'Do zamówienia'
+                         WHEN (ilosc_wstepna - rozchod_ilosc) < ilosc_minimalna AND status_leku = 'Ważny' THEN 'Uwaga Ilość'
                          WHEN (status_leku = 'Przeterminowane' OR status_leku = 'Ważność 1 miesiąc' OR status_leku = 'Ważność 3 miesiące') THEN 'Do zamówienia'
                          ELSE 'W porządku'
             END;
@@ -491,12 +501,39 @@ export async function updateStatusTrigger() {
     await db.exec(`
         UPDATE Sprzet
         SET ilosc_termin = CASE
-                         WHEN ((ilosc_wymagana - ilosc_aktualna) < ilosc_aktualna AND termin != 'Ważny') THEN 'Do zamówienia'
-                         WHEN ((ilosc_wymagana - ilosc_aktualna) < ilosc_aktualna AND termin = 'Ważny') THEN 'Uwaga Ilość'
+                         WHEN ilosc_aktualna <= 0 THEN 'Do zamówienia'
+                         WHEN ilosc_wymagana > ilosc_aktualna AND termin != 'Ważny' THEN 'Do zamówienia'
+                         WHEN ilosc_wymagana > ilosc_aktualna AND termin = 'Ważny' THEN 'Uwaga Ilość'
                          WHEN (termin = 'Przeterminowane' OR termin = 'Ważność 1 miesiąc' OR termin = 'Ważność 3 miesiące') THEN 'Do zamówienia'
                          ELSE 'W porządku'
             END;
     `);
 
     console.log('Medicine status triggers updated successfully');
+}
+
+
+export async function updateDateFormatToEuropean() {
+    const db = await getDb();
+
+    // Update all dates to DD-MM-YYYY format
+    await db.exec(`
+        UPDATE Leki
+        SET data_waznosci = strftime('%d-%m-%Y', date(data_waznosci))
+        WHERE data_waznosci IS NOT NULL 
+        AND data_waznosci != ''
+        AND data_waznosci NOT LIKE '__-__-____';
+    `);
+
+    // Also update the date format in Sprzet table to maintain consistency
+    await db.exec(`
+        UPDATE Sprzet
+        SET data_waznosci = strftime('%d-%m-%Y', date(data_waznosci))
+        WHERE data_waznosci IS NOT NULL 
+        AND data_waznosci != ''
+        AND data_waznosci NOT LIKE '__-__-____';
+    `);
+
+
+    console.log('All dates updated to DD-MM-YYYY format and triggers modified accordingly');
 }

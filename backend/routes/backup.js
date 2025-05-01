@@ -2,6 +2,8 @@
 import express from 'express';
 import multer from 'multer';
 import { exportDatabase, importDatabase } from '../utils/helpers.js';
+import {updateDateFormatToEuropean, updateExpiryStatusTrigger} from "../db/schema.js";
+import { getDb } from '../db/index.js';
 
 const router = express.Router();
 
@@ -27,6 +29,7 @@ router.get('/export-database', async (req, res, next) => {
     } catch (error) {
         next(error);
     }
+
 });
 
 router.post('/import-database', upload.single('database'), async (req, res, next) => {
@@ -54,6 +57,30 @@ router.post('/import-database', upload.single('database'), async (req, res, next
     } catch (error) {
         next(error);
     }
+    try {
+        const db = await getDb();
+        await updateDateFormatToEuropean(db);
+        console.log('Date format updated to European successfully');
+    } catch (error) {
+        console.error('Date format update error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Nie udało się zaktualizować formatu daty'
+        });
+    }
+    try {
+        const db = await getDb();
+        await updateExpiryStatusTrigger(db);
+        console.log('Expiry status updated successfully');
+    } catch (error) {
+        console.error('Expiry status update error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Nie udało się zaktualizować statusu ważności'
+        });
+    }
+
+
 });
 
 export default router;

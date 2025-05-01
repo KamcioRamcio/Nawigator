@@ -27,6 +27,16 @@ function OrganizedEquipment() {
         setCurrentDate(new Date().toISOString().slice(0, 10));
     }, []);
 
+    const categoryHasMatches = (categoryItems) => {
+        return Object.values(categoryItems).some(subcategory =>
+            subcategory.some(equipment => matchesSearch(equipment))
+        );
+    };
+
+    const subcategoryHasMatches = (subcategoryItems) => {
+        return subcategoryItems.some(equipment => matchesSearch(equipment));
+    };
+
     const fetchEquipment = async () => {
         try {
             const response = await fetch(apiUrl + "sprzet-zgrany-kategorie");
@@ -339,19 +349,30 @@ function OrganizedEquipment() {
                 </tr>
                 </thead>
                 <tbody className="text-left">
-                {Object.keys(equipments).map((category, categoryIndex) => (<React.Fragment key={category}>
-                    <tr className="bg-gray-300 text-xl">
-                        <td colSpan="13"
-                            className="font-bold p-4 bg-slate-400">{categoryIndex + 1}. {category}</td>
-                    </tr>
-                    {Object.keys(equipments[category]).map((subcategory, subcategoryIndex) => {
-                        const showSubcategoryName = subcategory !== "null";
-                        return (<React.Fragment key={subcategory}>
-                            {showSubcategoryName && (<tr className="bg-gray-200">
-                                <td colSpan="13"
-                                    className="font-semibold p-4 bg-slate-300">{subcategoryIndex + 1}. {subcategory}</td>
-                            </tr>)}
-                            {equipments[category][subcategory].filter(matchesSearch).map(equipment => (
+                {Object.keys(equipments).map((category, categoryIndex) => {
+                    const categoryItems = equipments[category];
+                    const hasCategoryMatches = searchQuery === "" || categoryHasMatches(categoryItems);
+
+                    return hasCategoryMatches ? (
+                        <React.Fragment key={category}>
+                            <tr className="bg-gray-300 text-xl">
+                                <td colSpan="13" className="font-bold p-4 bg-slate-400">{categoryIndex + 1}. {category}</td>
+                            </tr>
+                            {Object.keys(categoryItems).map((subcategory, subcategoryIndex) => {
+                                const showSubcategoryName = subcategory !== "null";
+                                const subcategoryItems = categoryItems[subcategory];
+                                const hasSubcategoryMatches = searchQuery === "" || subcategoryHasMatches(subcategoryItems);
+
+                                return hasSubcategoryMatches ? (
+                                    <React.Fragment key={subcategory}>
+                                        {showSubcategoryName && (
+                                            <tr className="bg-gray-200">
+                                                <td colSpan="13" className="font-semibold p-4 bg-slate-300">{subcategoryIndex + 1}. {subcategory}</td>
+                                            </tr>
+                                        )}
+                                        {subcategoryItems
+                                            .filter(matchesSearch)
+                                            .map(equipment => (
                                 <tr key={equipment.sprzet_zgrany_id}
                                     className={`${equipment.sprzet_zgrany_na_statku === "true" || equipment.sprzet_zgrany_na_statku === 1 ? "text-black" : "text-red-600"} border border-gray-700`}>
                                     <td className="pl-6 px-2 py-4 max-w-[500px] border-r border-l border-gray-700">
@@ -467,10 +488,14 @@ function OrganizedEquipment() {
                                             </div>
                                         )}
                                     </td>
-                                </tr>))}
-                        </React.Fragment>)
-                    })}
-                </React.Fragment>))}
+                                </tr>
+                                            ))}
+                                    </React.Fragment>
+                                ) : null;
+                            })}
+                        </React.Fragment>
+                    ) : null;
+                })}
                 </tbody>
             </table>
         </div>

@@ -47,6 +47,24 @@ function MainMedicineList() {
         fetchAllData();
     }, []);
 
+    const categoryHasMatches = (categoryItems) => {
+        return Object.keys(categoryItems).some(subcategory =>
+            Object.keys(categoryItems[subcategory]).some(subsubcategory =>
+                categoryItems[subcategory][subsubcategory].some(medicine => matchesSearch(medicine))
+            )
+        );
+    };
+
+    const subcategoryHasMatches = (subcategoryItems) => {
+        return Object.keys(subcategoryItems).some(subsubcategory =>
+            subcategoryItems[subsubcategory].some(medicine => matchesSearch(medicine))
+        );
+    };
+
+    const subsubcategoryHasMatches = (subsubcategoryItems) => {
+        return subsubcategoryItems.some(medicine => matchesSearch(medicine));
+    };
+
     const fetchAllData = async () => {
         fetchMedicines();
     };
@@ -140,6 +158,10 @@ function MainMedicineList() {
             if (dataToSend.id_kategorii === '') dataToSend.id_kategorii = null;
             if (dataToSend.id_pod_kategorii === '') dataToSend.id_pod_kategorii = null;
             if (dataToSend.id_pod_pod_kategorii === '') dataToSend.id_pod_pod_kategorii = null;
+            if (dataToSend.lek_data) {
+                const [year, month, day] = dataToSend.lek_data.split('-');
+                dataToSend.lek_data = `${day}-${month}-${year}`;
+            }
 
             const response = await fetch(apiUrl + "leki/" + medicineId, {
                 method: "PUT",
@@ -575,31 +597,39 @@ function MainMedicineList() {
                         <th className="px-2 py-3">Rozchód</th>
                         <th className="px-2 py-3">Aktualnie na statku</th>
                         <th className="px-2 py-3 ">Status</th>
-                        <th className="px-2 py-3">Ważny Status</th>
+                        <th className="px-2 py-3">Uwagi</th>
                         <th className="px-2 py-3">Kto Zmienił</th>
                         <th className="px-2 py-3">Akcje</th>
                     </tr>
                     </thead>
                     <tbody className="text-left">
-                    {Object.keys(medicines).map((category, categoryIndex) => (
-                        <React.Fragment key={category}>
-                            <tr className="bg-gray-300 text-xl">
-                                <td colSpan="13"
-                                    className="font-bold p-4 bg-slate-500">{categoryIndex + 1}. {category}</td>
-                            </tr>
-                            {Object.keys(medicines[category]).map((subcategory, subcategoryIndex) => {
+                    {Object.keys(medicines).map((category, categoryIndex) => {
+                        const categoryItems = medicines[category];
+                        const hasCategoryMatches = searchQuery === "" || categoryHasMatches(categoryItems);
+
+                        return hasCategoryMatches ? (
+                            <React.Fragment key={category}>
+                                <tr className="bg-gray-300 text-xl">
+                                    <td colSpan="13" className="font-bold p-4 bg-slate-500">{categoryIndex + 1}. {category}</td>
+                                </tr>
+                                {Object.keys(categoryItems).map((subcategory, subcategoryIndex) => {
                                     const showSubcategoryName = subcategory !== "null";
-                                    return (
+                                    const subcategoryItems = categoryItems[subcategory];
+                                    const hasSubcategoryMatches = searchQuery === "" || subcategoryHasMatches(subcategoryItems);
+
+                                    return hasSubcategoryMatches ? (
                                         <React.Fragment key={subcategory}>
                                             {showSubcategoryName && (
                                                 <tr className="bg-gray-200">
-                                                    <td colSpan="13"
-                                                        className="p-2 pl-4 font-semibold text-lg bg-slate-400">{subcategoryIndex + 1}. {subcategory}</td>
-                                                </tr>)}
-                                            {Object.keys(medicines[category][subcategory]).map((subsubcategory, subsubcategoryIndex) => {
+                                                    <td colSpan="13" className="p-2 pl-4 font-semibold text-lg bg-slate-400">{subcategoryIndex + 1}. {subcategory}</td>
+                                                </tr>
+                                            )}
+                                            {Object.keys(subcategoryItems).map((subsubcategory, subsubcategoryIndex) => {
                                                 const showSubsubcategoryName = subsubcategory !== "null";
+                                                const subsubcategoryItems = subcategoryItems[subsubcategory];
+                                                const hasSubsubcategoryMatches = searchQuery === "" || subsubcategoryHasMatches(subsubcategoryItems);
 
-                                                return (
+                                                return hasSubsubcategoryMatches ? (
                                                     <React.Fragment key={subsubcategory}>
                                                         {showSubsubcategoryName && (
                                                             <tr className="bg-gray-100">
@@ -608,7 +638,9 @@ function MainMedicineList() {
                                                                 </td>
                                                             </tr>
                                                         )}
-                                                        {medicines[category][subcategory][subsubcategory].filter(matchesSearch).map(medicine => (
+                                                        {subsubcategoryItems
+                                                            .filter(matchesSearch)
+                                                            .map(medicine => (
                                                             <tr key={medicine.lek_id}
                                                                 className={`${medicine.lek_przechowywanie === "freezer" ? "bg-blue-200" : medicine.lek_przechowywanie === "narkotyk" ? "bg-orange-200" : ""} ${medicine.lek_na_statku_spis_podstawowy === 1 ? "text-red-600" : ""} border border-gray-700`}>
                                                                 <td className="pl-6 px-2 py-4 border-r border-l border-gray-700">
@@ -817,7 +849,11 @@ function MainMedicineList() {
                                                                 <td className="px-2 py-4 border-r border-l border-gray-700">
                                                                     {medicine.stan_magazynowy_ilosc}
                                                                 </td>
-                                                                <td className="px-2 py-4 border-r border-l border-gray-700">
+                                                                <td className={`
+    ${medicine.stan_magazynowy_status === "W porządku" ? "font-bold text-green-600" : ""}
+    ${(medicine.stan_magazynowy_status === "Uwaga Ilość" || medicine.stan_magazynowy_status === "Do zamówienia") ? "font-bold text-orange-600" : ""}
+    px-2 py-4 border-r border-l border-gray-700
+`}>
                                                                     {medicine.stan_magazynowy_status}
                                                                 </td>
                                                                 <td className="px-2 py-4 border-r border-l border-gray-700">
@@ -831,7 +867,7 @@ function MainMedicineList() {
                                                                             className="border px-2 py-1 w-5/6"
                                                                         />
                                                                     ) : (
-                                                                        medicine.stan_magazynowy_important_status
+                                                                        medicine.stan_magazynowy_important_status === "0" ? "" : medicine.stan_magazynowy_important_status
                                                                     )}
                                                                 </td>
                                                                 <td className="px-2 py-4 border-r border-l border-gray-700">
@@ -898,17 +934,16 @@ function MainMedicineList() {
                                                                     )}
                                                                 </td>
                                                             </tr>
-                                                        ))}
+                                                            ))}
                                                     </React.Fragment>
-                                                );
+                                                ) : null;
                                             })}
                                         </React.Fragment>
-                                    );
-                                }
-                            )}
-
-                        </React.Fragment>
-                    ))}
+                                    ) : null;
+                                })}
+                            </React.Fragment>
+                        ) : null;
+                    })}
                     </tbody>
 
                 </table>

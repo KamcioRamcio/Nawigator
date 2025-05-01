@@ -44,6 +44,16 @@ function MainEquipmentList() {
         setCurrentDate(new Date().toISOString().slice(0, 10));
     }, []);
 
+    const categoryHasMatches = (categoryItems) => {
+        return Object.values(categoryItems).some(subcategory =>
+            subcategory.some(equipment => matchesSearch(equipment))
+        );
+    };
+
+    const subcategoryHasMatches = (subcategoryItems) => {
+        return subcategoryItems.some(equipment => matchesSearch(equipment));
+    };
+
     const fetchEquipment = async () => {
         try {
             const response = await fetch(apiUrl + "sprzet-kategorie");
@@ -454,9 +464,9 @@ function MainEquipmentList() {
                     <thead className="text-left sticky top-[168px] z-10">
                     <tr className="bg-gray-200 text-gray-700 uppercase text-sm tracking-wide">
                         <th className="px-2 py-4">Wyroby Medyczne</th>
-                        <th className="px-2 py-4">Ilość Wymagana</th>
                         <th className="px-2 py-4">Ilość Aktualna</th>
                         <th className="px-2 py-4">Data Ważności</th>
+                        <th className="px-2 py-4">Ilość Wymagana</th>
                         <th className="px-2 py-4">Uwagi</th>
                         <th className="px-2 py-4 ">Termin</th>
                         <th className="px-2 py-4 ">Ilość/Termin</th>
@@ -465,221 +475,239 @@ function MainEquipmentList() {
                     </tr>
                     </thead>
                     <tbody className="text-left">
-                    {Object.keys(equipments).map((category, categoryIndex) => (
-                        <React.Fragment key={category}>
-                            <tr className="bg-gray-300 text-xl">
-                                <td colSpan="13" className="font-bold p-4 bg-slate-400">
-                                    {categoryIndex + 1}. {category}
-                                </td>
-                            </tr>
-                            {Object.keys(equipments[category]).map((subcategory, subcategoryIndex) => {
-                                const showSubcategoryName = subcategory !== "null";
-                                return (
-                                    <React.Fragment key={subcategory}>
-                                        {showSubcategoryName && (
-                                            <tr className="bg-gray-200">
-                                                <td colSpan="13"
-                                                    className="p-2 pl-4 font-semibold text-lg bg-slate-300">
-                                                    {subcategoryIndex + 1}. {subcategory}
-                                                </td>
-                                            </tr>
-                                        )}
-                                        {equipments[category][subcategory].filter(matchesSearch).map(equipment => (
-                                            <tr key={equipment.sprzet_id}
-                                                className={`border border-gray-700 ${equipment.sprzet_torba_ratownika === 1 ? "bg-green-200" : ""} ${equipment.sprzet_na_statku === 1 ? "text-red-500" : ""}`}>
-                                                <td className="pl-6 px-2 py-4 border-r border-l border-gray-700 max-w-3xl">
-                                                    {editMode[equipment.sprzet_id] ? (
-                                                        <>
-                                                            <input
-                                                                type="text"
-                                                                value={editedEquipment[equipment.sprzet_id]?.sprzet_nazwa || ""}
-                                                                onChange={(e) => handleEdit(equipment.sprzet_id, "sprzet_nazwa", e.target.value)}
-                                                                className="border px-2 py-1 w-5/6"
-                                                            />
-                                                            <select
-                                                                name="id_kategorii"
-                                                                value={editedEquipment[equipment.sprzet_id]?.id_kategorii || ""}
-                                                                onChange={(e) => {
-                                                                    handleEdit(equipment.sprzet_id, "id_kategorii", e.target.value)
-                                                                    setSelectedCategory(e.target.value)
-                                                                }}
-                                                                className="border px-2 py-1 w-5/6 my-1"
-                                                            >
-                                                                <option>Wybierz Kategorie</option>
-                                                                {ConstantsEquipment.CategoryOptions.map(option => (
-                                                                    <option key={option.value} value={option.value}>
-                                                                        {option.label}
-                                                                    </option>
-                                                                ))}
-                                                            </select>
-                                                            <select
-                                                                name="id_pod_kategorii"
-                                                                value={editedEquipment[equipment.sprzet_id]?.id_pod_kategorii || ""}
-                                                                onChange={(e) => {
-                                                                    handleEdit(equipment.sprzet_id, "id_pod_kategorii", e.target.value)
-                                                                    setSelectedCategory(e.target.value)
-                                                                }}
-                                                                className="border px-2 py-1 w-5/6"
-                                                            >
-                                                                <option>Wybierz Pod Kategorie</option>
-                                                                {selectedCategory && ConstantsEquipment.SubCategoryOptions[selectedCategory]?.map(option => (
-                                                                    <option key={option.value} value={option.value}>
-                                                                        {option.label}
-                                                                    </option>
-                                                                ))}
-                                                            </select>
-                                                            <select
-                                                                name="sprzet_na_statku"
-                                                                value={editedEquipment[equipment.sprzet_id]?.sprzet_na_statku || ""}
-                                                                onChange={(e) => handleEdit(equipment.sprzet_id, "sprzet_na_statku", e.target.value)}
-                                                                className="border px-2 py-1 mt-1 w-5/6 mb-1"
-                                                            >
-                                                                <option value="">Spis Podstawowy brak na
-                                                                    statku</option>
-                                                                <option value="1">Tak</option>
-                                                                <option value="0">Nie</option>
-                                                            </select>
-                                                            <select
-                                                                name="sprzet_torba_ratownika"
-                                                                value={editedEquipment[equipment.sprzet_id]?.sprzet_torba_ratownika || ""}
-                                                                onChange={(e) => handleEdit(equipment.sprzet_id, "sprzet_torba_ratownika", e.target.value)}
-                                                                className="border px-2 py-1 w-5/6"
-                                                            >
-                                                                <option value="">W torbie ratownika</option>
-                                                                <option value="true">Tak</option>
-                                                                <option value="false">Nie</option>
-                                                            </select>
+                    {Object.keys(equipments).map((category, categoryIndex) => {
+                        const categoryItems = equipments[category];
+                        const hasCategoryMatches = searchQuery === "" || categoryHasMatches(categoryItems);
 
-                                                        </>
-                                                    ) : (
-                                                        equipment.sprzet_nazwa
-                                                    )}
-                                                </td>
-                                                <td className="px-2 py-4 border-r border-l border-gray-700">
-                                                    {editMode[equipment.sprzet_id] ? (
-                                                        <input
-                                                            type="number"
-                                                            value={editedEquipment[equipment.sprzet_id]?.sprzet_ilosc_wymagana || ""}
-                                                            onChange={(e) => handleEdit(equipment.sprzet_id, "sprzet_ilosc_wymagana", e.target.value)}
-                                                            className="border rounded-md px-2 py-1 w-full"
-                                                        />
-                                                    ) : (
-                                                        equipment.sprzet_ilosc_wymagana
-                                                    )}
-                                                </td>
-                                                <td className="px-2 py-4 border-r border-l border-gray-700">
-                                                    {editMode[equipment.sprzet_id] ? (
-                                                        <input
-                                                            type="number"
-                                                            value={editedEquipment[equipment.sprzet_id]?.sprzet_ilosc_aktualna || ""}
-                                                            onChange={(e) => handleEdit(equipment.sprzet_id, "sprzet_ilosc_aktualna", e.target.value)}
-                                                            className="border rounded-md px-2 py-1 w-full"
-                                                        />
-                                                    ) : (
-                                                        equipment.sprzet_ilosc_aktualna
-                                                    )}
-                                                </td>
-                                                <td className="px-2 py-4 border-r border-l border-gray-700">
-                                                    {editMode[equipment.sprzet_id] ? (
-                                                        <input
-                                                            type="date"
-                                                            value={editedEquipment[equipment.sprzet_id]?.sprzet_data_waznosci || ""}
-                                                            onChange={(e) => handleEdit(equipment.sprzet_id, "sprzet_data_waznosci", e.target.value)}
-                                                            className="border rounded-md px-2 py-1 w-full"
-                                                        />
-                                                    ) : (
-                                                        equipment.sprzet_data_waznosci
-                                                    )}
-                                                </td>
-                                                <td className="px-2 py-4 border-r border-l border-gray-700">
-                                                    {editMode[equipment.sprzet_id] ? (
-                                                        <input
-                                                            type="text"
-                                                            value={editedEquipment[equipment.sprzet_id]?.sprzet_status || ""}
-                                                            onChange={(e) => handleEdit(equipment.sprzet_id, "sprzet_status", e.target.value)}
-                                                            className="border rounded-md px-2 py-1 w-full"
-                                                        />
-                                                    ) : (
-                                                        equipment.sprzet_status
-                                                    )}
-                                                </td>
-                                                <td className={`${equipment.sprzet_termin !== "Ważny" ? "font-bold text-red-700" : ""} px-2 py-4 border-r border-l border-gray-700`}>
-                                                    {equipment.sprzet_termin}
-                                                </td>
-                                                <td className="px-2 py-4 border-r border-l border-gray-700">
-                                                    {equipment.sprzet_ilosc_termin}
-                                                </td>
-                                                <td className="px-2 py-4 border-r border-l border-gray-700">
-                                                    {equipment.sprzet_kto_zmienil}
-                                                </td>
-                                                <td className="px-2 py-4 w-20">
-                                                    {editMode[equipment.sprzet_id] ? (
-                                                        <div className="flex flex-col space-y-2">
-                                                            <button
-                                                                onClick={() => handleSave(equipment.sprzet_id)}
-                                                                className="bg-green-600 hover:bg-green-700 text-white font-semibold py-1 px-3 rounded"
-                                                            >
-                                                                Zapisz
-                                                            </button>
-                                                            <button
-                                                                onClick={() => setEditMode(prev => ({
-                                                                    ...prev,
-                                                                    [equipment.sprzet_id]: false
-                                                                }))}
-                                                                className="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-1 px-3 rounded"
-                                                            >
-                                                                Anuluj
-                                                            </button>
-                                                            {showDeleteButton(userPosition) && (
-                                                                <button
-                                                                    onClick={() => handleDelete(equipment.sprzet_id)}
-                                                                    className="bg-red-600 hover:bg-red-700 text-white font-semibold py-1 px-3 rounded"
-                                                                >
-                                                                    Usuń
-                                                                </button>
-                                                            )}
-                                                        </div>
-                                                    ) : (
-                                                        <div className="flex flex-col space-y-2">
-                                                            {showEditButton(userPosition) && (
-                                                                <button
-                                                                    onClick={() => {
-                                                                        setEditMode(prev => ({
-                                                                            ...prev,
-                                                                            [equipment.sprzet_id]: true,
-                                                                        }));
-                                                                        setEditedEquipment(prev => ({
-                                                                            ...prev,
-                                                                            [equipment.sprzet_id]: {
-                                                                                ...equipment,
-                                                                                sprzet_na_statku: equipment.sprzet_na_statku === 1 ? "true" : "false",
-                                                                                sprzet_torba_ratownika: equipment.sprzet_torba_ratownika === 1 ? "true" : "false"
-                                                                            },
-                                                                        }))
-                                                                    }}
-                                                                    className="bg-slate-900 hover:bg-slate-700 text-white font-semibold py-1 px-3 rounded"
-                                                                >
-                                                                    Edytuj
-                                                                </button>
-                                                            )}
-                                                            {showUtilizationButton(userPosition) && (
-                                                                <div className="mt-1">
-                                                                    <UtilizationEquipmentButton
-                                                                        equipment={equipment}
-                                                                        onUtilizationComplete={fetchEquipment}
+                        return hasCategoryMatches ? (
+                            <React.Fragment key={category}>
+                                <tr className="bg-gray-300 text-xl">
+                                    <td colSpan="13" className="font-bold p-4 bg-slate-400">
+                                        {categoryIndex + 1}. {category}
+                                    </td>
+                                </tr>
+                                {Object.keys(categoryItems).map((subcategory, subcategoryIndex) => {
+                                    const showSubcategoryName = subcategory !== "null";
+                                    const subcategoryItems = categoryItems[subcategory];
+                                    const hasSubcategoryMatches = searchQuery === "" || subcategoryHasMatches(subcategoryItems);
+
+                                    return hasSubcategoryMatches ? (
+                                        <React.Fragment key={subcategory}>
+                                            {showSubcategoryName && (
+                                                <tr className="bg-gray-200">
+                                                    <td colSpan="13"
+                                                        className="p-2 pl-4 font-semibold text-lg bg-slate-300">
+                                                        {subcategoryIndex + 1}. {subcategory}
+                                                    </td>
+                                                </tr>
+                                            )}
+                                            {subcategoryItems
+                                                .filter(matchesSearch)
+                                                .map(equipment => (
+                                                    <tr key={equipment.sprzet_id}
+                                                        className={`border border-gray-700 ${equipment.sprzet_torba_ratownika === 1 ? "bg-green-200" : ""} ${equipment.sprzet_na_statku === 1 ? "text-red-500" : ""}`}>
+                                                        <td className="pl-6 px-2 py-4 border-r border-l border-gray-700 max-w-3xl">
+                                                            {editMode[equipment.sprzet_id] ? (
+                                                                <>
+                                                                    <input
+                                                                        type="text"
+                                                                        value={editedEquipment[equipment.sprzet_id]?.sprzet_nazwa || ""}
+                                                                        onChange={(e) => handleEdit(equipment.sprzet_id, "sprzet_nazwa", e.target.value)}
+                                                                        className="border px-2 py-1 w-5/6"
                                                                     />
+                                                                    <select
+                                                                        name="id_kategorii"
+                                                                        value={editedEquipment[equipment.sprzet_id]?.id_kategorii || ""}
+                                                                        onChange={(e) => {
+                                                                            handleEdit(equipment.sprzet_id, "id_kategorii", e.target.value)
+                                                                            setSelectedCategory(e.target.value)
+                                                                        }}
+                                                                        className="border px-2 py-1 w-5/6 my-1"
+                                                                    >
+                                                                        <option>Wybierz Kategorie</option>
+                                                                        {ConstantsEquipment.CategoryOptions.map(option => (
+                                                                            <option key={option.value}
+                                                                                    value={option.value}>
+                                                                                {option.label}
+                                                                            </option>
+                                                                        ))}
+                                                                    </select>
+                                                                    <select
+                                                                        name="id_pod_kategorii"
+                                                                        value={editedEquipment[equipment.sprzet_id]?.id_pod_kategorii || ""}
+                                                                        onChange={(e) => {
+                                                                            handleEdit(equipment.sprzet_id, "id_pod_kategorii", e.target.value)
+                                                                            setSelectedCategory(e.target.value)
+                                                                        }}
+                                                                        className="border px-2 py-1 w-5/6"
+                                                                    >
+                                                                        <option>Wybierz Pod Kategorie</option>
+                                                                        {selectedCategory && ConstantsEquipment.SubCategoryOptions[selectedCategory]?.map(option => (
+                                                                            <option key={option.value}
+                                                                                    value={option.value}>
+                                                                                {option.label}
+                                                                            </option>
+                                                                        ))}
+                                                                    </select>
+                                                                    <select
+                                                                        name="sprzet_na_statku"
+                                                                        value={editedEquipment[equipment.sprzet_id]?.sprzet_na_statku || ""}
+                                                                        onChange={(e) => handleEdit(equipment.sprzet_id, "sprzet_na_statku", e.target.value)}
+                                                                        className="border px-2 py-1 mt-1 w-5/6 mb-1"
+                                                                    >
+                                                                        <option value="">Spis Podstawowy brak na
+                                                                            statku
+                                                                        </option>
+                                                                        <option value="true">Tak</option>
+                                                                        <option value="false">Nie</option>
+                                                                    </select>
+                                                                    <select
+                                                                        name="sprzet_torba_ratownika"
+                                                                        value={editedEquipment[equipment.sprzet_id]?.sprzet_torba_ratownika || ""}
+                                                                        onChange={(e) => handleEdit(equipment.sprzet_id, "sprzet_torba_ratownika", e.target.value)}
+                                                                        className="border px-2 py-1 w-5/6"
+                                                                    >
+                                                                        <option value="">W torbie ratownika</option>
+                                                                        <option value="true">Tak</option>
+                                                                        <option value="false">Nie</option>
+                                                                    </select>
+
+                                                                </>
+                                                            ) : (
+                                                                equipment.sprzet_nazwa
+                                                            )}
+                                                        </td>
+                                                        <td className="px-2 py-4 border-r border-l border-gray-700">
+                                                            {editMode[equipment.sprzet_id] ? (
+                                                                <input
+                                                                    type="number"
+                                                                    value={editedEquipment[equipment.sprzet_id]?.sprzet_ilosc_aktualna || ""}
+                                                                    onChange={(e) => handleEdit(equipment.sprzet_id, "sprzet_ilosc_aktualna", e.target.value)}
+                                                                    className="border rounded-md px-2 py-1 w-full"
+                                                                />
+                                                            ) : (
+                                                                equipment.sprzet_ilosc_aktualna
+                                                            )}
+                                                        </td>
+                                                        <td className="px-2 py-4 border-r border-l border-gray-700">
+                                                            {editMode[equipment.sprzet_id] ? (
+                                                                <input
+                                                                    type="date"
+                                                                    value={editedEquipment[equipment.sprzet_id]?.sprzet_data_waznosci || ""}
+                                                                    onChange={(e) => handleEdit(equipment.sprzet_id, "sprzet_data_waznosci", e.target.value)}
+                                                                    className="border rounded-md px-2 py-1 w-full"
+                                                                />
+                                                            ) : (
+                                                                equipment.sprzet_data_waznosci
+                                                            )}
+                                                        </td>
+                                                        <td className="px-2 py-4 border-r border-l border-gray-700">
+                                                            {editMode[equipment.sprzet_id] ? (
+                                                                <input
+                                                                    type="number"
+                                                                    value={editedEquipment[equipment.sprzet_id]?.sprzet_ilosc_wymagana || ""}
+                                                                    onChange={(e) => handleEdit(equipment.sprzet_id, "sprzet_ilosc_wymagana", e.target.value)}
+                                                                    className="border rounded-md px-2 py-1 w-full"
+                                                                />
+                                                            ) : (
+                                                                equipment.sprzet_ilosc_wymagana
+                                                            )}
+                                                        </td>
+                                                        <td className="px-2 py-4 border-r border-l border-gray-700">
+                                                            {editMode[equipment.sprzet_id] ? (
+                                                                <input
+                                                                    type="text"
+                                                                    value={editedEquipment[equipment.sprzet_id]?.sprzet_status || ""}
+                                                                    onChange={(e) => handleEdit(equipment.sprzet_id, "sprzet_status", e.target.value)}
+                                                                    className="border rounded-md px-2 py-1 w-full"
+                                                                />
+                                                            ) : (
+                                                                equipment.sprzet_status
+                                                            )}
+                                                        </td>
+                                                        <td className={`${equipment.sprzet_termin !== "Ważny" ? "font-bold text-red-700" : ""} px-2 py-4 border-r border-l border-gray-700`}>
+                                                            {equipment.sprzet_termin}
+                                                        </td>
+                                                        <td className={`
+    ${equipment.sprzet_ilosc_termin === "W porządku" ? "font-bold text-green-600" : ""}
+    ${(equipment.sprzet_ilosc_termin === "Uwaga Ilość" || equipment.sprzet_ilosc_termin === "Do zamówienia") ? "font-bold text-orange-600" : ""}
+    ${equipment.sprzet_ilosc_termin !== "Ważny" && equipment.sprzet_ilosc_termin !== "W porządku" && equipment.sprzet_ilosc_termin !== "Uwaga Ilość" && equipment.sprzet_ilosc_termin !== "Do zamówienia" ? "font-bold text-red-700" : ""}
+    px-2 py-4 border-r border-l border-gray-700
+`}>
+                                                            {equipment.sprzet_ilosc_termin}
+                                                        </td>
+                                                        <td className="px-2 py-4 border-r border-l border-gray-700">
+                                                            {equipment.sprzet_kto_zmienil}
+                                                        </td>
+                                                        <td className="px-2 py-4 w-20">
+                                                            {editMode[equipment.sprzet_id] ? (
+                                                                <div className="flex flex-col space-y-2">
+                                                                    <button
+                                                                        onClick={() => handleSave(equipment.sprzet_id)}
+                                                                        className="bg-green-600 hover:bg-green-700 text-white font-semibold py-1 px-3 rounded"
+                                                                    >
+                                                                        Zapisz
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => setEditMode(prev => ({
+                                                                            ...prev,
+                                                                            [equipment.sprzet_id]: false
+                                                                        }))}
+                                                                        className="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-1 px-3 rounded"
+                                                                    >
+                                                                        Anuluj
+                                                                    </button>
+                                                                    {showDeleteButton(userPosition) && (
+                                                                        <button
+                                                                            onClick={() => handleDelete(equipment.sprzet_id)}
+                                                                            className="bg-red-600 hover:bg-red-700 text-white font-semibold py-1 px-3 rounded"
+                                                                        >
+                                                                            Usuń
+                                                                        </button>
+                                                                    )}
+                                                                </div>
+                                                            ) : (
+                                                                <div className="flex flex-col space-y-2">
+                                                                    {showEditButton(userPosition) && (
+                                                                        <button
+                                                                            onClick={() => {
+                                                                                setEditMode(prev => ({
+                                                                                    ...prev,
+                                                                                    [equipment.sprzet_id]: true,
+                                                                                }));
+                                                                                setEditedEquipment(prev => ({
+                                                                                    ...prev,
+                                                                                    [equipment.sprzet_id]: {
+                                                                                        ...equipment,
+                                                                                        sprzet_na_statku: equipment.sprzet_na_statku === 1 ? "true" : "false",
+                                                                                        sprzet_torba_ratownika: equipment.sprzet_torba_ratownika === 1 ? "true" : "false"
+                                                                                    },
+                                                                                }))
+                                                                            }}
+                                                                            className="bg-slate-900 hover:bg-slate-700 text-white font-semibold py-1 px-3 rounded"
+                                                                        >
+                                                                            Edytuj
+                                                                        </button>
+                                                                    )}
+                                                                    {showUtilizationButton(userPosition) && (
+                                                                        <div className="mt-1">
+                                                                            <UtilizationEquipmentButton
+                                                                                equipment={equipment}
+                                                                                onUtilizationComplete={fetchEquipment}
+                                                                            />
+                                                                        </div>
+                                                                    )}
                                                                 </div>
                                                             )}
-                                                        </div>
-                                                    )}
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </React.Fragment>
-                                )
-                            })}
-                        </React.Fragment>
-                    ))}
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                        </React.Fragment>
+                                    ) : null;
+                                })}
+                            </React.Fragment>
+                        ) : null;
+                    })}
                     </tbody>
                 </table>
             </div>

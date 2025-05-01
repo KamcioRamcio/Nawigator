@@ -1,11 +1,20 @@
 // backend/db/queries.js
 import {getDb} from './index.js';
 
+
+function formatDateToEuropean(isoDate) {
+    if (!isoDate) return isoDate;
+    const [year, month, day] = isoDate.split('-');
+    return `${day}-${month}-${year}`;
+}
+
+
 // Medicine functions
 export async function addMedicine(medicineData) {
     const db = await getDb();
 
     try {
+        medicineData.lek_data = formatDateToEuropean(medicineData.lek_data);
         // Insert into consolidated Leki table
         const result = await db.run(
             `INSERT INTO Leki (
@@ -54,6 +63,7 @@ export async function updateMedicine(id, medicineData) {
     const db = await getDb();
 
     try {
+        medicineData.lek_data = formatDateToEuropean(medicineData.lek_data);
         await db.run(
             `UPDATE Leki SET 
         nazwa_leku = ?, 
@@ -91,7 +101,6 @@ export async function updateMedicine(id, medicineData) {
                 id
             ]
         );
-
         return id;
     } catch (error) {
         throw error;
@@ -241,15 +250,16 @@ export async function fetchMedicinesByDate(date) {
             l.ilosc_minimalna,
             (l.ilosc_wstepna - l.rozchod_ilosc) AS stan_magazynowy_ilosc,
             l.status_leku as current_status,
-            CASE 
-                WHEN date(l.data_waznosci) < date(?) THEN 'Przeterminowane'
-                WHEN date(l.data_waznosci) <= date(?, '+1 months') THEN 'Ważność 1 miesiąc'
-                WHEN date(l.data_waznosci) <= date(? , '+3 months') THEN 'Ważność 3 miesiące'
+            CASE
+                WHEN datetime(substr(l.data_waznosci, 7, 4) || '-' || substr(l.data_waznosci, 4, 2) || '-' || substr(l.data_waznosci, 1, 2)) < datetime(?) THEN 'Przeterminowane'
+                WHEN datetime(substr(l.data_waznosci, 7, 4) || '-' || substr(l.data_waznosci, 4, 2) || '-' || substr(l.data_waznosci, 1, 2)) <= datetime(?, '+1 month') THEN 'Ważność 1 miesiąc'
+                WHEN datetime(substr(l.data_waznosci, 7, 4) || '-' || substr(l.data_waznosci, 4, 2) || '-' || substr(l.data_waznosci, 1, 2)) <= datetime(?, '+3 month') THEN 'Ważność 3 miesiące'
                 ELSE 'Ważny'
-            END AS projected_status
+                END AS projected_status
         FROM Leki l
-        WHERE projected_status != 'Ważny' AND projected_status != current_status
-        ORDER BY l.data_waznosci ASC
+        WHERE l.data_waznosci IS NOT NULL
+          AND projected_status != 'Ważny' AND projected_status != current_status
+        ORDER BY datetime(substr(l.data_waznosci, 7, 4) || '-' || substr(l.data_waznosci, 4, 2) || '-' || substr(l.data_waznosci, 1, 2)) ASC
     `;
     return await db.all(sql, [date, date, date]);
 }
@@ -270,6 +280,7 @@ export async function addEquipment(equipmentData) {
     const db = await getDb();
 
     try {
+        equipmentData.eq_data = formatDateToEuropean(equipmentData.eq_data);
         const result = await db.run(
             `INSERT INTO Sprzet (
                 nazwa,
@@ -387,22 +398,25 @@ export async function fetchEquipmentsByDate(date) {
             e.ilosc_aktualna,
             e.termin as current_termin,
             CASE
-                WHEN date(e.data_waznosci) < date(?) THEN 'Przeterminowane'
-                WHEN date(e.data_waznosci) <= date(?, '+1 months') THEN 'Ważność 1 miesiąc'
-                WHEN date(e.data_waznosci) <= date(?, '+3 months') THEN 'Ważność 3 miesiące'
+                WHEN datetime(substr(e.data_waznosci, 7, 4) || '-' || substr(e.data_waznosci, 4, 2) || '-' || substr(e.data_waznosci, 1, 2)) < datetime(?) THEN 'Przeterminowane'
+                WHEN datetime(substr(e.data_waznosci, 7, 4) || '-' || substr(e.data_waznosci, 4, 2) || '-' || substr(e.data_waznosci, 1, 2)) <= datetime(?, '+1 month') THEN 'Ważność 1 miesiąc'
+                WHEN datetime(substr(e.data_waznosci, 7, 4) || '-' || substr(e.data_waznosci, 4, 2) || '-' || substr(e.data_waznosci, 1, 2)) <= datetime(?, '+3 month') THEN 'Ważność 3 miesiące'
                 ELSE 'Ważny'
-            END AS projected_termin
-            FROM Sprzet e
-            WHERE projected_termin != 'Ważny' AND projected_termin != current_termin
-            ORDER BY e.data_waznosci ASC
+                END AS projected_termin
+        FROM Sprzet e
+        WHERE e.data_waznosci IS NOT NULL
+          AND projected_termin != 'Ważny' AND projected_termin != current_termin
+        ORDER BY datetime(substr(e.data_waznosci, 7, 4) || '-' || substr(e.data_waznosci, 4, 2) || '-' || substr(e.data_waznosci, 1, 2)) ASC
     `;
-    return await  db.all(sql, [date, date, date]);
-} 
+    return await db.all(sql, [date, date, date]);
+}
 export async function updateEquipment(id, equipmentData) {
     const db = await getDb();
 
     try {
         // First get the current data
+        equipmentData.sprzet_data_waznosci = formatDateToEuropean(equipmentData.sprzet_data_waznosci);
+
         const currentEquipment = await db.get('SELECT * FROM Sprzet WHERE id = ?', [id]);
 
         // Handle boolean values - preserve existing ones unless explicitly changed
@@ -415,6 +429,7 @@ export async function updateEquipment(id, equipmentData) {
             : currentEquipment.torba_ratownika;
 
         await db.run(
+
             `UPDATE Sprzet SET
                                nazwa = ?,
                                ilosc_wymagana = ?,
@@ -430,14 +445,14 @@ export async function updateEquipment(id, equipmentData) {
                                torba_ratownika = ?
              WHERE id = ?`,
             [
-                equipmentData.sprzet_nazwa || currentEquipment.nazwa,
-                equipmentData.sprzet_ilosc_wymagana || currentEquipment.ilosc_wymagana,
-                equipmentData.sprzet_ilosc_aktualna || currentEquipment.ilosc_aktualna,
-                equipmentData.sprzet_data_waznosci || currentEquipment.data_waznosci,
-                equipmentData.sprzet_status || currentEquipment.status,
-                equipmentData.sprzet_termin || currentEquipment.termin,
-                equipmentData.sprzet_ilosc_termin || currentEquipment.ilosc_termin,
-                equipmentData.sprzet_kto_zmienil || currentEquipment.kto_zmienil,
+                equipmentData.sprzet_nazwa ,
+                equipmentData.sprzet_ilosc_wymagana ,
+                equipmentData.sprzet_ilosc_aktualna ,
+                equipmentData.sprzet_data_waznosci ,
+                equipmentData.sprzet_status ,
+                equipmentData.sprzet_termin,
+                equipmentData.sprzet_ilosc_termin,
+                equipmentData.sprzet_kto_zmienil,
                 equipmentData.id_kategorii !== undefined ? equipmentData.id_kategorii : currentEquipment.id_kategorii,
                 equipmentData.id_pod_kategorii !== undefined ? equipmentData.id_pod_kategorii : currentEquipment.id_pod_kategorii,
                 na_statku,
@@ -472,7 +487,7 @@ export async function fetchAllUtylizacja() {
 export async function addUtylizacja(utilizationData) {
     const db = await getDb();
     const {nazwa, ilosc, opakowanie, data_waznosci, ilosc_nominalna, grupa, powod_utylizacji} = utilizationData;
-
+    utilizationData.data_waznosci = formatDateToEuropean(utilizationData.data_waznosci)
     const result = await db.run(
         `INSERT INTO Utylizacja (nazwa,
                                  ilosc,
@@ -490,6 +505,7 @@ export async function addUtylizacja(utilizationData) {
 
 export async function updateUtylizacja(id, data) {
     const db = await getDb();
+    data.data_waznosci = formatDateToEuropean(data.data_waznosci);
 
     await db.run(
         'UPDATE Utylizacja SET nazwa = ?, ilosc = ?, opakowanie = ?, data_waznosci = ?, ilosc_nominalna = ?, grupa = ?, powod_utylizacji = ? WHERE id = ?',

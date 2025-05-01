@@ -32,6 +32,24 @@ function MinMedicine() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
 
+    const categoryHasMatches = (categoryItems) => {
+        return Object.keys(categoryItems).some(subcategory =>
+            Object.keys(categoryItems[subcategory]).some(subsubcategory =>
+                categoryItems[subcategory][subsubcategory].some(medicine => matchesSearch(medicine))
+            )
+        );
+    };
+
+    const subcategoryHasMatches = (subcategoryItems) => {
+        return Object.keys(subcategoryItems).some(subsubcategory =>
+            subcategoryItems[subsubcategory].some(medicine => matchesSearch(medicine))
+        );
+    };
+
+    const subsubcategoryHasMatches = (subsubcategoryItems) => {
+        return subsubcategoryItems.some(medicine => matchesSearch(medicine));
+    };
+
     useEffect(() => {
         fetchMedicines();
     }, []);
@@ -490,36 +508,48 @@ function MinMedicine() {
                     </tr>
                     </thead>
                     <tbody className="text-left">
-                    {Object.keys(medicines).map((category, categoryIndex) => (
-                        <React.Fragment key={category}>
-                            <tr className="bg-gray-300 text-xl">
-                                <td colSpan="4" className="font-bold p-4 bg-slate-500">
-                                    {categoryIndex + 1}. {category}
-                                </td>
-                            </tr>
-                            {Object.keys(medicines[category]).map((subcategory, subcategoryIndex) => {
-                                const showSubcategoryName = subcategory !== "null";
-                                return (
-                                    <React.Fragment key={subcategory}>
-                                        {showSubcategoryName && (
-                                            <tr className="bg-gray-200">
-                                                <td colSpan="4" className="p-2 pl-8 font-semibold text-lg bg-slate-400">
-                                                    {subcategoryIndex + 1}. {subcategory}
-                                                </td>
-                                            </tr>
-                                        )}
-                                        {Object.keys(medicines[category][subcategory]).map((subsubcategory, subsubcategoryIndex) => {
-                                            const showSubsubcategoryName = subsubcategory !== "null";
-                                            return (
-                                                <React.Fragment key={subsubcategory}>
-                                                    {showSubsubcategoryName && (
-                                                        <tr className="bg-gray-100">
-                                                            <td colSpan="4" className="pl-12 text-lg bg-slate-300">
-                                                                {subcategoryIndex + 1}.{indexToLetter(subsubcategoryIndex)}. {subsubcategory}
-                                                            </td>
-                                                        </tr>
-                                                    )}
-                                                    {medicines[category][subcategory][subsubcategory].filter(matchesSearch).map(medicine => (
+                    {Object.keys(medicines).map((category, categoryIndex) => {
+                        const categoryItems = medicines[category];
+                        const hasCategoryMatches = searchQuery === "" || categoryHasMatches(categoryItems);
+
+                        return hasCategoryMatches ? (
+                            <React.Fragment key={category}>
+                                <tr className="bg-gray-300 text-xl">
+                                    <td colSpan="4" className="font-bold p-4 bg-slate-500">
+                                        {categoryIndex + 1}. {category}
+                                    </td>
+                                </tr>
+                                {Object.keys(categoryItems).map((subcategory, subcategoryIndex) => {
+                                    const showSubcategoryName = subcategory !== "null";
+                                    const subcategoryItems = categoryItems[subcategory];
+                                    const hasSubcategoryMatches = searchQuery === "" || subcategoryHasMatches(subcategoryItems);
+
+                                    return hasSubcategoryMatches ? (
+                                        <React.Fragment key={subcategory}>
+                                            {showSubcategoryName && (
+                                                <tr className="bg-gray-200">
+                                                    <td colSpan="4" className="p-2 pl-8 font-semibold text-lg bg-slate-400">
+                                                        {subcategoryIndex + 1}. {subcategory}
+                                                    </td>
+                                                </tr>
+                                            )}
+                                            {Object.keys(subcategoryItems).map((subsubcategory, subsubcategoryIndex) => {
+                                                const showSubsubcategoryName = subsubcategory !== "null";
+                                                const subsubcategoryItems = subcategoryItems[subsubcategory];
+                                                const hasSubsubcategoryMatches = searchQuery === "" || subsubcategoryHasMatches(subsubcategoryItems);
+
+                                                return hasSubsubcategoryMatches ? (
+                                                    <React.Fragment key={subsubcategory}>
+                                                        {showSubsubcategoryName && (
+                                                            <tr className="bg-gray-100">
+                                                                <td colSpan="4" className="pl-12 text-lg bg-slate-300">
+                                                                    {subcategoryIndex + 1}.{indexToLetter(subsubcategoryIndex)}. {subsubcategory}
+                                                                </td>
+                                                            </tr>
+                                                        )}
+                                                        {subsubcategoryItems
+                                                            .filter(matchesSearch)
+                                                            .map(medicine => (
                                                         <tr key={medicine.lek_min_id}
                                                             className={`${medicine.leki_min_przechowywanie === "freezer" ? "bg-blue-200" : medicine.leki_min_przechowywanie === "narkotyk" ? "bg-orange-200" : ""} ${medicine.leki_min_na_statku_spis_podstawowy === 1 ? "text-red-600" : ""} border border-gray-700`}>
                                                             <td className="pl-16 px-4 py-3 border-r border-l border-gray-700">
@@ -719,15 +749,16 @@ function MinMedicine() {
                                                                 )}
                                                             </td>
                                                         </tr>
-                                                    ))}
-                                                </React.Fragment>
-                                            );
-                                        })}
-                                    </React.Fragment>
-                                );
-                            })}
-                        </React.Fragment>
-                    ))}
+                                                            ))}
+                                                    </React.Fragment>
+                                                ) : null;
+                                            })}
+                                        </React.Fragment>
+                                    ) : null;
+                                })}
+                            </React.Fragment>
+                        ) : null;
+                    })}
                     </tbody>
                 </table>
             </div>

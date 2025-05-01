@@ -7,7 +7,8 @@ import {
     addExpiryStatusTrigger,
     addStatusMedicineTrigger,
     updateExpiryStatusTrigger,
-    updateStatusTrigger
+    updateStatusTrigger,
+    updateDateFormatToEuropean
 } from './db/schema.js';
 import lekiRoutes from './routes/leki.js';
 import sprzetRoutes from './routes/sprzet.js';
@@ -33,10 +34,11 @@ async function initializeDatabase() {
         await updateExpiryStatusTrigger();
         await updateStatusTrigger();
         console.log('Database initialized successfully');
-        await addExpiryStatusTrigger();
-        console.log('Expiry status trigger added successfully');
         await addStatusMedicineTrigger();
         console.log('Status medicine trigger added successfully');
+        await addExpiryStatusTrigger();
+        console.log('Expiry status trigger added successfully');
+
     } catch (error) {
         console.error('Database initialization error:', error);
         process.exit(1);
