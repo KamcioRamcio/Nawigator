@@ -4,28 +4,44 @@ import EquipmentAdd from "../../components/EquipmentAdd.jsx";
 import SiteChange from "../../components/SiteChange.jsx";
 import ConstantsEquipment from "../../constants/constantsEquipment.js";
 import UtilizationEquipmentButton from '../../components/UtilizationEquipmentButton.jsx';
+import AddToOrderModal from '../../components/AddToOrderModal.jsx';
+import ConfirmDialog from "../../components/ConfirmDialog.jsx";
 import {
     showEditButton,
     showDeleteButton,
     showUtilizationButton,
     showAddButton,
-    showPredictedStatusButton
+    showPredictedStatusButton,
+    showOrderButton
+
 } from "../../constants/permisions.js";
 import EquipmentStatusPreview from "../../components/EquipmentStatusPreview.jsx";
 import toastService from '../../utils/toast.js';
 
 function MainEquipmentList() {
     const [equipments, setEquipments] = useState([]);
-    const [editMode, setEditMode] = useState(false);
+    // Change from individual edit mode to global edit mode
+    const [globalEditMode, setGlobalEditMode] = useState(false);
     const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
     const [editedEquipment, setEditedEquipment] = useState({});
+    // Track whether there are unsaved changes
+
+    const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+    const [confirmAction, setConfirmAction] = useState(null);
+    const [confirmMessage, setConfirmMessage] = useState('');
+
+    const [hasChanges, setHasChanges] = useState(false);
     const [currentDate, setCurrentDate] = useState("");
     const username = localStorage.getItem("username");
     const user = JSON.parse(localStorage.getItem("user"));
     const userPosition = user.position || "viewer";
+    const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
+    const [selectedEquipment, setSelectedEquipment] = useState(null);
+    const [statusFilter, setStatusFilter] = useState("all");
     const [siteChange, setSiteChange] = useState(false)
     const [selectedCategory, setSelectedCategory] = useState(0);
     const [addEquipment, setAddEquipment] = useState(false);
+    const [showActions, setShowActions] = useState(false)
     const [newEquipment, setNewEquipment] = useState({
         eq_nazwa: "",
         eq_ilosc_wymagana: "",
@@ -68,6 +84,7 @@ function MainEquipmentList() {
         }
     }
 
+    // Modified handle edit to work with global edit mode
     const handleEdit = (equipmentId, field, value) => {
         if (userPosition === "viewer") {
             return;
@@ -96,8 +113,131 @@ function MainEquipmentList() {
                 }
             }
         ));
+
+        // Set hasChanges flag to true
+        setHasChanges(true);
     }
 
+    // New function to handle global edit mode
+    const handleGlobalEditToggle = () => {
+        if (userPosition === "viewer") {
+            return;
+        }
+
+        if (globalEditMode) {
+            // If exiting edit mode with changes, ask for confirmation
+            if (hasChanges) {
+                if (!confirm("Masz niezapisane zmiany. Czy na pewno chcesz wyjść z trybu edycji?")) {
+                    return;
+                }
+            }
+            // Exiting edit mode
+            setGlobalEditMode(false);
+            setEditedEquipment({});
+            setHasChanges(false);
+        } else {
+            // Entering edit mode - initialize editedEquipment
+            const initialValues = {};
+
+            // Loop through all equipment to initialize edit values
+            Object.keys(equipments).forEach(category => {
+                const categoryItems = equipments[category];
+                Object.keys(categoryItems).forEach(subcategory => {
+                    const subcategoryItems = categoryItems[subcategory];
+                    subcategoryItems.forEach(equipment => {
+                        initialValues[equipment.sprzet_id] = {
+                            ...equipment,
+                            sprzet_na_statku: equipment.sprzet_na_statku === 1 ? "true" : "false",
+                            sprzet_torba_ratownika: equipment.sprzet_torba_ratownika === 1 ? "true" : "false"
+                        };
+                    });
+                });
+            });
+
+            setEditedEquipment(initialValues);
+            setGlobalEditMode(true);
+        }
+    };
+    const handleAddToOrderClick = (equipment) => {
+        setSelectedEquipment(equipment);
+        setIsOrderModalOpen(true);
+    };
+
+
+    // New function to save all changes at once
+    const handleSaveAll = async () => {
+        // Get all equipment IDs that have been edited
+        const equipmentIds = Object.keys(editedEquipment);
+        if (equipmentIds.length === 0) {
+            toastService.info('Brak zmian do zapisania');
+            return;
+        }
+
+        const savePromises = equipmentIds.map(async (equipmentId) => {
+            try {
+                // Convert equipmentId to string to ensure consistent comparison
+                const stringEquipmentId = String(equipmentId);
+
+                // Find the equipment in the nested structure, accounting for possible type mismatches
+                let foundEquipment = null;
+                for (const category of Object.values(equipments)) {
+                    for (const subcategory of Object.values(category)) {
+                        const found = subcategory.find(eq => String(eq.sprzet_id) === stringEquipmentId);
+                        if (found) {
+                            foundEquipment = found;
+                            break;
+                        }
+                    }
+                    if (foundEquipment) break;
+                }
+
+                // If equipment not found, handle gracefully
+                if (!foundEquipment) {
+                    console.error(`Equipment with ID ${equipmentId} not found in data`);
+                    return { success: false, id: equipmentId, error: "Equipment not found in data structure" };
+                }
+
+                const response = await fetch(apiUrl + "sprzet/" + equipmentId, {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(editedEquipment[equipmentId])
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                return { success: true, id: equipmentId };
+            } catch (error) {
+                console.error(`Error updating equipment ${equipmentId}:`, error);
+                return { success: false, id: equipmentId, error: error.message };
+            }
+        });
+
+        // Wait for all save operations to complete
+        const results = await Promise.all(savePromises);
+
+        // Count successes and failures
+        const successes = results.filter(r => r.success).length;
+        const failures = results.filter(r => !r.success).length;
+
+        if (failures === 0) {
+            toastService.success(`Zapisano wszystkie zmiany (${successes} pozycji)`);
+            setGlobalEditMode(false);
+            setEditedEquipment({});
+            setHasChanges(false);
+        } else if (successes === 0) {
+            toastService.error(`Błąd podczas zapisywania zmian. Żadna pozycja nie została zaktualizowana.`);
+        } else {
+            toastService.warning(`Zapisano częściowo: ${successes} pozycji, ${failures} błędów`);
+        }
+
+        fetchEquipment();
+    };
+
+    // Original save method preserved for compatibility
     const handleSave = async (equipmentId) => {
         try {
             const response = await fetch(apiUrl + "sprzet/" + equipmentId, {
@@ -112,7 +252,6 @@ function MainEquipmentList() {
             }
             toastService.success('Sprzęt został zaktualizowany pomyślnie');
 
-            setEditMode(prev => ({...prev, [equipmentId]: false}));
             console.log('Equipment updated', editedEquipment[equipmentId]);
         } catch (error) {
             console.error('Fetch error:', error);
@@ -122,9 +261,6 @@ function MainEquipmentList() {
     }
 
     const handleDelete = async (equipmentId) => {
-        if (!confirm("Czy na pewno chcesz usunąć tę pozycję? Ta operacja jest nieodwracalna.")) {
-            return;
-        }
         try {
             const response = await fetch(apiUrl + "sprzet/delete/" + equipmentId, {
                 method: "DELETE",
@@ -210,11 +346,26 @@ function MainEquipmentList() {
 
     const [searchQuery, setSearchQuery] = useState("");
     const matchesSearch = (equipment) => {
-        const searchLower = searchQuery.toLowerCase();
-        return (
-            equipment.sprzet_nazwa.toLowerCase().includes(searchLower)
-        );
-    }
+        if (!searchQuery.trim() && statusFilter === "all") return true;
+
+        const queryMatch = !searchQuery.trim() ||
+            (equipment.sprzet_nazwa && equipment.sprzet_nazwa.toLowerCase().includes(searchQuery.toLowerCase()));
+
+        const statusMatch = statusFilter === "all" ||
+            equipment.sprzet_termin === statusFilter ||
+            equipment.sprzet_ilosc_termin === statusFilter;
+
+        return queryMatch && statusMatch;
+    };
+
+    const handleDeleteEquipment = (equipmentId) => {
+        setConfirmAction(() => () => handleDelete(equipmentId));
+        setConfirmMessage("Czy na pewno chcesz usunąć tę pozycję? Ta operacja jest nieodwracalna.");
+        setConfirmDialogOpen(true);
+    };
+
+
+
 
     return (
         <div className="bg-gray-100 min-h-screen pb-10">
@@ -238,6 +389,26 @@ function MainEquipmentList() {
                                 Zalogowany jako {username}
                             </p>
                         </div>
+
+                        {/* Global edit button added here */}
+                        {showEditButton(userPosition) && (
+                            <button
+                                className={`rounded-3xl ${globalEditMode ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700'} text-white font-bold text-lg p-3 mr-3 z-10`}
+                                onClick={globalEditMode ? handleSaveAll : handleGlobalEditToggle}
+                            >
+                                {globalEditMode ? 'Zapisz wszystko' : 'Edytuj wszystko'}
+                            </button>
+                        )}
+
+                        {/* Cancel edit button, only appears when in edit mode */}
+                        {globalEditMode && showEditButton(userPosition) && (
+                            <button
+                                className="rounded-3xl bg-gray-500 hover:bg-gray-600 text-white font-bold text-lg p-3 mr-3 z-10"
+                                onClick={handleGlobalEditToggle}
+                            >
+                                Anuluj
+                            </button>
+                        )}
 
                         {showAddButton(userPosition) && (
                             <button className="rounded-3xl bg-slate-900 text-white font-bold text-lg p-3 mr-10 z-10"
@@ -457,6 +628,26 @@ function MainEquipmentList() {
                                 </svg>
                             </div>
                         </div>
+                        <div className="relative w-1/4">
+                            <select
+                                value={statusFilter}
+                                onChange={(e) => setStatusFilter(e.target.value)}
+                                className="border border-gray-300 rounded-md px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                                <option value="all">Wszystkie statusy</option>
+                                <option value="Ważny">Ważny</option>
+                                <option value="Nieważny">Nieważny</option>
+                                <option value="W porządku">W porządku</option>
+                                <option value="Zamówione">Zamówione</option>
+                                <option value="Uwaga Ilość">Uwaga Ilość</option>
+                                <option value="Do zamówienia">Do zamówienia</option>
+                            </select>
+                            <div className="absolute right-3 top-2.5 text-gray-400 pointer-events-none">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -477,7 +668,7 @@ function MainEquipmentList() {
                     <tbody className="text-left">
                     {Object.keys(equipments).map((category, categoryIndex) => {
                         const categoryItems = equipments[category];
-                        const hasCategoryMatches = searchQuery === "" || categoryHasMatches(categoryItems);
+                        const hasCategoryMatches = categoryHasMatches(categoryItems);
 
                         return hasCategoryMatches ? (
                             <React.Fragment key={category}>
@@ -489,7 +680,7 @@ function MainEquipmentList() {
                                 {Object.keys(categoryItems).map((subcategory, subcategoryIndex) => {
                                     const showSubcategoryName = subcategory !== "null";
                                     const subcategoryItems = categoryItems[subcategory];
-                                    const hasSubcategoryMatches = searchQuery === "" || subcategoryHasMatches(subcategoryItems);
+                                    const hasSubcategoryMatches = subcategoryHasMatches(subcategoryItems);
 
                                     return hasSubcategoryMatches ? (
                                         <React.Fragment key={subcategory}>
@@ -505,9 +696,9 @@ function MainEquipmentList() {
                                                 .filter(matchesSearch)
                                                 .map(equipment => (
                                                     <tr key={equipment.sprzet_id}
-                                                        className={`border border-gray-700 ${equipment.sprzet_torba_ratownika === 1 ? "bg-green-200" : ""} ${equipment.sprzet_na_statku === 1 ? "text-red-500" : ""}`}>
+                                                        className={`border border-gray-700 ${equipment.sprzet_torba_ratownika === 1 ? "bg-green-200" : ""}`}>
                                                         <td className="pl-6 px-2 py-4 border-r border-l border-gray-700 max-w-3xl">
-                                                            {editMode[equipment.sprzet_id] ? (
+                                                            {globalEditMode ? (
                                                                 <>
                                                                     <input
                                                                         type="text"
@@ -578,7 +769,7 @@ function MainEquipmentList() {
                                                             )}
                                                         </td>
                                                         <td className="px-2 py-4 border-r border-l border-gray-700">
-                                                            {editMode[equipment.sprzet_id] ? (
+                                                            {globalEditMode ? (
                                                                 <input
                                                                     type="number"
                                                                     value={editedEquipment[equipment.sprzet_id]?.sprzet_ilosc_aktualna || ""}
@@ -590,7 +781,7 @@ function MainEquipmentList() {
                                                             )}
                                                         </td>
                                                         <td className="px-2 py-4 border-r border-l border-gray-700">
-                                                            {editMode[equipment.sprzet_id] ? (
+                                                            {globalEditMode ? (
                                                                 <input
                                                                     type="date"
                                                                     value={editedEquipment[equipment.sprzet_id]?.sprzet_data_waznosci || ""}
@@ -602,7 +793,7 @@ function MainEquipmentList() {
                                                             )}
                                                         </td>
                                                         <td className="px-2 py-4 border-r border-l border-gray-700">
-                                                            {editMode[equipment.sprzet_id] ? (
+                                                            {globalEditMode ? (
                                                                 <input
                                                                     type="number"
                                                                     value={editedEquipment[equipment.sprzet_id]?.sprzet_ilosc_wymagana || ""}
@@ -614,7 +805,7 @@ function MainEquipmentList() {
                                                             )}
                                                         </td>
                                                         <td className="px-2 py-4 border-r border-l border-gray-700">
-                                                            {editMode[equipment.sprzet_id] ? (
+                                                            {globalEditMode ? (
                                                                 <input
                                                                     type="text"
                                                                     value={editedEquipment[equipment.sprzet_id]?.sprzet_status || ""}
@@ -630,8 +821,9 @@ function MainEquipmentList() {
                                                         </td>
                                                         <td className={`
     ${equipment.sprzet_ilosc_termin === "W porządku" ? "font-bold text-green-600" : ""}
+    ${equipment.sprzet_ilosc_termin === "Zamówione" ? "font-bold text-blue-600" : ""}
+    ${equipment.sprzet_ilosc_termin.includes("W zamówieniu") ? "font-bold text-violet-600" : ""}
     ${(equipment.sprzet_ilosc_termin === "Uwaga Ilość" || equipment.sprzet_ilosc_termin === "Do zamówienia") ? "font-bold text-orange-600" : ""}
-    ${equipment.sprzet_ilosc_termin !== "Ważny" && equipment.sprzet_ilosc_termin !== "W porządku" && equipment.sprzet_ilosc_termin !== "Uwaga Ilość" && equipment.sprzet_ilosc_termin !== "Do zamówienia" ? "font-bold text-red-700" : ""}
     px-2 py-4 border-r border-l border-gray-700
 `}>
                                                             {equipment.sprzet_ilosc_termin}
@@ -639,66 +831,46 @@ function MainEquipmentList() {
                                                         <td className="px-2 py-4 border-r border-l border-gray-700">
                                                             {equipment.sprzet_kto_zmienil}
                                                         </td>
-                                                        <td className="px-2 py-4 w-20">
-                                                            {editMode[equipment.sprzet_id] ? (
-                                                                <div className="flex flex-col space-y-2">
-                                                                    <button
-                                                                        onClick={() => handleSave(equipment.sprzet_id)}
-                                                                        className="bg-green-600 hover:bg-green-700 text-white font-semibold py-1 px-3 rounded"
-                                                                    >
-                                                                        Zapisz
-                                                                    </button>
-                                                                    <button
-                                                                        onClick={() => setEditMode(prev => ({
-                                                                            ...prev,
-                                                                            [equipment.sprzet_id]: false
-                                                                        }))}
-                                                                        className="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-1 px-3 rounded"
-                                                                    >
-                                                                        Anuluj
-                                                                    </button>
-                                                                    {showDeleteButton(userPosition) && (
-                                                                        <button
-                                                                            onClick={() => handleDelete(equipment.sprzet_id)}
-                                                                            className="bg-red-600 hover:bg-red-700 text-white font-semibold py-1 px-3 rounded"
-                                                                        >
-                                                                            Usuń
-                                                                        </button>
-                                                                    )}
-                                                                </div>
-                                                            ) : (
-                                                                <div className="flex flex-col space-y-2">
-                                                                    {showEditButton(userPosition) && (
-                                                                        <button
-                                                                            onClick={() => {
-                                                                                setEditMode(prev => ({
-                                                                                    ...prev,
-                                                                                    [equipment.sprzet_id]: true,
-                                                                                }));
-                                                                                setEditedEquipment(prev => ({
-                                                                                    ...prev,
-                                                                                    [equipment.sprzet_id]: {
-                                                                                        ...equipment,
-                                                                                        sprzet_na_statku: equipment.sprzet_na_statku === 1 ? "true" : "false",
-                                                                                        sprzet_torba_ratownika: equipment.sprzet_torba_ratownika === 1 ? "true" : "false"
-                                                                                    },
-                                                                                }))
-                                                                            }}
-                                                                            className="bg-slate-900 hover:bg-slate-700 text-white font-semibold py-1 px-3 rounded"
-                                                                        >
-                                                                            Edytuj
-                                                                        </button>
-                                                                    )}
-                                                                    {showUtilizationButton(userPosition) && (
-                                                                        <div className="mt-1">
-                                                                            <UtilizationEquipmentButton
-                                                                                equipment={equipment}
-                                                                                onUtilizationComplete={fetchEquipment}
-                                                                            />
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                            )}
+                                                        <td className="px-2 py-2 w-16">
+                                                            <div className="flex flex-col space-y-1">
+                                                                {/* Toggle Button - More subtle */}
+                                                                <button
+                                                                    onClick={() => setShowActions(!showActions)}
+                                                                    className="text-gray-600 text-sm py-1 px-1 rounded"
+                                                                >
+                                                                    {showActions ? '⬆️' : '⚙️'}
+                                                                </button>
+
+                                                                {showActions && (
+                                                                    <div className="flex flex-col space-y-1">
+                                                                        {showDeleteButton(userPosition) && !globalEditMode && (
+                                                                            <button
+                                                                                onClick={() => handleDeleteEquipment(equipment.sprzet_id)}
+                                                                                className="bg-red-100 text-red-700 text-xs py-1 px-2 rounded flex items-center"
+                                                                            >
+                                                                                <span className="mr-1">🗑️</span>Usuń
+                                                                            </button>
+                                                                        )}
+
+                                                                        {showOrderButton(userPosition) && !globalEditMode && (
+                                                                            <button
+                                                                                onClick={() => handleAddToOrderClick(equipment)}
+                                                                                className="bg-blue-100 text-blue-700 text-xs py-1 px-2 rounded flex items-center"
+                                                                            >
+                                                                                <span className="mr-1">🛒</span>Zamów
+                                                                            </button>
+                                                                        )}
+                                                                        {showUtilizationButton(userPosition) && !globalEditMode && (
+                                                                            <div>
+                                                                                <UtilizationEquipmentButton
+                                                                                    equipment={equipment}
+                                                                                    onUtilizationComplete={fetchEquipment}
+                                                                                />
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                )}
+                                                            </div>
                                                         </td>
                                                     </tr>
                                                 ))}
@@ -714,9 +886,24 @@ function MainEquipmentList() {
             <EquipmentStatusPreview
                 isOpen={isStatusModalOpen}
                 onClose={() => setIsStatusModalOpen(false)}/>
+            <AddToOrderModal
+                isOpen={isOrderModalOpen}
+                onClose={() => setIsOrderModalOpen(false)}
+                equipment={selectedEquipment}
+            />
+            <ConfirmDialog
+                isOpen={confirmDialogOpen}
+                message={confirmMessage}
+                onConfirm={() => {
+                    setConfirmDialogOpen(false);
+                    confirmAction && confirmAction();
+                }}
+                onCancel={() => setConfirmDialogOpen(false)}
+            />
         </div>
 
     )
 }
 
 export default MainEquipmentList;
+

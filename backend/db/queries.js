@@ -2,10 +2,22 @@
 import {getDb} from './index.js';
 
 
-function formatDateToEuropean(isoDate) {
-    if (!isoDate) return isoDate;
-    const [year, month, day] = isoDate.split('-');
-    return `${day}-${month}-${year}`;
+function formatDateToEuropean(date) {
+    if (!date) return date;
+
+    // Check if already in DD-MM-YYYY format
+    if (/^\d{2}-\d{2}-\d{4}$/.test(date)) {
+        return date; // Already in correct format
+    }
+
+    // Check if in YYYY-MM-DD format
+    if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+        const [year, month, day] = date.split('-');
+        return `${day}-${month}-${year}`;
+    }
+
+    // Return original if format is unknown
+    return date;
 }
 
 
@@ -792,4 +804,293 @@ export async function deleteUser(id) {
     const db = await getDb();
     await db.run('DELETE FROM users WHERE id = ?', [id]);
     return { message: 'User deleted successfully' };
+}
+
+// Order management queries
+export async function createOrder(orderData) {
+    const db = await getDb();
+    const { nazwa, status, data_zamowienia } = orderData;
+
+    const result = await db.run(
+        'INSERT INTO Zamowienia (nazwa, status, data_zamowienia) VALUES (?, ?, ?)',
+        [nazwa, status || 'Nowe', data_zamowienia || new Date().toLocaleDateString('pl-PL')]
+    );
+
+    return result.lastID;
+}
+
+export async function getAllOrders() {
+    const db = await getDb();
+
+    const sql = `
+        SELECT 
+            z.*,
+            COALESCE(leki_count.count, 0) as leki_count,
+            COALESCE(sprzet_count.count, 0) as sprzet_count
+        FROM Zamowienia z
+        LEFT JOIN (
+            SELECT id_zamowienia, COUNT(*) as count 
+            FROM Zamowienia_Leki 
+            GROUP BY id_zamowienia
+        ) leki_count ON z.id = leki_count.id_zamowienia
+        LEFT JOIN (
+            SELECT id_zamowienia, COUNT(*) as count 
+            FROM Zamowienia_Sprzet 
+            GROUP BY id_zamowienia
+        ) sprzet_count ON z.id = sprzet_count.id_zamowienia
+        ORDER BY z.data_zamowienia DESC
+    `;
+
+    return await db.all(sql);
+}
+
+// Get order by ID with items
+export async function getOrderById(id) {
+    const db = await getDb();
+
+    try {
+        // Get the order
+        const order = await db.get(`
+            SELECT * FROM Zamowienia WHERE id = ?
+        `, [id]);
+
+        if (!order) return null;
+
+        // Get medicine items
+        const medicineItems = await db.all(`
+            SELECT zi.*, l.nazwa_leku, l.opakowanie 
+            FROM Zamowienia_Leki zi
+            JOIN Leki l ON zi.id_leku = l.id
+            WHERE zi.id_zamowienia = ?
+        `, [id]);
+
+        // Get equipment items - FIX: use correct column name
+        const equipmentItems = await db.all(`
+            SELECT zi.*, s.nazwa as nazwa_sprzetu 
+            FROM Zamowienia_Sprzet zi
+            JOIN Sprzet s ON zi.id_sprzetu = s.id
+            WHERE zi.id_zamowienia = ?
+        `, [id]);
+
+        return {
+            ...order,
+            leki: medicineItems,
+            sprzet: equipmentItems
+        };
+    } catch (error) {
+        console.error("Error retrieving order by ID:", error);
+        throw error;
+    }
+}
+
+export async function updateOrderStatus(orderId, newStatus) {
+    const db = await getDb();
+
+    await db.run(
+        'UPDATE Zamowienia SET status = ? WHERE id = ?',
+        [newStatus, orderId]
+    );
+
+    // If status is "Zamówione", update product statuses
+    if (newStatus === 'Zamówione') {
+        // Update medicine statuses
+        await db.run(`
+      UPDATE Leki
+      SET status = 'Zamówione'
+      WHERE id IN (
+        SELECT id_leku FROM Zamowienia_Leki WHERE id_zamowienia = ?
+      ) AND status = 'Do zamówienia'
+    `, [orderId]);
+
+        // Update equipment statuses
+        await db.run(`
+      UPDATE Sprzet
+      SET ilosc_termin = 'Zamówione'
+      WHERE id IN (
+        SELECT id_sprzetu FROM Zamowienia_Sprzet WHERE id_zamowienia = ?
+      ) AND ilosc_termin = 'Do zamówienia'
+    `, [orderId]);
+    }
+
+    // If status is "Przyjęte", update product quantities
+    if (newStatus === 'Przyjęte') {
+        const medicines = await db.all(
+            'SELECT * FROM Zamowienia_Leki WHERE id_zamowienia = ?',
+            [orderId]
+        );
+
+        for (const medicine of medicines) {
+            const currentMedicine = await db.get(
+                'SELECT * FROM Leki WHERE id = ?',
+                [medicine.id_leku]
+            );
+
+            // Save original values before updating
+            const originalQuantity = currentMedicine.ilosc_wstepna;
+            const originalExpDate = currentMedicine.data_waznosci;
+            const formattedNewExpDate = formatDateToEuropean(medicine.data_waznosci);
+
+            await db.run(`
+                UPDATE Leki
+                SET ilosc_wstepna    = ilosc_wstepna + ?,
+                    data_waznosci    = CASE
+                                           WHEN ilosc_wstepna = 0 THEN ?
+                                           ELSE data_waznosci
+                        END,
+                    important_status = CASE
+                                           WHEN ilosc_wstepna = 0 AND (important_status IS NULL OR important_status = '')
+                                               THEN ? || 'x' || ?
+                                           WHEN ilosc_wstepna = 0
+                                               THEN important_status || '; ' || ? || 'x' || ?
+                                           WHEN ilosc_wstepna > 0 AND
+                                                (important_status IS NULL OR important_status = '' OR important_status = '0')
+                                               THEN ? || 'x' || ? || '; ' || ? || 'x' || ?
+                                           ELSE important_status || '; ' || ? || 'x' || ? || '; ' || ? || 'x' || ?
+                        END
+                WHERE id = ?
+            `, [
+                medicine.ilosc,                    // 1. Add to ilosc_wstepna
+                formattedNewExpDate,            // 2. New expiration date if original was 0
+                medicine.ilosc,                    // 3. New quantity (case: original = 0, no status)
+                formattedNewExpDate,            // 4. New expiration date (case: original = 0, no status)
+                medicine.ilosc,                    // 5. New quantity (case: original = 0, has status)
+                formattedNewExpDate,            // 6. New expiration date (case: original = 0, has status)
+                originalQuantity,                  // 7. Original quantity (case: original > 0, no status)
+                originalExpDate,                   // 8. Original expiration date (case: original > 0, no status)
+                medicine.ilosc,                    // 9. New quantity (case: original > 0, no status)
+                formattedNewExpDate,            // 10. New expiration date (case: original > 0, no status)
+                originalQuantity,                  // 11. Original quantity (case: original > 0, has status)
+                originalExpDate,                   // 12. Original expiration date (case: original > 0, has status)
+                medicine.ilosc,                    // 13. New quantity (case: original > 0, has status)
+                formattedNewExpDate,            // 14. New expiration date (case: original > 0, has status)
+                medicine.id_leku                   // 15. WHERE clause
+            ]);
+        }
+
+
+        // Update equipment quantities
+        const equipment = await db.all(
+            'SELECT * FROM Zamowienia_Sprzet WHERE id_zamowienia = ?',
+            [orderId]
+        );
+
+        for (const item of equipment) {
+            // Fetch current equipment data to get original values (like in Leki UPDATE)
+            const currentEquipment = await db.get(
+                'SELECT * FROM Sprzet WHERE id = ?',
+                [item.id_sprzetu]
+            );
+
+            // Save original values before updating
+            const originalQuantity = currentEquipment.ilosc_aktualna;
+            const originalExpDate = currentEquipment.data_waznosci;
+
+            await db.run(`
+                UPDATE Sprzet
+                SET ilosc_aktualna = ilosc_aktualna + ?,
+                    data_waznosci  = CASE
+                                         WHEN ilosc_aktualna = 0 THEN ?
+                                         ELSE data_waznosci
+                        END,
+                    status         = CASE
+                                         WHEN ilosc_aktualna = 0 AND (status IS NULL OR status = '')
+                                             THEN ? || 'x' || ?
+                                         WHEN ilosc_aktualna = 0
+                                             THEN status || '; ' || ? || 'x' || ?
+                                         WHEN ilosc_aktualna > 0 AND (status IS NULL OR status = '' OR status = '0')
+                                             THEN ? || 'x' || ? || '; ' || ? || 'x' || ?
+                                         ELSE status || '; ' || ? || 'x' || ? || '; ' || ? || 'x' || ?
+                        END
+                WHERE id = ?
+            `, [
+                item.ilosc,
+                item.data_waznosci,
+                item.ilosc,
+                item.data_waznosci,
+                item.ilosc,
+                item.data_waznosci,
+                originalQuantity,
+                originalExpDate,
+                item.ilosc,
+                item.data_waznosci,
+                originalQuantity,
+                originalExpDate,
+                item.ilosc,
+                item.data_waznosci,
+                item.id_sprzetu
+            ]);
+        }
+    }
+
+    return true;
+}
+
+// Order items management
+export async function addMedicineToOrder(orderItemData) {
+    const db = await getDb();
+    const { id_zamowienia, id_leku, ilosc, uwagi, data_waznosci } = orderItemData;
+
+    const result = await db.run(
+        'INSERT INTO Zamowienia_Leki (id_zamowienia, id_leku, ilosc, uwagi, data_waznosci) VALUES (?, ?, ?, ?, ?)',
+        [id_zamowienia, id_leku, ilosc, uwagi || '', data_waznosci]
+    );
+
+    return result.lastID;
+}
+
+export async function addEquipmentToOrder(orderItemData) {
+    const db = await getDb();
+    const { id_zamowienia, id_sprzetu, ilosc, uwagi , data_waznosci } = orderItemData;
+
+    const result = await db.run(
+        'INSERT INTO Zamowienia_Sprzet (id_zamowienia, id_sprzetu, ilosc, uwagi, data_waznosci) VALUES (?, ?, ?, ?, ?)',
+        [id_zamowienia, id_sprzetu, ilosc, uwagi || '', data_waznosci]
+    );
+
+    return result.lastID;
+}
+
+export async function removeMedicineFromOrder(orderItemId) {
+    const db = await getDb();
+    await db.run('DELETE FROM Zamowienia_Leki WHERE id = ?', [orderItemId]);
+    return true;
+}
+
+export async function removeEquipmentFromOrder(orderItemId) {
+    const db = await getDb();
+    await db.run('DELETE FROM Zamowienia_Sprzet WHERE id = ?', [orderItemId]);
+    return true;
+}
+
+export async function deleteOrder(orderId) {
+    const db = await getDb();
+
+    await db.run('DELETE FROM Zamowienia_Leki WHERE id_zamowienia = ?', [orderId]);
+    await db.run('DELETE FROM Zamowienia_Sprzet WHERE id_zamowienia = ?', [orderId]);
+    await db.run('DELETE FROM Zamowienia WHERE id = ?', [orderId]);
+
+    return true;
+}
+export async function updateMedicineInOrder(orderItemId, data) {
+    const db = await getDb();
+    const { ilosc, uwagi, data_waznosci } = data;
+
+    await db.run(
+        'UPDATE Zamowienia_Leki SET ilosc = ?, uwagi = ?, data_waznosci = ? WHERE id = ?',
+        [ilosc, uwagi || null, data_waznosci, orderItemId]
+    );
+
+    return orderItemId;
+}
+
+export async function updateEquipmentInOrder(orderItemId, data) {
+    const db = await getDb();
+    const { ilosc, uwagi, data_waznosci } = data;
+
+    await db.run(
+        'UPDATE Zamowienia_Sprzet SET ilosc = ?, uwagi = ?, data_waznosci = ? WHERE id = ?',
+        [ilosc, uwagi || null, data_waznosci, orderItemId]
+    );
+
+    return orderItemId;
 }

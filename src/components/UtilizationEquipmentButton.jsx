@@ -16,7 +16,8 @@ const UtilizationEquipmentButton = ({equipment, onUtilizationComplete}) => {
         <>
             <button
                 onClick={handleUtilize}
-                className="text-red-600 font-semibold ml-2"
+                className="bg-violet-200 text-violet-600 px-[18px] py-1 text-xs rounded "
+                title="Proszę kliknąć, aby zutylizować"
             >
                 Utylizuj
             </button>

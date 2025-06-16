@@ -15,6 +15,8 @@ import sprzetRoutes from './routes/sprzet.js';
 import utylizacjaRoutes from './routes/utylizacja.js';
 import backupRoutes from './routes/backup.js';
 import adminRoutes from './routes/admin.js';
+import zamowieniaRoutes from './routes/zamowienia.js';
+
 import { backupMiddleware } from './middleware/backup.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { createDailyBackup} from './utils/helpers.js';
@@ -52,6 +54,7 @@ app.use('/api', sprzetRoutes);
 app.use('/api/utylizacja', utylizacjaRoutes);
 app.use('/api', backupRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api', zamowieniaRoutes);
 
 // Error handling
 app.use(errorHandler);

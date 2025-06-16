@@ -33,14 +33,14 @@ export const generateUtilizationPDF = (data) => {
     doc.setFont("Roboto", "bold");
     doc.text("POLITECHNIKA MORSKA W SZCZECINIE", doc.internal.pageSize.width / 2, 15, {align: 'center'});
     doc.setFontSize(13);
-    doc.text("MV NAWIGATOR XXI", doc.internal.pageSize.width / 2, 20, {align: 'center'});
+    doc.text("NAWIGATOR XXI", doc.internal.pageSize.width / 2, 20, {align: 'center'});
     doc.setFontSize(10);
     doc.text(`Utylizacja : ${currentDate}`, doc.internal.pageSize.width / 2, 30, {align: 'center'});
 
     // Define table data with only L group items
 
 
-    const tableColumn = ["Nazwa", "Ilość", "Opakowanie", "Data ważności", "Ilość nominalna"];
+    const tableColumn = ["Nazwa", "Ilość do utylizacji", "Opakowanie"];
 
     // Process data to handle Polish characters
     const tableRows = data
@@ -49,8 +49,6 @@ export const generateUtilizationPDF = (data) => {
             item.nazwa,
             item.ilosc,
             item.opakowanie || '',
-            item.data_waznosci || '',
-            item.ilosc_nominalna || ''
         ]);
 
     // Generate the table

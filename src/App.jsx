@@ -9,6 +9,7 @@ import MinMedicine from "./pages/Med/MinMedicine.jsx";
 import Utilization from "./pages/Other/Utilization.jsx";
 import Documentation from "./pages/Other/Documentation.jsx";
 import OrganizedEquipment from "./pages/Eq/OrganizedEquipment.jsx";
+import OrderList from "./pages/Other/OrderList.jsx";
 import Admin from "./pages/Other/Admin.jsx";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute.jsx";
 import './index.css';
@@ -33,6 +34,7 @@ function App(){
                     <Route path="/zgrany-sprzet" element={<OrganizedEquipment/>}></Route>
                     <Route path="/utylizacja" element={<Utilization/>}></Route>
                     <Route path="/dokumentacja" element={<Documentation/>}></Route>
+                    <Route path="/zamowienia" element={<OrderList/>}></Route>
                     <Route path="*" element={<Navigate to="/" />} />
                 </Routes>
             </BrowserRouter>

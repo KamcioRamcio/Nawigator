@@ -38,9 +38,8 @@ export async function createTables() {
         );
 
         CREATE VIEW IF NOT EXISTS LekiView AS
-        SELECT
-            *,
-            (ilosc_wstepna - rozchod_ilosc) AS stan_magazynowy_ilosc
+        SELECT *,
+               (ilosc_wstepna - rozchod_ilosc) AS stan_magazynowy_ilosc
         FROM Leki;
 
 
@@ -82,19 +81,19 @@ export async function createTables() {
 
         CREATE TABLE IF NOT EXISTS Sprzet
         (
-            id              INTEGER PRIMARY KEY AUTOINCREMENT,
-            nazwa           TEXT,
-            ilosc_wymagana  FLOAT,
-            ilosc_aktualna  FLOAT,
-            data_waznosci   DATE,
-            status          TEXT,
-            termin          TEXT,
-            ilosc_termin    TEXT,
-            kto_zmienil     TEXT,
-            id_kategorii   INTEGER,
-            id_pod_kategorii  INTEGER,
-            na_statku       BOOLEAN DEFAULT true,
-            torba_ratownika BOOLEAN
+            id               INTEGER PRIMARY KEY AUTOINCREMENT,
+            nazwa            TEXT,
+            ilosc_wymagana   FLOAT,
+            ilosc_aktualna   FLOAT,
+            data_waznosci    DATE,
+            status           TEXT,
+            termin           TEXT,
+            ilosc_termin     TEXT,
+            kto_zmienil      TEXT,
+            id_kategorii     INTEGER,
+            id_pod_kategorii INTEGER,
+            na_statku        BOOLEAN DEFAULT true,
+            torba_ratownika  BOOLEAN
         );
 
         CREATE TABLE IF NOT EXISTS Utylizacja
@@ -139,14 +138,46 @@ export async function createTables() {
             id INTEGER
         );
 
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+        CREATE TABLE IF NOT EXISTS users
+        (
+            id       INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT NOT NULL UNIQUE,
             password TEXT DEFAULT NULL,
             position TEXT NOT NULL
         );
 
-    `);
+        CREATE TABLE IF NOT EXISTS Zamowienia (
+                                                  id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                                  nazwa TEXT NOT NULL,
+                                                  status TEXT DEFAULT 'Nowe',
+                                                  data_zamowienia DATE NOT NULL DEFAULT (strftime('%d-%m-%Y', 'now')),
+                                                  data_realizacji DATE DEFAULT NULL DEFAULT (strftime('%d-%m-%Y', 'now')),
+                                                  uwagi TEXT
+        );
+
+        CREATE TABLE IF NOT EXISTS Zamowienia_Leki (
+                                                       id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                                       id_zamowienia INTEGER NOT NULL,
+                                                       id_leku INTEGER NOT NULL,
+                                                       ilosc REAL NOT NULL,
+                                                       uwagi TEXT,
+                                                       data_waznosci DATE,
+                                                       FOREIGN KEY (id_zamowienia) REFERENCES Zamowienia(id),
+                                                       FOREIGN KEY (id_leku) REFERENCES Leki(id)
+        );
+
+        CREATE TABLE IF NOT EXISTS Zamowienia_Sprzet (
+                                                         id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                                         id_zamowienia INTEGER NOT NULL,
+                                                         id_sprzetu INTEGER NOT NULL,
+                                                         ilosc REAL NOT NULL,
+                                                         uwagi TEXT,
+                                                         data_waznosci DATE,
+                                                         FOREIGN KEY (id_zamowienia) REFERENCES Zamowienia(id),
+                                                         FOREIGN KEY (id_sprzetu) REFERENCES Sprzet(id)
+        );
+    
+`);
 
     await db.exec(`
     -- Leki_spis_min -> Leki (when adding to min list)
@@ -317,6 +348,7 @@ export async function addExpiryStatusTrigger() {
                 WHEN datetime(substr(NEW.data_waznosci, 7, 4) || '-' || substr(NEW.data_waznosci, 4, 2) || '-' || substr(NEW.data_waznosci, 1, 2)) < datetime('now') THEN 'Przeterminowane'
                 WHEN datetime(substr(NEW.data_waznosci, 7, 4) || '-' || substr(NEW.data_waznosci, 4, 2) || '-' || substr(NEW.data_waznosci, 1, 2)) <= datetime('now', '+1 month') THEN 'Ważność 1 miesiąc'
                 WHEN datetime(substr(NEW.data_waznosci, 7, 4) || '-' || substr(NEW.data_waznosci, 4, 2) || '-' || substr(NEW.data_waznosci, 1, 2)) <= datetime('now', '+3 month') THEN 'Ważność 3 miesiące'
+                WHEN ilosc_wstepna = 0 THEN 'Brak na stanie'
                 ELSE 'Ważny'
             END
             WHERE id = NEW.id;
@@ -334,6 +366,7 @@ export async function addExpiryStatusTrigger() {
                 WHEN datetime(substr(NEW.data_waznosci, 7, 4) || '-' || substr(NEW.data_waznosci, 4, 2) || '-' || substr(NEW.data_waznosci, 1, 2)) < datetime('now') THEN 'Przeterminowane'
                 WHEN datetime(substr(NEW.data_waznosci, 7, 4) || '-' || substr(NEW.data_waznosci, 4, 2) || '-' || substr(NEW.data_waznosci, 1, 2)) <= datetime('now', '+1 month') THEN 'Ważność 1 miesiąc'
                 WHEN datetime(substr(NEW.data_waznosci, 7, 4) || '-' || substr(NEW.data_waznosci, 4, 2) || '-' || substr(NEW.data_waznosci, 1, 2)) <= datetime('now', '+3 month') THEN 'Ważność 3 miesiące'
+                WHEN ilosc_wstepna = 0 THEN 'Brak na stanie'
                 ELSE 'Ważny'
             END
             WHERE id = NEW.id;
@@ -351,6 +384,7 @@ export async function addExpiryStatusTrigger() {
                 WHEN datetime(substr(NEW.data_waznosci, 7, 4) || '-' || substr(NEW.data_waznosci, 4, 2) || '-' || substr(NEW.data_waznosci, 1, 2)) < datetime('now') THEN 'Przeterminowane'
                 WHEN datetime(substr(NEW.data_waznosci, 7, 4) || '-' || substr(NEW.data_waznosci, 4, 2) || '-' || substr(NEW.data_waznosci, 1, 2)) <= datetime('now', '+1 month') THEN 'Ważność 1 miesiąc'
                 WHEN datetime(substr(NEW.data_waznosci, 7, 4) || '-' || substr(NEW.data_waznosci, 4, 2) || '-' || substr(NEW.data_waznosci, 1, 2)) <= datetime('now', '+3 month') THEN 'Ważność 3 miesiące'
+                WHEN ilosc_aktualna = 0 THEN 'Brak na stanie'
                 ELSE 'Ważny'
             END
             WHERE id = NEW.id;
@@ -368,6 +402,7 @@ export async function addExpiryStatusTrigger() {
                 WHEN datetime(substr(NEW.data_waznosci, 7, 4) || '-' || substr(NEW.data_waznosci, 4, 2) || '-' || substr(NEW.data_waznosci, 1, 2)) < datetime('now') THEN 'Przeterminowane'
                 WHEN datetime(substr(NEW.data_waznosci, 7, 4) || '-' || substr(NEW.data_waznosci, 4, 2) || '-' || substr(NEW.data_waznosci, 1, 2)) <= datetime('now', '+1 month') THEN 'Ważność 1 miesiąc'
                 WHEN datetime(substr(NEW.data_waznosci, 7, 4) || '-' || substr(NEW.data_waznosci, 4, 2) || '-' || substr(NEW.data_waznosci, 1, 2)) <= datetime('now', '+3 month') THEN 'Ważność 3 miesiące'
+                WHEN ilosc_aktualna = 0 THEN 'Brak na stanie'
                 ELSE 'Ważny'
             END
             WHERE id = NEW.id;
@@ -381,23 +416,37 @@ export async function updateExpiryStatusTrigger() {
     const db = await getDb();
 
     await db.run(`
+        DROP TRIGGER IF EXISTS update_status_on_change_medicine;
+        DROP TRIGGER IF EXISTS update_status_on_insert_medicine;
         UPDATE Leki
         SET status_leku = CASE
-                              WHEN data_waznosci IS NULL OR data_waznosci = '' THEN 'Przeterminowane'
-                              WHEN datetime(substr(data_waznosci, 7, 4) || '-' || substr(data_waznosci, 4, 2) || '-' || substr(data_waznosci, 1, 2)) < datetime('now') THEN 'Przeterminowane'
-                              WHEN datetime(substr(data_waznosci, 7, 4) || '-' || substr(data_waznosci, 4, 2) || '-' || substr(data_waznosci, 1, 2)) <= datetime('now', '+1 month') THEN 'Ważność 1 miesiąc'
-                              WHEN datetime(substr(data_waznosci, 7, 4) || '-' || substr(data_waznosci, 4, 2) || '-' || substr(data_waznosci, 1, 2)) <= datetime('now', '+3 month') THEN 'Ważność 3 miesiące'
-                              ELSE 'Ważny'
+--                               WHEN data_waznosci IS NULL OR data_waznosci = '' THEN 'Przeterminowane'
+                              WHEN datetime(substr(data_waznosci, 7, 4) || '-' || substr(data_waznosci, 4, 2) || '-' ||
+                                            substr(data_waznosci, 1, 2)) < datetime('now') THEN 'Przeterminowane'
+                              WHEN datetime(substr(data_waznosci, 7, 4) || '-' || substr(data_waznosci, 4, 2) || '-' ||
+                                            substr(data_waznosci, 1, 2)) <= datetime('now', '+1 month')
+                                  THEN 'Ważność 1 miesiąc'
+                              WHEN datetime(substr(data_waznosci, 7, 4) || '-' || substr(data_waznosci, 4, 2) || '-' ||
+                                            substr(data_waznosci, 1, 2)) <= datetime('now', '+3 month')
+                                  THEN 'Ważność 3 miesiące'
+                              WHEN ilosc_wstepna = 0 THEN 'Brak na stanie'                  
+            ELSE 'Ważny'
             END
     `);
 
     await db.run(`
         UPDATE Sprzet
         SET termin = CASE
-                         WHEN data_waznosci IS NULL OR data_waznosci = '' THEN 'Przeterminowane'
-                         WHEN datetime(substr(data_waznosci, 7, 4) || '-' || substr(data_waznosci, 4, 2) || '-' || substr(data_waznosci, 1, 2)) < datetime('now') THEN 'Przeterminowane'
-                         WHEN datetime(substr(data_waznosci, 7, 4) || '-' || substr(data_waznosci, 4, 2) || '-' || substr(data_waznosci, 1, 2)) <= datetime('now', '+1 month') THEN 'Ważność 1 miesiąc'
-                         WHEN datetime(substr(data_waznosci, 7, 4) || '-' || substr(data_waznosci, 4, 2) || '-' || substr(data_waznosci, 1, 2)) <= datetime('now', '+3 month') THEN 'Ważność 3 miesiące'
+--                          WHEN data_waznosci IS NULL OR data_waznosci = '' THEN 'Ważny'
+                         WHEN datetime(substr(data_waznosci, 7, 4) || '-' || substr(data_waznosci, 4, 2) || '-' ||
+                                       substr(data_waznosci, 1, 2)) < datetime('now') THEN 'Przeterminowane'
+                         WHEN datetime(substr(data_waznosci, 7, 4) || '-' || substr(data_waznosci, 4, 2) || '-' ||
+                                       substr(data_waznosci, 1, 2)) <= datetime('now', '+1 month')
+                             THEN 'Ważność 1 miesiąc'
+                         WHEN datetime(substr(data_waznosci, 7, 4) || '-' || substr(data_waznosci, 4, 2) || '-' ||
+                                       substr(data_waznosci, 1, 2)) <= datetime('now', '+3 month')
+                             THEN 'Ważność 3 miesiące'
+                        WHEN ilosc_aktualna = 0 THEN 'Brak na stanie'
                          ELSE 'Ważny'
             END
     `);
@@ -417,10 +466,30 @@ export async function addStatusMedicineTrigger() {
         BEGIN
             UPDATE Leki
             SET status = CASE
+                -- First check if medicine is in an active order
+                WHEN EXISTS (
+                    SELECT 1 FROM Zamowienia_Leki zl
+                    JOIN Zamowienia z ON zl.id_zamowienia = z.id
+                    WHERE zl.id_leku = NEW.id
+                    AND z.status IN ('Zamówione')
+                ) THEN 'Zamówione'
+                WHEN EXISTS (
+                    SELECT 1 FROM Zamowienia_Leki zl
+                    JOIN Zamowienia z ON zl.id_zamowienia = z.id
+                    WHERE zl.id_leku = NEW.id
+                    AND z.status IN ('Nowe', 'W trakcie')
+                ) THEN 'W zamówieniu: ' || (
+                    SELECT z.nazwa FROM Zamowienia z
+                    JOIN Zamowienia_Leki zl ON zl.id_zamowienia = z.id
+                    WHERE zl.id_leku = NEW.id
+                    AND z.status IN ('Nowe', 'W trakcie')
+                    LIMIT 1
+                )
+                -- Then apply the existing rules
                 WHEN (ilosc_wstepna - rozchod_ilosc) = 0 THEN 'Do zamówienia'
                 WHEN (ilosc_wstepna - rozchod_ilosc) < ilosc_minimalna AND status_leku != 'Ważny' THEN 'Do zamówienia'
                 WHEN (ilosc_wstepna - rozchod_ilosc) < ilosc_minimalna AND status_leku = 'Ważny' THEN 'Uwaga Ilość'
-                WHEN (status_leku = 'Przeterminowane' OR status_leku = 'Ważność 1 miesiąc' OR status_leku = 'Ważność 3 miesiące') THEN 'Do zamówienia'
+                WHEN (status_leku = 'Przeterminowane' OR status_leku = 'Ważność 1 miesiąc' OR status_leku = 'Ważność 3 miesiące' OR status_leku = 'Brak na stanie') THEN 'Do zamówienia'
                 ELSE 'W porządku'
             END
             WHERE id = NEW.id;
@@ -435,10 +504,30 @@ export async function addStatusMedicineTrigger() {
         BEGIN
             UPDATE Leki
             SET status = CASE
+                -- First check if medicine is in an active order
+                WHEN EXISTS (
+                    SELECT 1 FROM Zamowienia_Leki zl
+                    JOIN Zamowienia z ON zl.id_zamowienia = z.id
+                    WHERE zl.id_leku = NEW.id
+                    AND z.status IN ('Zamówione')
+                ) THEN 'Zamówione'
+                WHEN EXISTS (
+                    SELECT 1 FROM Zamowienia_Leki zl
+                    JOIN Zamowienia z ON zl.id_zamowienia = z.id
+                    WHERE zl.id_leku = NEW.id
+                    AND z.status IN ('Nowe', 'W trakcie')
+                ) THEN 'W zamówieniu: ' || (
+                    SELECT z.nazwa FROM Zamowienia z
+                    JOIN Zamowienia_Leki zl ON zl.id_zamowienia = z.id
+                    WHERE zl.id_leku = NEW.id
+                    AND z.status IN ('Nowe', 'W trakcie')
+                    LIMIT 1
+                )
+                -- Then apply the existing rules
                 WHEN (ilosc_wstepna - rozchod_ilosc) < ilosc_minimalna AND status_leku != 'Ważny' THEN 'Do zamówienia'
                 WHEN (ilosc_wstepna - rozchod_ilosc) < ilosc_minimalna AND status_leku = 'Ważny' THEN 'Uwaga Ilość'
                 WHEN (ilosc_wstepna - rozchod_ilosc) <= 0 THEN 'Do zamówienia'
-                WHEN (status_leku = 'Przeterminowane' OR status_leku = 'Ważność 1 miesiąc' OR status_leku = 'Ważność 3 miesiące') THEN 'Do zamówienia'
+                WHEN (status_leku = 'Przeterminowane' OR status_leku = 'Ważność 1 miesiąc' OR status_leku = 'Ważność 3 miesiące' OR status_leku = 'Brak na stanie') THEN 'Do zamówienia'
                 ELSE 'W porządku'
             END
             WHERE id = NEW.id;
@@ -453,10 +542,29 @@ export async function addStatusMedicineTrigger() {
         BEGIN
             UPDATE Sprzet
             SET ilosc_termin = CASE
+                -- First check if equipment is in an active order
+                WHEN EXISTS (
+                    SELECT 1 FROM Zamowienia_Sprzet zs
+                    JOIN Zamowienia z ON zs.id_zamowienia = z.id
+                    WHERE zs.id_sprzetu = NEW.id
+                    AND z.status IN ('Nowe', 'W trakcie')
+                ) THEN 'W zamówieniu: ' || ( SELECT z.nazwa FROM Zamowienia z
+                    JOIN Zamowienia_Sprzet zs ON zs.id_zamowienia = z.id
+                    WHERE zs.id_sprzetu = NEW.id
+                    AND z.status IN ('Nowe', 'W trakcie')
+                    LIMIT 1)
+                    
+                WHEN EXISTS (
+                    SELECT 1 FROM Zamowienia_Sprzet zs
+                    JOIN Zamowienia z ON zs.id_zamowienia = z.id
+                    WHERE zs.id_sprzetu = NEW.id
+                    AND z.status IN ('Zamówione')
+                ) THEN 'Zamówione'
+                -- Then apply the existing rules
                 WHEN ilosc_wymagana > ilosc_aktualna AND termin != 'Ważny' THEN 'Do zamówienia'
-                WHEN ilosc_wymagana > ilosc_aktualna AND termin = 'Ważny' THEN 'Uwaga Ilość'
+                WHEN ilosc_wymagana > ilosc_aktualna AND termin = 'Ważny' AND ilosc_aktualna > 0 THEN 'Uwaga Ilość'
                 WHEN ilosc_aktualna <= 0 THEN 'Do zamówienia'
-                WHEN (termin = 'Przeterminowane' OR termin = 'Ważność 1 miesiąc' OR termin = 'Ważność 3 miesiące') THEN 'Do zamówienia'
+                WHEN (termin = 'Przeterminowane' OR termin = 'Ważność 1 miesiąc' OR termin = 'Ważność 3 miesiące' OR termin = 'Brak na stanie') THEN 'Do zamówienia'
                 ELSE 'W porządku'
             END
             WHERE id = NEW.id;
@@ -471,46 +579,174 @@ export async function addStatusMedicineTrigger() {
         BEGIN
             UPDATE Sprzet
             SET ilosc_termin = CASE
+                -- First check if equipment is in an active order
+                WHEN EXISTS (
+                    SELECT 1 FROM Zamowienia_Sprzet zs
+                    JOIN Zamowienia z ON zs.id_zamowienia = z.id
+                    WHERE zs.id_sprzetu = NEW.id
+                    AND z.status IN ('Zamówione')
+                ) THEN 'Zamówione'
+                WHEN EXISTS (
+                    SELECT 1 FROM Zamowienia_Sprzet zs
+                    JOIN Zamowienia z ON zs.id_zamowienia = z.id
+                    WHERE zs.id_sprzetu = NEW.id
+                    AND z.status IN ('Nowe', 'W trakcie')
+                ) THEN 'W zamówieniu: ' || ( SELECT z.nazwa FROM Zamowienia z
+                    JOIN Zamowienia_Sprzet zs ON zs.id_zamowienia = z.id
+                    WHERE zs.id_sprzetu = NEW.id
+                    AND z.status IN ('Nowe', 'W trakcie')
+                    LIMIT 1)
+                -- Then apply the existing rules
                 WHEN ilosc_aktualna <= 0 THEN 'Do zamówienia'
                 WHEN ilosc_wymagana > ilosc_aktualna AND termin != 'Ważny' THEN 'Do zamówienia'
                 WHEN ilosc_wymagana > ilosc_aktualna AND termin = 'Ważny' THEN 'Uwaga Ilość'
-                WHEN (termin = 'Przeterminowane' OR termin = 'Ważność 1 miesiąc' OR termin = 'Ważność 3 miesiące') THEN 'Do zamówienia'
+                WHEN (termin = 'Przeterminowane' OR termin = 'Ważność 1 miesiąc' OR termin = 'Ważność 3 miesiące' OR termin = 'Brak na stanie') THEN 'Do zamówienia'
                 ELSE 'W porządku'
             END
             WHERE id = NEW.id;
         END;
     `);
 
-    console.log('Medicine status triggers created successfully');
+    // Add triggers for order changes
+    await db.exec(`
+        -- Update medicine status when added to an order
+        DROP TRIGGER IF EXISTS update_leki_status_on_order_add;
+        CREATE TRIGGER IF NOT EXISTS update_leki_status_on_order_add
+        AFTER INSERT ON Zamowienia_Leki
+        BEGIN
+            UPDATE Leki
+            SET status = 'Zamówione'
+            WHERE id = NEW.id_leku
+            AND EXISTS (
+                SELECT 1 FROM Zamowienia
+                WHERE id = NEW.id_zamowienia
+                AND status NOT IN ('Zakończone', 'Anulowane')
+            );
+        END;
+
+        -- Update equipment status when added to an order
+        DROP TRIGGER IF EXISTS update_sprzet_status_on_order_add;
+        CREATE TRIGGER IF NOT EXISTS update_sprzet_status_on_order_add
+        AFTER INSERT ON Zamowienia_Sprzet
+        BEGIN
+            UPDATE Sprzet
+            SET ilosc_termin = 'Zamówione'
+            WHERE id = NEW.id_sprzetu
+            AND EXISTS (
+                SELECT 1 FROM Zamowienia
+                WHERE id = NEW.id_zamowienia
+                AND status NOT IN ('Zakończone', 'Anulowane')
+            );
+        END;
+
+        -- Update statuses when order status changes
+        DROP TRIGGER IF EXISTS update_status_on_order_status_change;
+        CREATE TRIGGER IF NOT EXISTS update_status_on_order_status_change
+        AFTER UPDATE OF status ON Zamowienia
+        BEGIN
+            -- Update medicine statuses
+            UPDATE Leki
+            SET status = (
+                CASE
+                    WHEN (ilosc_wstepna - rozchod_ilosc) = 0 THEN 'Do zamówienia'
+                    WHEN (ilosc_wstepna - rozchod_ilosc) < ilosc_minimalna AND status_leku != 'Ważny' THEN 'Do zamówienia'
+                    WHEN (ilosc_wstepna - rozchod_ilosc) < ilosc_minimalna AND status_leku = 'Ważny' THEN 'Uwaga Ilość'
+                    WHEN (status_leku = 'Przeterminowane' OR status_leku = 'Ważność 1 miesiąc' OR status_leku = 'Ważność 3 miesiące' OR status_leku = 'Brak na stanie') THEN 'Do zamówienia'
+                    ELSE 'W porządku'
+                END
+            )
+            WHERE id IN (
+                SELECT id_leku FROM Zamowienia_Leki
+                WHERE id_zamowienia = NEW.id
+            )
+            AND NEW.status IN ('Zakończone', 'Anulowane', 'Przyjęte');
+
+            -- Update equipment statuses
+            UPDATE Sprzet
+            SET ilosc_termin = (
+                CASE
+                    WHEN ilosc_aktualna <= 0 THEN 'Do zamówienia'
+                    WHEN ilosc_wymagana > ilosc_aktualna AND termin != 'Ważny' THEN 'Do zamówienia'
+                    WHEN ilosc_wymagana > ilosc_aktualna AND termin = 'Ważny' THEN 'Uwaga Ilość'
+                    WHEN (termin = 'Przeterminowane' OR termin = 'Ważność 1 miesiąc' OR termin = 'Ważność 3 miesiące' OR termin = 'Brak na stanie') THEN 'Do zamówienia'
+                    ELSE 'W porządku'
+                END
+            )
+            WHERE id IN (
+                SELECT id_sprzetu FROM Zamowienia_Sprzet
+                WHERE id_zamowienia = NEW.id
+            )
+            AND NEW.status IN ('Zakończone', 'Anulowane', 'Przyjęte');
+        END;
+    `);
+
+    console.log('Medicine and equipment status triggers created successfully');
 }
 
 export async function updateStatusTrigger() {
     const db = await getDb();
 
     await db.exec(`
+        -- First update items in active orders
+        UPDATE Leki
+        SET status = 'Zamówione'
+        WHERE id IN (
+            SELECT zl.id_leku 
+            FROM Zamowienia_Leki zl
+            JOIN Zamowienia z ON zl.id_zamowienia = z.id
+            WHERE z.status NOT IN ('Zakończone', 'Anulowane')
+        );
+
+        -- Then update remaining items based on original rules
         UPDATE Leki
         SET status = CASE
                          WHEN (ilosc_wstepna - rozchod_ilosc) <= 0 THEN 'Do zamówienia'
-                         WHEN (ilosc_wstepna - rozchod_ilosc) < ilosc_minimalna AND status_leku != 'Ważny' THEN 'Do zamówienia'
-                         WHEN (ilosc_wstepna - rozchod_ilosc) < ilosc_minimalna AND status_leku = 'Ważny' THEN 'Uwaga Ilość'
-                         WHEN (status_leku = 'Przeterminowane' OR status_leku = 'Ważność 1 miesiąc' OR status_leku = 'Ważność 3 miesiące') THEN 'Do zamówienia'
+                         WHEN (ilosc_wstepna - rozchod_ilosc) < ilosc_minimalna AND status_leku != 'Ważny'
+                             THEN 'Do zamówienia'
+                         WHEN (ilosc_wstepna - rozchod_ilosc) < ilosc_minimalna AND status_leku = 'Ważny'
+                             THEN 'Uwaga Ilość'
+                         WHEN (status_leku = 'Przeterminowane' OR status_leku = 'Ważność 1 miesiąc' OR
+                               status_leku = 'Ważność 3 miesiące' OR status_leku = 'Brak na stanie') THEN 'Do zamówienia'
                          ELSE 'W porządku'
-            END;
-    `);
+            END
+        WHERE id NOT IN (
+            SELECT zl.id_leku 
+            FROM Zamowienia_Leki zl
+            JOIN Zamowienia z ON zl.id_zamowienia = z.id
+            WHERE z.status NOT IN ('Zakończone', 'Anulowane')
+        );
 
-    await db.exec(`
+        -- Update equipment in active orders
+        UPDATE Sprzet
+        SET ilosc_termin = 'Zamówione'
+        WHERE id IN (
+            SELECT zs.id_sprzetu 
+            FROM Zamowienia_Sprzet zs
+            JOIN Zamowienia z ON zs.id_zamowienia = z.id
+            WHERE z.status NOT IN ('Zakończone', 'Anulowane')
+        );
+
+        -- Update remaining equipment
         UPDATE Sprzet
         SET ilosc_termin = CASE
-                         WHEN ilosc_aktualna <= 0 THEN 'Do zamówienia'
-                         WHEN ilosc_wymagana > ilosc_aktualna AND termin != 'Ważny' THEN 'Do zamówienia'
-                         WHEN ilosc_wymagana > ilosc_aktualna AND termin = 'Ważny' THEN 'Uwaga Ilość'
-                         WHEN (termin = 'Przeterminowane' OR termin = 'Ważność 1 miesiąc' OR termin = 'Ważność 3 miesiące') THEN 'Do zamówienia'
-                         ELSE 'W porządku'
-            END;
+                               WHEN ilosc_aktualna <= 0 THEN 'Do zamówienia'
+                               WHEN ilosc_wymagana > ilosc_aktualna AND termin != 'Ważny' THEN 'Do zamówienia'
+                               WHEN ilosc_wymagana > ilosc_aktualna AND termin = 'Ważny' THEN 'Uwaga Ilość'
+                               WHEN (termin = 'Przeterminowane' OR termin = 'Ważność 1 miesiąc' OR
+                                     termin = 'Ważność 3 miesiące' OR termin = 'Brak na stanie') THEN 'Do zamówienia'
+                               ELSE 'W porządku'
+            END
+        WHERE id NOT IN (
+            SELECT zs.id_sprzetu 
+            FROM Zamowienia_Sprzet zs
+            JOIN Zamowienia z ON zs.id_zamowienia = z.id
+            WHERE z.status NOT IN ('Zakończone', 'Anulowane')
+        );
     `);
 
-    console.log('Medicine status triggers updated successfully');
+    console.log('Medicine and equipment status triggers updated successfully');
 }
+
 
 
 export async function updateDateFormatToEuropean() {
@@ -520,18 +756,18 @@ export async function updateDateFormatToEuropean() {
     await db.exec(`
         UPDATE Leki
         SET data_waznosci = strftime('%d-%m-%Y', date(data_waznosci))
-        WHERE data_waznosci IS NOT NULL 
-        AND data_waznosci != ''
-        AND data_waznosci NOT LIKE '__-__-____';
+        WHERE data_waznosci IS NOT NULL
+          AND data_waznosci != ''
+          AND data_waznosci NOT LIKE '__-__-____';
     `);
 
     // Also update the date format in Sprzet table to maintain consistency
     await db.exec(`
         UPDATE Sprzet
         SET data_waznosci = strftime('%d-%m-%Y', date(data_waznosci))
-        WHERE data_waznosci IS NOT NULL 
-        AND data_waznosci != ''
-        AND data_waznosci NOT LIKE '__-__-____';
+        WHERE data_waznosci IS NOT NULL
+          AND data_waznosci != ''
+          AND data_waznosci NOT LIKE '__-__-____';
     `);
 
 

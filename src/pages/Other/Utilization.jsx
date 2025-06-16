@@ -13,13 +13,13 @@ import {
 import {generateUtilizationPDF} from "../../utils/utilizationPdfGenerator.js";
 import toastService from '../../utils/toast.js';
 
-
 function Utilization() {
     const [utilizations, setUtilizations] = useState([]);
     const [utilizationAdd, setUtilizationAdd] = useState(false);
     const [siteChange, setSiteChange] = useState(false);
-    const [editMode, setEditMode] = useState({});
+    const [globalEditMode, setGlobalEditMode] = useState(false);
     const [editedValues, setEditedValues] = useState({});
+    const [originalValues, setOriginalValues] = useState({});
     const [currentDate] = useState(new Date());
     const username = localStorage.getItem("username");
     const user = JSON.parse(localStorage.getItem("user"));
@@ -96,7 +96,6 @@ function Utilization() {
     };
 
     const handleEdit = (id, field, value) => {
-
         if (userPosition === "viewer") {
             return;
         }
@@ -114,32 +113,6 @@ function Utilization() {
                 [field]: value
             }
         }));
-    };
-
-    const handleSave = async (id) => {
-        try {
-            const response = await fetch(apiUrl + `utylizacja/${id}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    ...editedValues[id],
-                    kto_zmienil: username
-                }),
-            });
-
-            if (!response.ok) throw new Error('Network response was not ok');
-            toastService.success('Zaktualizowany pomyślnie');
-            fetchUtilizations();
-            setEditMode(prev => ({
-                ...prev,
-                [id]: false
-            }));
-        } catch (error) {
-            console.error("Error updating medicine:", error);
-            toastService.error(`Błąd podczas aktualizacji: ${error.message}`);
-        }
     };
 
     const handleDeleteUtilization = async (id) => {
@@ -213,6 +186,74 @@ function Utilization() {
         }
     }
 
+    const startGlobalEdit = () => {
+        // Store original values for cancel functionality
+        const originalData = {};
+        const initialEditValues = {};
+
+        utilizations.forEach(utilization => {
+            originalData[utilization.id] = { ...utilization };
+            initialEditValues[utilization.id] = { ...utilization };
+        });
+
+        setOriginalValues(originalData);
+        setEditedValues(initialEditValues);
+        setGlobalEditMode(true);
+    };
+
+    const handleGlobalSave = async () => {
+        try {
+            const updatePromises = Object.keys(editedValues).map(async (id) => {
+                const response = await fetch(apiUrl + `utylizacja/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        ...editedValues[id],
+                        kto_zmienil: username
+                    }),
+                });
+
+                if (!response.ok) throw new Error(`Network response was not ok for ID: ${id}`);
+                return response;
+            });
+
+            await Promise.all(updatePromises);
+
+            toastService.success('Wszystkie zmiany zostały zapisane pomyślnie');
+            fetchUtilizations();
+
+            // Exit edit mode
+            setGlobalEditMode(false);
+            setEditedValues({});
+            setOriginalValues({});
+
+        } catch (error) {
+            console.error("Error updating records:", error);
+            toastService.error(`Błąd podczas aktualizacji: ${error.message}`);
+        }
+    };
+
+    const handleGlobalCancel = () => {
+        // Restore original values
+        setEditedValues({});
+        setOriginalValues({});
+        setGlobalEditMode(false);
+    };
+
+    // Function to get group title
+    const getGroupTitle = (group) => {
+        switch (group) {
+            case 'S':
+                return 'Sprzęt';
+            case 'L':
+                return 'Leki';
+            default:
+                return 'Inne';
+        }
+    };
+
     // Filter utilizations by group
     const sGroupUtilizations = utilizations.filter(item => item.grupa === 'S');
     const lGroupUtilizations = utilizations.filter(item => item.grupa === 'L');
@@ -230,7 +271,6 @@ function Utilization() {
                     <th className="px-2 py-4">Opakowanie</th>
                     <th className="px-2 py-4">Data ważności</th>
                     <th className="px-2 py-4">Ilość nominalna</th>
-                    <th className="px-2 py-4">Grupa</th>
                     <th className="px-2 py-4">Powód</th>
                     <th className="px-2 py-4">Kto Zmienił</th>
                     <th className="px-2 py-4 w-20">Akcje</th>
@@ -240,7 +280,7 @@ function Utilization() {
                 {items.map(utilization => (
                     <tr key={utilization.id} className="border border-gray-700 hover:bg-gray-50">
                         <td className="pl-6 px-2 py-4 border-r border-l border-gray-700 max-w-72">
-                            {editMode[utilization.id] ? (
+                            {globalEditMode ? (
                                 <input
                                     type="text"
                                     value={editedValues[utilization.id]?.nazwa || ""}
@@ -252,7 +292,7 @@ function Utilization() {
                             )}
                         </td>
                         <td className="pl-6 px-2 py-4 border-r border-l border-gray-700">
-                            {editMode[utilization.id] ? (
+                            {globalEditMode ? (
                                 <input
                                     type="number"
                                     value={editedValues[utilization.id]?.ilosc || ""}
@@ -264,7 +304,7 @@ function Utilization() {
                             )}
                         </td>
                         <td className="pl-6 px-2 py-4 border-r border-l border-gray-700">
-                            {editMode[utilization.id] ? (
+                            {globalEditMode ? (
                                 <select
                                     value={editedValues[utilization.id]?.opakowanie || ""}
                                     onChange={(e) => handleEdit(utilization.id, "opakowanie", e.target.value)}
@@ -282,7 +322,7 @@ function Utilization() {
                             )}
                         </td>
                         <td className="pl-6 px-2 py-4 border-r border-l border-gray-700">
-                            {editMode[utilization.id] ? (
+                            {globalEditMode ? (
                                 <input
                                     type="date"
                                     value={editedValues[utilization.id]?.data_waznosci || ""}
@@ -294,7 +334,7 @@ function Utilization() {
                             )}
                         </td>
                         <td className="pl-6 px-2 py-4 border-r border-l border-gray-700">
-                            {editMode[utilization.id] ? (
+                            {globalEditMode ? (
                                 <input
                                     type="text"
                                     value={editedValues[utilization.id]?.ilosc_nominalna || ""}
@@ -305,27 +345,9 @@ function Utilization() {
                                 utilization.ilosc_nominalna
                             )}
                         </td>
-                        <td className="pl-6 px-2 py-4 border-r border-l border-gray-700">
-                            {editMode[utilization.id] ? (
-                                <select
-                                    value={editedValues[utilization.id]?.grupa || ""}
-                                    onChange={(e) => handleEdit(utilization.id, "grupa", e.target.value)}
-                                    className="w-full"
-                                >
-                                    <option>
-                                        Wybierz grupę
-                                    </option>
-                                    <option value="S">S</option>
-                                    <option value="L">L</option>
-                                    <option value="Other">Inna</option>
-                                </select>
 
-                            ) : (
-                                utilization.grupa
-                            )}
-                        </td>
                         <td className="pl-6 px-2 py-4 border-r border-l border-gray-700">
-                            {editMode[utilization.id] ? (
+                            {globalEditMode ? (
                                 <input
                                     type="text"
                                     value={editedValues[utilization.id]?.powod_utylizacji || ""}
@@ -339,53 +361,17 @@ function Utilization() {
                         <td className="pl-6 px-2 py-4 border-r border-l border-gray-700">
                             {utilization.kto_zmienil}
                         </td>
-                        <td className="w-20 p-2">
-                            {editMode[utilization.id] ? (
-                                <div className="flex flex-col space-y-2">
-                                    <button
-                                        onClick={() => handleSave(utilization.id)}
-                                        className="bg-green-600 hover:bg-green-700 text-white font-semibold py-1 px-3 rounded"
-                                    >
-                                        Zapisz
-                                    </button>
-                                    <button
-                                        onClick={() => setEditMode(prev => ({
-                                            ...prev,
-                                            [utilization.id]: false
-                                        }))}
-                                        className="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-1 px-3 rounded"
-                                    >
-                                        Anuluj
-                                    </button>
-                                    {showDeleteButton(userPosition) && (
-                                        <button
-                                            onClick={() => handleDeleteUtilization(utilization.id)}
-                                            className="bg-red-600 hover:bg-red-700 text-white font-semibold py-1 px-3 rounded"
-                                        >
-                                            Usuń
-                                        </button>
-                                    )}
-                                </div>
-                            ) : (
-                                <div className="flex flex-col space-y-2">
-                                    {showEditButton(userPosition) && (
-                                        <button
-                                            onClick={() => {
-                                                setEditMode(prev => ({
-                                                    ...prev,
-                                                    [utilization.id]: true
-                                                }));
-                                                setEditedValues(prev => ({
-                                                    ...prev,
-                                                    [utilization.id]: utilization
-                                                }));
-                                            }}
-                                            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-1 px-3 rounded"
-                                        >
-                                            Edytuj
-                                        </button>
-                                    )}
-                                </div>
+                        <td className="w-16 p-1">
+                            {!globalEditMode && showDeleteButton(userPosition) && (
+                                <button
+                                    onClick={() => handleDeleteUtilization(utilization.id)}
+                                    className="bg-red-100 text-red-700 text-xs py-1 px-2 rounded flex items-center"
+                                >
+                                    <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                    Usuń
+                                </button>
                             )}
                         </td>
                     </tr>
@@ -398,19 +384,50 @@ function Utilization() {
     return (
         <div className="bg-gray-100 min-h-screen py-10">
             <div>
-                <div>
-                    <h1 className="text-2xl text-center font-bold flex-grow">Utylizacja MV NAWIGATOR
-                        XXI</h1>
+                <div className="relative">
+                    <h1 className="text-2xl text-center font-bold flex-grow">Utylizacja MV NAWIGATOR XXI</h1>
+
                     <button className="absolute left-32 rounded-3xl bg-slate-900 text-white font-bold text-lg p-3"
                             onClick={handleSiteChangeOpen}
                     > Zmiana Arkusza
                     </button>
+
                     {showAddButton(userPosition) && (
-                        <button className="absolute right-32 rounded-3xl bg-slate-900 text-white font-bold text-lg p-3"
+                        <button className="absolute right-64 rounded-3xl bg-slate-900 text-white font-bold text-lg p-3"
                                 onClick={handleAddUtilizationOpen}
                         >Dodaj Pozycję
                         </button>
                     )}
+
+                    {/* Global Edit/Save/Cancel Buttons */}
+                    {showEditButton(userPosition) && (
+                        <div className="absolute right-8 flex gap-2">
+                            {globalEditMode ? (
+                                <>
+                                    <button
+                                        className="rounded-3xl bg-gray-500 text-white font-bold text-lg p-3 hover:bg-gray-600"
+                                        onClick={handleGlobalCancel}
+                                    >
+                                        Anuluj
+                                    </button>
+                                    <button
+                                        className="rounded-3xl bg-green-600 text-white font-bold text-lg p-3 hover:bg-green-700"
+                                        onClick={handleGlobalSave}
+                                    >
+                                        Zapisz
+                                    </button>
+                                </>
+                            ) : (
+                                <button
+                                    className="rounded-3xl bg-blue-600 text-white font-bold text-lg p-3 hover:bg-blue-700"
+                                    onClick={startGlobalEdit}
+                                >
+                                    Edytuj
+                                </button>
+                            )}
+                        </div>
+                    )}
+
                     <div className="flex justify-center gap-4 mt-16">
                         {showDbButtons(userPosition) && (
                             <button
@@ -466,9 +483,9 @@ function Utilization() {
                     </h3>
 
                     <div className="mt-6">
-                        {sGroupUtilizations.length > 0 && renderTable(sGroupUtilizations, "S")}
-                        {lGroupUtilizations.length > 0 && renderTable(lGroupUtilizations, "L")}
-                        {otherGroupUtilizations.length > 0 && renderTable(otherGroupUtilizations, "Inne")}
+                        {sGroupUtilizations.length > 0 && renderTable(sGroupUtilizations, getGroupTitle("S"))}
+                        {lGroupUtilizations.length > 0 && renderTable(lGroupUtilizations, getGroupTitle("L"))}
+                        {otherGroupUtilizations.length > 0 && renderTable(otherGroupUtilizations, getGroupTitle("Other"))}
                     </div>
                 </div>
             </div>
@@ -513,7 +530,6 @@ function Utilization() {
                             {constantsMedicine.BoxTypeOptions.map((option, index) => (
                                 <option key={index} value={option.value}>{option.label}</option>
                             ))}
-
                         </select>
                     </div>
                     <div>
@@ -555,7 +571,6 @@ function Utilization() {
                             <option value="L">Lek</option>
                         </select>
                     </div>
-
                 </div>
 
                 <div className="mt-4">
@@ -581,9 +596,7 @@ function Utilization() {
                         className="px-4 py-2 bg-blue-500 rounded-md"
                         onClick={handleAddUtilization}
                     >Dodaj
-
                     </button>
-
                 </div>
             </UtilizationAdd>
             <SiteChange isOpen={siteChange} onClose={handleSiteChangeClose}/>

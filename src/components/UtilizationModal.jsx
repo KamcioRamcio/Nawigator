@@ -52,87 +52,142 @@ const UtilizationModal = ({isOpen, onClose, medicine, onUtilizationComplete}) =>
             console.error('Utilization error:', err);
         }
     };
+
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center">
-            <div className="bg-white p-6 rounded-lg shadow-lg w-96 max-w-full">
-                <h2 className="text-xl font-bold mb-4">Utylizacja Leku: {medicine.lek_nazwa}</h2>
-
-                {error && (
-                    <div className="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-                        {error}
-                    </div>
-                )}
-
-                <form onSubmit={handleSubmit}>
-                    <div className="mb-4">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Grupa*
-                        </label>
-                        <select
-                            name="grupa"
-                            value={formData.grupa}
-                            onChange={handleChange}
-                            className="border rounded-md p-2 w-full"
-                            required
+        <div className="fixed inset-0 bg-black bg-opacity-40 z-50 flex justify-center items-center p-4">
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-md border border-gray-200">
+                {/* Header */}
+                <div className="bg-gray-50 px-6 py-4 rounded-t-xl border-b border-gray-200">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                            <div className="bg-red-100 p-2 rounded-lg">
+                                <span className="text-xl">🗑️</span>
+                            </div>
+                            <div>
+                                <h2 className="text-lg font-semibold text-gray-900">Utylizacja Leku</h2>
+                                <p className="text-sm text-gray-600">{medicine.lek_nazwa}</p>
+                            </div>
+                        </div>
+                        <button
+                            onClick={onClose}
+                            className="text-gray-400 p-1 rounded-full"
+                            disabled={isSubmitting}
                         >
-                            <option value="">Wybierz grupę</option>
-                            <option value="S">S</option>
-                            <option value="L">L</option>
-                            <option value="Other">Inna</option>
-                        </select>
+                            <span className="text-xl">✕</span>
+                        </button>
                     </div>
-                    <div className="mb-4">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Ilość nominalna*
-                        </label>
-                        <input
-                            type="text"
-                            name="ilosc_nominalna"
-                            value={formData.ilosc_nominalna}
-                            onChange={handleChange}
-                            className="border rounded-md p-2 w-full"
-                        />
+                </div>
+
+                {/* Content */}
+                <div className="px-6 py-6">
+                    {/* Medicine Info Card */}
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                        <h3 className="text-sm font-medium text-blue-900 mb-2">Informacje o leku</h3>
+                        <div className="grid grid-cols-2 gap-3 text-sm">
+                            <div>
+                                <span className="text-blue-700 font-medium">Ilość:</span>
+                                <p className="text-blue-900">{medicine.lek_ilosc}</p>
+                            </div>
+                            <div>
+                                <span className="text-blue-700 font-medium">Data ważności:</span>
+                                <p className="text-blue-900">{medicine.lek_data}</p>
+                            </div>
+                        </div>
                     </div>
 
-                    <div className="mb-4">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Powód utylizacji*
-                        </label>
-                        <textarea
-                            name="powod_utylizacji"
-                            value={formData.powod_utylizacji}
-                            onChange={handleChange}
-                            className="border rounded-md p-2 w-full"
-                            rows="3"
-                            required
-                        />
-                    </div>
+                    {/* Error Message */}
+                    {error && (
+                        <div className="mb-6 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
+                            <div className="flex items-center space-x-2">
+                                <span>⚠️</span>
+                                <span className="text-sm">{error}</span>
+                            </div>
+                        </div>
+                    )}
 
-                    <div className="flex items-center justify-between space-x-3">
+                    {/* Form */}
+                    <form onSubmit={handleSubmit} className="space-y-5">
+                        {/* Group Selection */}
                         <div>
-                            <p className="text-sm text-gray-500">Ilość: {medicine.lek_ilosc}</p>
-                            <p className="text-sm text-gray-500">Data ważności: {medicine.lek_data}</p>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Grupa <span className="text-red-500">*</span>
+                            </label>
+                            <select
+                                name="grupa"
+                                value={formData.grupa}
+                                onChange={handleChange}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900"
+                                required
+                            >
+                                <option value="">Wybierz grupę</option>
+                                <option value="S">Sprzęt</option>
+                                <option value="L">Lek</option>
+                                <option value="Other">Inna</option>
+                            </select>
                         </div>
 
-                        <div className="flex justify-end">
+                        {/* Nominal Amount */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Ilość nominalna <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                                type="text"
+                                name="ilosc_nominalna"
+                                value={formData.ilosc_nominalna}
+                                onChange={handleChange}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                placeholder="Wprowadź ilość nominalną"
+                                required
+                            />
+                        </div>
+
+                        {/* Reason */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Powód utylizacji <span className="text-red-500">*</span>
+                            </label>
+                            <textarea
+                                name="powod_utylizacji"
+                                value={formData.powod_utylizacji}
+                                onChange={handleChange}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                                rows="3"
+                                placeholder="Opisz powód utylizacji..."
+                                required
+                            />
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex space-x-3 pt-4">
                             <button
                                 type="button"
                                 onClick={onClose}
-                                className="mr-2 px-4 py-2 bg-gray-300 rounded-md"
+                                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium bg-white"
                                 disabled={isSubmitting}
                             >
                                 Anuluj
                             </button>
                             <button
                                 type="submit"
-                                className="px-4 py-2 bg-red-500 text-white rounded-md"
+                                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                                 disabled={isSubmitting}
                             >
-                                {isSubmitting ? 'Przetwarzanie...' : 'Utylizuj'}
+                                {isSubmitting ? (
+                                    <span className="flex items-center justify-center space-x-2">
+                                    <span className="animate-spin">⏳</span>
+                                    <span>Przetwarzanie...</span>
+                                </span>
+                                ) : (
+                                    <span className="flex items-center justify-center space-x-2">
+                                    <span>🗑️</span>
+                                    <span>Utylizuj</span>
+                                </span>
+                                )}
                             </button>
                         </div>
-                    </div>
-                </form>
+                    </form>
+                </div>
             </div>
         </div>
     );

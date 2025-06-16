@@ -31,3 +31,7 @@ export function showPDFExportButton(userPosition) {
 export function showPredictedStatusButton(userPosition) {
     return userPosition === "admin";
 }
+
+export const showOrderButton = (position) => {
+    return ['admin', 'manager', 'user'].includes(position);
+};

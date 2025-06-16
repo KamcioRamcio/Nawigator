@@ -9,7 +9,8 @@ import {showEditButtonNoMain, showAddButton, showPredictedStatusButton} from "..
 function MedicineList() {
     const [medicines, setMedicines] = useState([]);
     const [currentDate, setCurrentDate] = useState(new Date());
-    const [editMode, setEditMode] = useState({});
+    // Change from individual edit mode to global edit mode
+    const [globalEditMode, setGlobalEditMode] = useState(false);
     const [editedValues, setEditedValues] = useState({});
     const username = localStorage.getItem("username");
     const user = JSON.parse(localStorage.getItem("user"));
@@ -18,6 +19,8 @@ function MedicineList() {
     const [siteChange, setSiteChange] = useState(false)
     const [selectedCategory, setSelectedCategory] = useState(null);
     const [selectedSubCategory, setSelectedSubCategory] = useState(null);
+    // Track whether there are unsaved changes
+    const [hasChanges, setHasChanges] = useState(false);
     const [newMedicine, setNewMedicine] = useState({
         lek_nazwa: "",
         lek_ilosc: "",
@@ -90,8 +93,8 @@ function MedicineList() {
         return String.fromCharCode(97 + index);
     }
 
+    // Modified handle edit to work with global edit mode
     const handleEdit = (medicineId, field, value) => {
-
         setEditedValues(prev => ({
             ...prev,
             [medicineId]: {
@@ -99,10 +102,103 @@ function MedicineList() {
                 [field]: value,
                 rozchod_kto_zmienil: username,
             },
-
         }));
+
+        // Set hasChanges flag to true
+        setHasChanges(true);
     };
 
+    // New function to handle global edit mode
+    const handleGlobalEditToggle = () => {
+        if (userPosition === "viewer") {
+            return;
+        }
+
+        if (globalEditMode) {
+            // If exiting edit mode with changes, ask for confirmation
+            if (hasChanges) {
+                if (!confirm("Masz niezapisane zmiany. Czy na pewno chcesz wyjść z trybu edycji?")) {
+                    return;
+                }
+            }
+            // Exiting edit mode
+            setGlobalEditMode(false);
+            setEditedValues({});
+            setHasChanges(false);
+        } else {
+            // Entering edit mode - initialize editedValues
+            const initialValues = {};
+
+            // Loop through all medicines to initialize edit values
+            Object.keys(medicines).forEach(category => {
+                const categoryItems = medicines[category];
+                Object.keys(categoryItems).forEach(subcategory => {
+                    const subcategoryItems = categoryItems[subcategory];
+                    Object.keys(subcategoryItems).forEach(subsubcategory => {
+                        const medicineItems = subcategoryItems[subsubcategory];
+                        medicineItems.forEach(medicine => {
+                            initialValues[medicine.lek_id] = {...medicine};
+                        });
+                    });
+                });
+            });
+
+            setEditedValues(initialValues);
+            setGlobalEditMode(true);
+        }
+    };
+
+    // New function to save all changes at once
+    const handleSaveAll = async () => {
+        // Get all medicine IDs that have been edited
+        const medicineIds = Object.keys(editedValues);
+        if (medicineIds.length === 0) {
+            alert('Brak zmian do zapisania');
+            return;
+        }
+
+        const savePromises = medicineIds.map(async (medicineId) => {
+            try {
+                const response = await fetch(apiUrl + "leki/" + medicineId, {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(editedValues[medicineId]),
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                return { success: true, id: medicineId };
+            } catch (error) {
+                console.error(`Error updating medicine ${medicineId}:`, error);
+                return { success: false, id: medicineId, error: error.message };
+            }
+        });
+
+        // Wait for all save operations to complete
+        const results = await Promise.all(savePromises);
+
+        // Count successes and failures
+        const successes = results.filter(r => r.success).length;
+        const failures = results.filter(r => !r.success).length;
+
+        if (failures === 0) {
+            setGlobalEditMode(false);
+            setEditedValues({});
+            setHasChanges(false);
+        } else if (successes === 0) {
+            alert(`Błąd podczas zapisywania zmian. Żadna pozycja nie została zaktualizowana.`);
+        } else {
+            alert(`Zapisano częściowo: ${successes} pozycji, ${failures} błędów`);
+        }
+
+        fetchMedicines();
+    };
+
+    // The old individual save method is preserved for backward compatibility
     const handleSave = async (medicineId) => {
         try {
             const response = await fetch(apiUrl + "leki/" + medicineId, {
@@ -115,10 +211,6 @@ function MedicineList() {
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
-            setEditMode(prev => ({
-                ...prev,
-                [medicineId]: false,
-            }));
             console.log("Medicine updated:", editedValues[medicineId]);
         } catch (error) {
             console.error("Error updating medicine:", error);
@@ -207,6 +299,26 @@ function MedicineList() {
                                 Zalogowany jako {username}
                             </p>
                         </div>
+
+                        {/* Global edit button added here */}
+                        {showEditButtonNoMain(userPosition) && (
+                            <button
+                                className={`rounded-3xl ${globalEditMode ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700'} text-white font-bold text-lg p-3 mr-3 z-10`}
+                                onClick={globalEditMode ? handleSaveAll : handleGlobalEditToggle}
+                            >
+                                {globalEditMode ? 'Zapisz wszystko' : 'Edytuj wszystko'}
+                            </button>
+                        )}
+
+                        {/* Cancel edit button, only appears when in edit mode */}
+                        {globalEditMode && showEditButtonNoMain(userPosition) && (
+                            <button
+                                className="rounded-3xl bg-gray-500 hover:bg-gray-600 text-white font-bold text-lg p-3 mr-3 z-10"
+                                onClick={handleGlobalEditToggle}
+                            >
+                                Anuluj
+                            </button>
+                        )}
 
                         {showAddButton(userPosition) && (
                             <button className="rounded-3xl bg-slate-900 text-white font-bold text-lg p-3 mr-10 z-10"
@@ -460,163 +572,127 @@ function MedicineList() {
                                                         {subsubcategoryItems
                                                             .filter(matchesSearch)
                                                             .map(medicine => (
-                                                            <tr key={medicine.lek_id}
-                                                                className={`${medicine.lek_przechowywanie === "freezer" ? "bg-blue-200" : ""} border border-gray-700`}>
-                                                                <td className="pl-6 px-2 py-4 border-r border-l border-gray-700">
-                                                                    {editMode[medicine.lek_id] ? (
-                                                                        <>
-                                                                            <input
-                                                                                type="text"
-                                                                                value={editedValues[medicine.lek_id]?.lek_nazwa || ""}
-                                                                                onChange={(e) =>
-                                                                                    handleEdit(medicine.lek_id, "lek_nazwa", e.target.value)
-                                                                                }
-                                                                                className="border px-2 py-1 w-5/6"
-                                                                            />
-                                                                            <select
-                                                                                name="id_kategorii"
-                                                                                value={editedValues[medicine.lek_id]?.id_kategorii || ""}
-                                                                                onChange={(e) => {
-                                                                                    handleEdit(medicine.lek_id, "id_kategorii", parseInt(e.target.value));
-                                                                                    setSelectedCategory(e.target.value);
-                                                                                }}
-                                                                                className="border px-2 py-1 mt-1 w-5/6"
-                                                                            >
-                                                                                <option value="">Wybierz kategorię</option>
-                                                                                {ConstantsMedicine.CategoryOptions.map(option => (
-                                                                                    <option key={option.value}
-                                                                                            value={option.value}>
-                                                                                        {option.label}
-                                                                                    </option>
-                                                                                ))}
-                                                                            </select>
-                                                                            <select
-                                                                                name="id_pod_kategorii"
-                                                                                value={editedValues[medicine.lek_id]?.id_pod_kategorii || ""}
-                                                                                onChange={(e) => {
-                                                                                    handleEdit(medicine.lek_id, "id_pod_kategorii", parseInt(e.target.value));
-                                                                                    setSelectedSubCategory(e.target.value);
-                                                                                }}
-                                                                                className="border px-2 py-1 mt-1 w-5/6"
-                                                                            >
-                                                                                <option value="">Wybierz podkategorię
-                                                                                </option>
-                                                                                {selectedCategory && ConstantsMedicine.SubCategoryOptions[selectedCategory]?.map(option => (
-                                                                                    <option key={option.value}
-                                                                                            value={option.value}>
-                                                                                        {option.label}
-                                                                                    </option>
-                                                                                ))}
-                                                                            </select>
-                                                                            <select
-                                                                                name="id_pod_pod_kategorii"
-                                                                                value={editedValues[medicine.lek_id]?.id_pod_pod_kategorii || ""}
-                                                                                onChange={(e) =>
-                                                                                    handleEdit(medicine.lek_id, "id_pod_pod_kategorii", parseInt(e.target.value))
-                                                                                }
-                                                                                className="border px-2 py-1 mt-1 w-5/6"
-                                                                            >
-                                                                                <option value="">Wybierz podpodkategorię
-                                                                                </option>
-                                                                                {Array.isArray(ConstantsMedicine.SubSubCategoryOptions[selectedCategory]?.[selectedSubCategory]) &&
-                                                                                    ConstantsMedicine.SubSubCategoryOptions[selectedCategory][selectedSubCategory].map(option => (
+                                                                <tr key={medicine.lek_id}
+                                                                    className={`${medicine.lek_przechowywanie === "freezer" ? "bg-blue-200" : ""} border border-gray-700`}>
+                                                                    <td className="pl-6 px-2 py-4 border-r border-l border-gray-700">
+                                                                        {globalEditMode ? (
+                                                                            <>
+                                                                                <input
+                                                                                    type="text"
+                                                                                    value={editedValues[medicine.lek_id]?.lek_nazwa || ""}
+                                                                                    onChange={(e) =>
+                                                                                        handleEdit(medicine.lek_id, "lek_nazwa", e.target.value)
+                                                                                    }
+                                                                                    className="border px-2 py-1 w-5/6"
+                                                                                />
+                                                                                <select
+                                                                                    name="id_kategorii"
+                                                                                    value={editedValues[medicine.lek_id]?.id_kategorii || ""}
+                                                                                    onChange={(e) => {
+                                                                                        handleEdit(medicine.lek_id, "id_kategorii", parseInt(e.target.value));
+                                                                                        setSelectedCategory(e.target.value);
+                                                                                    }}
+                                                                                    className="border px-2 py-1 mt-1 w-5/6"
+                                                                                >
+                                                                                    <option value="">Wybierz kategorię</option>
+                                                                                    {ConstantsMedicine.CategoryOptions.map(option => (
                                                                                         <option key={option.value}
                                                                                                 value={option.value}>
                                                                                             {option.label}
                                                                                         </option>
-                                                                                    ))
-                                                                                }
-                                                                            </select>
-                                                                        </>
-                                                                    ) : (
-                                                                        medicine.lek_nazwa
-                                                                    )}
-                                                                </td>
+                                                                                    ))}
+                                                                                </select>
+                                                                                <select
+                                                                                    name="id_pod_kategorii"
+                                                                                    value={editedValues[medicine.lek_id]?.id_pod_kategorii || ""}
+                                                                                    onChange={(e) => {
+                                                                                        handleEdit(medicine.lek_id, "id_pod_kategorii", parseInt(e.target.value));
+                                                                                        setSelectedSubCategory(e.target.value);
+                                                                                    }}
+                                                                                    className="border px-2 py-1 mt-1 w-5/6"
+                                                                                >
+                                                                                    <option value="">Wybierz podkategorię
+                                                                                    </option>
+                                                                                    {selectedCategory && ConstantsMedicine.SubCategoryOptions[selectedCategory]?.map(option => (
+                                                                                        <option key={option.value}
+                                                                                                value={option.value}>
+                                                                                            {option.label}
+                                                                                        </option>
+                                                                                    ))}
+                                                                                </select>
+                                                                                <select
+                                                                                    name="id_pod_pod_kategorii"
+                                                                                    value={editedValues[medicine.lek_id]?.id_pod_pod_kategorii || ""}
+                                                                                    onChange={(e) =>
+                                                                                        handleEdit(medicine.lek_id, "id_pod_pod_kategorii", parseInt(e.target.value))
+                                                                                    }
+                                                                                    className="border px-2 py-1 mt-1 w-5/6"
+                                                                                >
+                                                                                    <option value="">Wybierz podpodkategorię
+                                                                                    </option>
+                                                                                    {Array.isArray(ConstantsMedicine.SubSubCategoryOptions[selectedCategory]?.[selectedSubCategory]) &&
+                                                                                        ConstantsMedicine.SubSubCategoryOptions[selectedCategory][selectedSubCategory].map(option => (
+                                                                                            <option key={option.value}
+                                                                                                    value={option.value}>
+                                                                                                {option.label}
+                                                                                            </option>
+                                                                                        ))
+                                                                                    }
+                                                                                </select>
+                                                                            </>
+                                                                        ) : (
+                                                                            medicine.lek_nazwa
+                                                                        )}
+                                                                    </td>
 
-                                                                <td className="px-2 py-4 border-r border-l border-gray-700">
-                                                                    {medicine.stan_magazynowy_ilosc}
-                                                                </td>
-                                                                <td className="px-2 py-4 border-r border-l border-gray-700">
-                                                                    {editMode[medicine.lek_id] ? (
-                                                                        <input
-                                                                            type="number"
-                                                                            value={editedValues[medicine.lek_id]?.lek_ilosc_minimalna || ""}
-                                                                            onChange={(e) =>
-                                                                                handleEdit(medicine.lek_id, "lek_ilosc_minimalna", e.target.value)
-                                                                            }
-                                                                            className="border px-2 py-1 w-5/6"
-                                                                        />
-                                                                    ) : (
-                                                                        medicine.lek_ilosc_minimalna
-                                                                    )}
-                                                                </td>
-                                                                <td className="px-2 py-4 border-r border-l border-gray-700">
-                                                                    {editMode[medicine.lek_id] ? (
-                                                                        <input
-                                                                            type="date"
-                                                                            value={editedValues[medicine.lek_id]?.lek_data || ""}
-                                                                            onChange={(e) =>
-                                                                                handleEdit(medicine.lek_id, "lek_data", e.target.value)
-                                                                            }
-                                                                            className="border px-2 py-1 w-5/6"
-                                                                        />
-                                                                    ) : (
-                                                                        medicine.lek_data
-                                                                    )}
-                                                                </td>
-                                                                <td className={`${medicine.lek_status !== "Ważny" ? "font-bold text-red-700" : ""} px-2 py-4 border-r border-l border-gray-700`}>
-                                                                    {medicine.lek_status}
-                                                                </td>
-                                                                <td className="px-2 py-4border-r border-l border-gray-700">
-                                                                    {medicine.rozchod_kto_zmienil}</td>
-                                                                <td className="px-2 py-4 border-r border-l border-gray-700 w-20">
-                                                                    {editMode[medicine.lek_id] ? (
-                                                                        <div className="flex flex-col space-y-2">
-                                                                            <button
-                                                                                onClick={() => handleSave(medicine.lek_id)}
-                                                                                className="bg-green-600 hover:bg-green-700 text-white font-semibold py-1 px-3 rounded"
-                                                                            >
-                                                                                Zapisz
-                                                                            </button>
-                                                                            <button
-                                                                                onClick={() => setEditMode(prev => ({
-                                                                                    ...prev,
-                                                                                    [medicine.lek_id]: false,
-                                                                                }))}
-                                                                                className="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-1 px-3 rounded"
-                                                                            >
-                                                                                Anuluj
-                                                                            </button>
+                                                                    <td className="px-2 py-4 border-r border-l border-gray-700">
+                                                                        {medicine.stan_magazynowy_ilosc}
+                                                                    </td>
+                                                                    <td className="px-2 py-4 border-r border-l border-gray-700">
+                                                                        {globalEditMode ? (
+                                                                            <input
+                                                                                type="number"
+                                                                                value={editedValues[medicine.lek_id]?.lek_ilosc_minimalna || ""}
+                                                                                onChange={(e) =>
+                                                                                    handleEdit(medicine.lek_id, "lek_ilosc_minimalna", e.target.value)
+                                                                                }
+                                                                                className="border px-2 py-1 w-5/6"
+                                                                            />
+                                                                        ) : (
+                                                                            medicine.lek_ilosc_minimalna
+                                                                        )}
+                                                                    </td>
+                                                                    <td className="px-2 py-4 border-r border-l border-gray-700">
+                                                                        {globalEditMode ? (
+                                                                            <input
+                                                                                type="date"
+                                                                                value={editedValues[medicine.lek_id]?.lek_data || ""}
+                                                                                onChange={(e) =>
+                                                                                    handleEdit(medicine.lek_id, "lek_data", e.target.value)
+                                                                                }
+                                                                                className="border px-2 py-1 w-5/6"
+                                                                            />
+                                                                        ) : (
+                                                                            medicine.lek_data
+                                                                        )}
+                                                                    </td>
+                                                                    <td className={`${medicine.lek_status !== "Ważny" ? "font-bold text-red-700" : ""} px-2 py-4 border-r border-l border-gray-700`}>
+                                                                        {medicine.lek_status}
+                                                                    </td>
+                                                                    <td className="px-2 py-4border-r border-l border-gray-700">
+                                                                        {medicine.rozchod_kto_zmienil}</td>
+                                                                    <td className="px-2 py-4 border-r border-l border-gray-700 w-20">
+                                                                        {/* Remove edit buttons, keep only delete button when not in edit mode */}
+                                                                        {!globalEditMode && (
                                                                             <button
                                                                                 onClick={() => handleDeleteMedicine(medicine.lek_id)}
-                                                                                className="bg-red-600 hover:bg-red-700 text-white font-semibold py-1 px-3 rounded"
+                                                                                className="bg-red-100 text-red-700 text-xs py-1 px-2 rounded flex items-center"
                                                                             >
                                                                                 Usuń
                                                                             </button>
-                                                                        </div>
-                                                                    ) : (
-                                                                        <div className="flex flex-col space-y-2">
-                                                                            {showEditButtonNoMain(userPosition) && (
-                                                                                <button
-                                                                                    onClick={() => {
-                                                                                        setEditMode(prev => ({
-                                                                                            ...prev,
-                                                                                            [medicine.lek_id]: true,
-                                                                                        }));
-                                                                                        setEditedValues(prev => ({
-                                                                                            ...prev,
-                                                                                            [medicine.lek_id]: medicine,
-                                                                                        }));
-                                                                                    }}
-                                                                                    className="bg-slate-900 hover:bg-slate-700 text-white font-semibold py-1 px-3 rounded"
-                                                                                >
-                                                                                    Edytuj
-                                                                                </button>
-                                                                            )}
-                                                                        </div>
-                                                                    )}
-                                                                </td>
-                                                            </tr>
+                                                                        )}
+                                                                    </td>
+                                                                </tr>
                                                             ))}
                                                     </React.Fragment>
                                                 ) : null;

@@ -57,6 +57,7 @@ function SiteChange({isOpen, onClose}) {
     const otherItems = [
         {path: '/utylizacja', name: 'Utylizacja', icon: '♻️'},
         {path: '/dokumentacja', name: 'Dokumentacja', icon: '📄'},
+        {path: '/zamowienia', name: 'Zamówienia', icon: '🛒'},
     ];
 
     return (

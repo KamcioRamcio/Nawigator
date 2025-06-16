@@ -13,8 +13,11 @@ function MinMedicine() {
     const userPosition = user.position || "viewer";
     const [currentDate, setCurrentDate] = useState(new Date());
     const [medicines, setMedicines] = useState({});
-    const [editMode, setEditMode] = useState({});
+    // Change from individual edit mode to global edit mode
+    const [globalEditMode, setGlobalEditMode] = useState(false);
     const [editedValues, setEditedValues] = useState({});
+    // Track whether there are unsaved changes
+    const [hasChanges, setHasChanges] = useState(false);
     const [medicineAdd, setMedicineAdd] = useState(false);
     const [siteChange, setSiteChange] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState(null);
@@ -160,6 +163,7 @@ function MinMedicine() {
         }
     };
 
+    // Modified handle edit to work with global edit mode
     const handleEdit = (medicineId, field, value) => {
         if (field === 'id_kategorii') {
             setEditedValues(prev => ({
@@ -189,6 +193,9 @@ function MinMedicine() {
                 }
             }));
         }
+
+        // Set hasChanges flag to true
+        setHasChanges(true);
     };
 
     const validateEdit = (medicineId) => {
@@ -198,8 +205,153 @@ function MinMedicine() {
             return false;
         }
 
-
         return true;
+    };
+
+    // New function to handle global edit mode
+    const handleGlobalEditToggle = () => {
+        if (userPosition === "viewer") {
+            return;
+        }
+
+        if (globalEditMode) {
+            // If exiting edit mode with changes, ask for confirmation
+            if (hasChanges) {
+                if (!confirm("Masz niezapisane zmiany. Czy na pewno chcesz wyjść z trybu edycji?")) {
+                    return;
+                }
+            }
+            // Exiting edit mode
+            setGlobalEditMode(false);
+            setEditedValues({});
+            setHasChanges(false);
+        } else {
+            // Entering edit mode - initialize editedValues
+            const initialValues = {};
+
+            // Loop through all medicines to initialize edit values
+            Object.keys(medicines).forEach(category => {
+                const categoryItems = medicines[category];
+                Object.keys(categoryItems).forEach(subcategory => {
+                    const subcategoryItems = categoryItems[subcategory];
+                    Object.keys(subcategoryItems).forEach(subsubcategory => {
+                        const medicineItems = subcategoryItems[subsubcategory];
+                        medicineItems.forEach(medicine => {
+                            initialValues[medicine.lek_min_id] = {
+                                nazwa_leku: medicine.lek_min_nazwa,
+                                pakowanie: medicine.lek_min_pakowanie,
+                                w_opakowaniu: medicine.lek_min_w_opakowaniu,
+                                przechowywanie: medicine.leki_min_przechowywanie,
+                                na_statku_spis_podstawowy: medicine.leki_min_na_statku_spis_podstawowy,
+                                id_kategorii: medicine.id_kategorii,
+                                id_pod_kategorii: medicine.id_pod_kategorii,
+                                id_pod_pod_kategorii: medicine.id_pod_pod_kategorii
+                            };
+                        });
+                    });
+                });
+            });
+
+            setEditedValues(initialValues);
+            setGlobalEditMode(true);
+        }
+    };
+
+    // New function to save all changes at once
+    const handleSaveAll = async () => {
+        // Get all medicine IDs that have been edited
+        const medicineIds = Object.keys(editedValues);
+        if (medicineIds.length === 0) {
+            toastService.info('Brak zmian do zapisania');
+            return;
+        }
+
+        // Validate all edits first
+        for (const medicineId of medicineIds) {
+            if (!validateEdit(medicineId)) {
+                return;
+            }
+        }
+
+        const savePromises = medicineIds.map(async (medicineId) => {
+            try {
+                // Convert medicineId to string to ensure consistent comparison
+                const stringMedicineId = String(medicineId);
+
+                // Find the medicine in the nested structure, accounting for possible type mismatches
+                const medicine = Object.values(medicines)
+                    .flatMap(category => Object.values(category))
+                    .flatMap(subcategory => Object.values(subcategory))
+                    .flatMap(subsubcategory => subsubcategory)
+                    .find(med => String(med.lek_min_id) === stringMedicineId);
+
+                // If medicine not found, handle gracefully
+                if (!medicine) {
+                    console.error(`Medicine with ID ${medicineId} not found in data`);
+                    return { success: false, id: medicineId, error: "Medicine not found in data structure" };
+                }
+
+                // Use editedValues as the primary source of data
+                const dataToSend = {
+                    nazwa_leku: editedValues[medicineId]?.nazwa_leku || medicine.lek_min_nazwa,
+                    pakowanie: editedValues[medicineId]?.pakowanie || medicine.lek_min_pakowanie,
+                    w_opakowaniu: editedValues[medicineId]?.w_opakowaniu || medicine.lek_min_w_opakowaniu,
+                    przechowywanie: editedValues[medicineId]?.przechowywanie !== undefined ?
+                        editedValues[medicineId].przechowywanie :
+                        medicine.leki_min_przechowywanie,
+                    na_statku_spis_podstawowy: editedValues[medicineId]?.na_statku_spis_podstawowy !== undefined ?
+                        editedValues[medicineId].na_statku_spis_podstawowy :
+                        medicine.leki_min_na_statku_spis_podstawowy,
+                    id_kategorii: editedValues[medicineId]?.id_kategorii !== undefined ?
+                        (editedValues[medicineId].id_kategorii === "" ? null : editedValues[medicineId].id_kategorii) :
+                        medicine.id_kategorii,
+                    id_pod_kategorii: editedValues[medicineId]?.id_pod_kategorii !== undefined ?
+                        (editedValues[medicineId].id_pod_kategorii === "" ? null : editedValues[medicineId].id_pod_kategorii) :
+                        medicine.id_pod_kategorii,
+                    id_pod_pod_kategorii: editedValues[medicineId]?.id_pod_pod_kategorii !== undefined ?
+                        (editedValues[medicineId].id_pod_pod_kategorii === "" ? null : editedValues[medicineId].id_pod_pod_kategorii) :
+                        medicine.id_pod_pod_kategorii
+                };
+
+                const response = await fetch(apiUrl + "leki-min/" + medicineId, {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(dataToSend),
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+                }
+
+                return { success: true, id: medicineId };
+            } catch (error) {
+                console.error(`Error updating medicine ${medicineId}:`, error);
+                return { success: false, id: medicineId, error: error.message };
+            }
+        });
+
+        // Wait for all save operations to complete
+        const results = await Promise.all(savePromises);
+
+        // Count successes and failures
+        const successes = results.filter(r => r.success).length;
+        const failures = results.filter(r => !r.success).length;
+
+        if (failures === 0) {
+            toastService.success(`Zapisano wszystkie zmiany (${successes} pozycji)`);
+            setGlobalEditMode(false);
+            setEditedValues({});
+            setHasChanges(false);
+        } else if (successes === 0) {
+            toastService.error(`Błąd podczas zapisywania zmian. Żadna pozycja nie została zaktualizowana.`);
+        } else {
+            toastService.warning(`Zapisano częściowo: ${successes} pozycji, ${failures} błędów`);
+        }
+
+        fetchMedicines();
     };
 
     const handleSave = async (medicineId) => {
@@ -208,11 +360,22 @@ function MinMedicine() {
         }
 
         try {
+            // Convert medicineId to string to ensure consistent comparison
+            const stringMedicineId = String(medicineId);
+
+            // Find the medicine in the nested structure, accounting for possible type mismatches
             const medicine = Object.values(medicines)
                 .flatMap(category => Object.values(category))
                 .flatMap(subcategory => Object.values(subcategory))
                 .flatMap(subsubcategory => subsubcategory)
-                .find(med => med.lek_min_id === medicineId);
+                .find(med => String(med.lek_min_id) === stringMedicineId);
+
+            // If medicine not found, handle gracefully
+            if (!medicine) {
+                console.error(`Medicine with ID ${medicineId} not found in data`);
+                toastService.error(`Błąd: Nie znaleziono leku o ID ${medicineId}`);
+                return;
+            }
 
             const dataToSend = {
                 nazwa_leku: editedValues[medicineId]?.nazwa_leku || medicine.lek_min_nazwa,
@@ -252,11 +415,6 @@ function MinMedicine() {
                 throw new Error(error.error || `HTTP error! status: ${response.status}`);
             }
             toastService.success('Dane leku zostały zaktualizowane pomyślnie');
-
-            setEditMode(prev => ({
-                ...prev,
-                [medicineId]: false,
-            }));
 
             await fetchMedicines();
         } catch (error) {
@@ -328,6 +486,26 @@ function MinMedicine() {
                                 Zalogowany jako {username}
                             </p>
                         </div>
+
+                        {/* Global edit button added here */}
+                        {showEditButtonNoMain(userPosition) && (
+                            <button
+                                className={`rounded-3xl ${globalEditMode ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700'} text-white font-bold text-lg p-3 mr-3 z-10`}
+                                onClick={globalEditMode ? handleSaveAll : handleGlobalEditToggle}
+                            >
+                                {globalEditMode ? 'Zapisz wszystko' : 'Edytuj wszystko'}
+                            </button>
+                        )}
+
+                        {/* Cancel edit button, only appears when in edit mode */}
+                        {globalEditMode && showEditButtonNoMain(userPosition) && (
+                            <button
+                                className="rounded-3xl bg-gray-500 hover:bg-gray-600 text-white font-bold text-lg p-3 mr-3 z-10"
+                                onClick={handleGlobalEditToggle}
+                            >
+                                Anuluj
+                            </button>
+                        )}
 
                         {showAddButton(userPosition) && (
                             <button className="rounded-3xl bg-slate-900 text-white font-bold text-lg p-3 mr-10 z-10"
@@ -550,205 +728,162 @@ function MinMedicine() {
                                                         {subsubcategoryItems
                                                             .filter(matchesSearch)
                                                             .map(medicine => (
-                                                        <tr key={medicine.lek_min_id}
-                                                            className={`${medicine.leki_min_przechowywanie === "freezer" ? "bg-blue-200" : medicine.leki_min_przechowywanie === "narkotyk" ? "bg-orange-200" : ""} ${medicine.leki_min_na_statku_spis_podstawowy === 1 ? "text-red-600" : ""} border border-gray-700`}>
-                                                            <td className="pl-16 px-4 py-3 border-r border-l border-gray-700">
-                                                                {editMode[medicine.lek_min_id] ? (
-                                                                    <>
-                                                                        <input
-                                                                            type="text"
-                                                                            value={editedValues[medicine.lek_min_id]?.nazwa_leku || ""}
-                                                                            onChange={(e) => handleEdit(medicine.lek_min_id, "nazwa_leku", e.target.value)}
-                                                                            className="border px-2 py-1 w-full mb-1"
-                                                                            required
-                                                                        />
-                                                                        <select
-                                                                            value={editedValues[medicine.lek_min_id]?.id_kategorii || ""}
-                                                                            onChange={(e) => {
-                                                                                handleEdit(medicine.lek_min_id, "id_kategorii", e.target.value);
-                                                                                setEditSelectedCategory({
-                                                                                    ...editSelectedCategory,
-                                                                                    [medicine.lek_min_id]: e.target.value
-                                                                                });
-                                                                                // Reset dependent fields when category changes
-                                                                                setEditSelectedSubCategory({
-                                                                                    ...editSelectedSubCategory,
-                                                                                    [medicine.lek_min_id]: null
-                                                                                });
-                                                                                handleEdit(medicine.lek_min_id, "id_pod_kategorii", null);
-                                                                                handleEdit(medicine.lek_min_id, "id_pod_pod_kategorii", null);
-                                                                            }}
-                                                                            className="border px-2 py-1 w-full mb-1"
-                                                                        >
-                                                                            <option value="">Wybierz kategorię</option>
-                                                                            {ConstantsMedicine.CategoryOptions.map(option => (
-                                                                                <option key={option.value}
-                                                                                        value={option.value}>
-                                                                                    {option.label}
-                                                                                </option>
-                                                                            ))}
-                                                                        </select>
-                                                                        <select
-                                                                            value={editedValues[medicine.lek_min_id]?.id_pod_kategorii || ""}
-                                                                            onChange={(e) => {
-                                                                                handleEdit(medicine.lek_min_id, "id_pod_kategorii", e.target.value);
-                                                                                setEditSelectedSubCategory({
-                                                                                    ...editSelectedSubCategory,
-                                                                                    [medicine.lek_min_id]: e.target.value
-                                                                                });
-                                                                                // Reset sub-subcategory when subcategory changes
-                                                                                handleEdit(medicine.lek_min_id, "id_pod_pod_kategorii", null);
-                                                                            }}
-                                                                            className="border px-2 py-1 w-full mb-1"
-                                                                            disabled={!editedValues[medicine.lek_min_id]?.id_kategorii}
-                                                                        >
-                                                                            <option value="">Wybierz podkategorię
-                                                                            </option>
-                                                                            {editedValues[medicine.lek_min_id]?.id_kategorii &&
-                                                                                ConstantsMedicine.SubCategoryOptions[editedValues[medicine.lek_min_id]?.id_kategorii]?.map(option => (
-                                                                                    <option key={option.value}
-                                                                                            value={option.value}>
-                                                                                        {option.label}
+                                                                <tr key={medicine.lek_min_id}
+                                                                    className={`${medicine.leki_min_przechowywanie === "freezer" ? "bg-blue-200" : medicine.leki_min_przechowywanie === "narkotyk" ? "bg-orange-200" : ""} ${medicine.leki_min_na_statku_spis_podstawowy === 1 ? "text-red-600" : ""} border border-gray-700`}>
+                                                                    <td className="pl-16 px-4 py-3 border-r border-l border-gray-700">
+                                                                        {globalEditMode ? (
+                                                                            <>
+                                                                                <input
+                                                                                    type="text"
+                                                                                    value={editedValues[medicine.lek_min_id]?.nazwa_leku || ""}
+                                                                                    onChange={(e) => handleEdit(medicine.lek_min_id, "nazwa_leku", e.target.value)}
+                                                                                    className="border px-2 py-1 w-full mb-1"
+                                                                                    required
+                                                                                />
+                                                                                <select
+                                                                                    value={editedValues[medicine.lek_min_id]?.id_kategorii || ""}
+                                                                                    onChange={(e) => {
+                                                                                        handleEdit(medicine.lek_min_id, "id_kategorii", e.target.value);
+                                                                                        setEditSelectedCategory({
+                                                                                            ...editSelectedCategory,
+                                                                                            [medicine.lek_min_id]: e.target.value
+                                                                                        });
+                                                                                        // Reset dependent fields when category changes
+                                                                                        setEditSelectedSubCategory({
+                                                                                            ...editSelectedSubCategory,
+                                                                                            [medicine.lek_min_id]: null
+                                                                                        });
+                                                                                        handleEdit(medicine.lek_min_id, "id_pod_kategorii", null);
+                                                                                        handleEdit(medicine.lek_min_id, "id_pod_pod_kategorii", null);
+                                                                                    }}
+                                                                                    className="border px-2 py-1 w-full mb-1"
+                                                                                >
+                                                                                    <option value="">Wybierz kategorię</option>
+                                                                                    {ConstantsMedicine.CategoryOptions.map(option => (
+                                                                                        <option key={option.value}
+                                                                                                value={option.value}>
+                                                                                            {option.label}
+                                                                                        </option>
+                                                                                    ))}
+                                                                                </select>
+                                                                                <select
+                                                                                    value={editedValues[medicine.lek_min_id]?.id_pod_kategorii || ""}
+                                                                                    onChange={(e) => {
+                                                                                        handleEdit(medicine.lek_min_id, "id_pod_kategorii", e.target.value);
+                                                                                        setEditSelectedSubCategory({
+                                                                                            ...editSelectedSubCategory,
+                                                                                            [medicine.lek_min_id]: e.target.value
+                                                                                        });
+                                                                                        // Reset sub-subcategory when subcategory changes
+                                                                                        handleEdit(medicine.lek_min_id, "id_pod_pod_kategorii", null);
+                                                                                    }}
+                                                                                    className="border px-2 py-1 w-full mb-1"
+                                                                                    disabled={!editedValues[medicine.lek_min_id]?.id_kategorii}
+                                                                                >
+                                                                                    <option value="">Wybierz podkategorię
                                                                                     </option>
-                                                                                ))
-                                                                            }
-                                                                        </select>
-                                                                        <select
-                                                                            value={editedValues[medicine.lek_min_id]?.id_pod_pod_kategorii || ""}
-                                                                            onChange={(e) => handleEdit(medicine.lek_min_id, "id_pod_pod_kategorii", e.target.value)}
-                                                                            className="border px-2 py-1 w-full"
-                                                                            disabled={!editedValues[medicine.lek_min_id]?.id_pod_kategorii}
-                                                                        >
-                                                                            <option value="">Wybierz podpodkategorię
-                                                                            </option>
-                                                                            {editedValues[medicine.lek_min_id]?.id_kategorii &&
-                                                                                editedValues[medicine.lek_min_id]?.id_pod_kategorii &&
-                                                                                Array.isArray(ConstantsMedicine.SubSubCategoryOptions[editedValues[medicine.lek_min_id]?.id_kategorii]?.[editedValues[medicine.lek_min_id]?.id_pod_kategorii]) &&
-                                                                                ConstantsMedicine.SubSubCategoryOptions[editedValues[medicine.lek_min_id]?.id_kategorii][editedValues[medicine.lek_min_id]?.id_pod_kategorii].map(option => (
-                                                                                    <option key={option.value}
-                                                                                            value={option.value}>
-                                                                                        {option.label}
+                                                                                    {editedValues[medicine.lek_min_id]?.id_kategorii &&
+                                                                                        ConstantsMedicine.SubCategoryOptions[editedValues[medicine.lek_min_id]?.id_kategorii]?.map(option => (
+                                                                                            <option key={option.value}
+                                                                                                    value={option.value}>
+                                                                                                {option.label}
+                                                                                            </option>
+                                                                                        ))
+                                                                                    }
+                                                                                </select>
+                                                                                <select
+                                                                                    value={editedValues[medicine.lek_min_id]?.id_pod_pod_kategorii || ""}
+                                                                                    onChange={(e) => handleEdit(medicine.lek_min_id, "id_pod_pod_kategorii", e.target.value)}
+                                                                                    className="border px-2 py-1 w-full"
+                                                                                    disabled={!editedValues[medicine.lek_min_id]?.id_pod_kategorii}
+                                                                                >
+                                                                                    <option value="">Wybierz podpodkategorię
                                                                                     </option>
-                                                                                ))
-                                                                            }
-                                                                        </select>
-                                                                        <select
-                                                                            name="przechowywanie"
-                                                                            value={editedValues[medicine.lek_min_id]?.przechowywanie || medicine.leki_min_przechowywanie || ""}
-                                                                            onChange={(e) => handleEdit(medicine.lek_min_id, "przechowywanie", e.target.value)}
-                                                                            className="border px-2 py-1 my-1 w-full"
-                                                                        >
-                                                                            <option value="">Wybierz przechowywanie
-                                                                            </option>
-                                                                            {ConstantsMedicine.StoringOptions.map(option => (
-                                                                                <option key={option.value}
-                                                                                        value={option.value}>
-                                                                                    {option.label}
-                                                                                </option>
-                                                                            ))}
-                                                                        </select>
-                                                                        <select
-                                                                            name="na_statku_spis_podstawowy"
-                                                                            value={editedValues[medicine.lek_min_id]?.na_statku_spis_podstawowy || medicine.leki_min_na_statku_spis_podstawowy || ""}
-                                                                            onChange={(e) => handleEdit(medicine.lek_min_id, "na_statku_spis_podstawowy", e.target.value)}
-                                                                            className="border px-2 py-1 w-full"
-                                                                        >
-                                                                            <option value="">Spis Podstawowy Brak na
-                                                                                statku
-                                                                            </option>
-                                                                            <option value="1">Tak</option>
-                                                                            <option value="0">Nie</option>
-                                                                        </select>
-                                                                    </>
-                                                                ) : (
-                                                                    medicine.lek_min_nazwa
-                                                                )}
-                                                            </td>
-                                                            <td className="px-4 py-3 border-r border-l border-gray-700">
-                                                                {editMode[medicine.lek_min_id] ? (
-                                                                    <select
-                                                                        value={editedValues[medicine.lek_min_id]?.pakowanie || ""}
-                                                                        onChange={(e) => handleEdit(medicine.lek_min_id, "pakowanie", e.target.value)}
-                                                                        className="border px-2 py-1 w-full"
-                                                                    >
-                                                                        <option value="">Wybierz opakowanie</option>
-                                                                        {ConstantsMedicine.BoxTypeOptions.map(option => (
-                                                                            <option key={option.value}
-                                                                                    value={option.value}>
-                                                                                {option.label}
-                                                                            </option>
-                                                                        ))}
-                                                                    </select>
-                                                                ) : (
-                                                                    medicine.lek_min_pakowanie
-                                                                )}
-                                                            </td>
-                                                            <td className="px-4 py-3 border-r border-l border-gray-700">
-                                                                {editMode[medicine.lek_min_id] ? (
-                                                                    <input
-                                                                        type="text"
-                                                                        value={editedValues[medicine.lek_min_id]?.w_opakowaniu || ""}
-                                                                        onChange={(e) => handleEdit(medicine.lek_min_id, "w_opakowaniu", e.target.value)}
-                                                                        className="border px-2 py-1 w-full"
-                                                                    />
-                                                                ) : (
-                                                                    medicine.lek_min_w_opakowaniu
-                                                                )}
-                                                            </td>
-                                                            <td className="px-4 py-3 border border-gray-700 w-20 ">
-                                                                {editMode[medicine.lek_min_id] ? (
-                                                                    <div className="flex flex-col space-y-2">
-                                                                        <button
-                                                                            onClick={() => handleSave(medicine.lek_min_id)}
-                                                                            className="bg-green-600 hover:bg-green-700 text-white font-semibold py-1 px-3 rounded"
-                                                                        >
-                                                                            Zapisz
-                                                                        </button>
-                                                                        <button
-                                                                            onClick={() => setEditMode(prev => ({
-                                                                                ...prev,
-                                                                                [medicine.lek_min_id]: false,
-                                                                            }))}
-                                                                            className="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-1 px-3 rounded"
-                                                                        >
-                                                                            Anuluj
-                                                                        </button>
-                                                                        <button
-                                                                            onClick={() => handleDelete(medicine.lek_min_id)}
-                                                                            className="bg-red-600 hover:bg-red-700 text-white font-semibold py-1 px-3 rounded"
-                                                                        >
-                                                                            Usuń
-                                                                        </button>
-                                                                    </div>
-                                                                ) : (
-                                                                    <div className="flex flex-col space-y-2">
-                                                                        {showEditButtonNoMain(userPosition) && (
-                                                                            <button
-                                                                                onClick={() => {
-                                                                                    setEditMode(prev => ({
-                                                                                        ...prev,
-                                                                                        [medicine.lek_min_id]: true,
-                                                                                    }));
-                                                                                    setEditedValues(prev => ({
-                                                                                        ...prev,
-                                                                                        [medicine.lek_min_id]: {
-                                                                                            nazwa_leku: medicine.lek_min_nazwa,
-                                                                                            pakowanie: medicine.lek_min_pakowanie,
-                                                                                            w_opakowaniu: medicine.lek_min_w_opakowaniu,
-                                                                                            przechowywanie: medicine.leki_min_przechowywanie,
-                                                                                            na_statku_spis_podstawowy: medicine.leki_min_na_statku_spis_podstawowy,
-                                                                                        }
-                                                                                    }));
-                                                                                }}
-                                                                                className="bg-slate-900 hover:bg-slate-700 text-white font-semibold py-1 px-3 rounded"
+                                                                                    {editedValues[medicine.lek_min_id]?.id_kategorii &&
+                                                                                        editedValues[medicine.lek_min_id]?.id_pod_kategorii &&
+                                                                                        Array.isArray(ConstantsMedicine.SubSubCategoryOptions[editedValues[medicine.lek_min_id]?.id_kategorii]?.[editedValues[medicine.lek_min_id]?.id_pod_kategorii]) &&
+                                                                                        ConstantsMedicine.SubSubCategoryOptions[editedValues[medicine.lek_min_id]?.id_kategorii][editedValues[medicine.lek_min_id]?.id_pod_kategorii].map(option => (
+                                                                                            <option key={option.value}
+                                                                                                    value={option.value}>
+                                                                                                {option.label}
+                                                                                            </option>
+                                                                                        ))
+                                                                                    }
+                                                                                </select>
+                                                                                <select
+                                                                                    name="przechowywanie"
+                                                                                    value={editedValues[medicine.lek_min_id]?.przechowywanie || medicine.leki_min_przechowywanie || ""}
+                                                                                    onChange={(e) => handleEdit(medicine.lek_min_id, "przechowywanie", e.target.value)}
+                                                                                    className="border px-2 py-1 my-1 w-full"
+                                                                                >
+                                                                                    <option value="">Wybierz przechowywanie
+                                                                                    </option>
+                                                                                    {ConstantsMedicine.StoringOptions.map(option => (
+                                                                                        <option key={option.value}
+                                                                                                value={option.value}>
+                                                                                            {option.label}
+                                                                                        </option>
+                                                                                    ))}
+                                                                                </select>
+                                                                                <select
+                                                                                    name="na_statku_spis_podstawowy"
+                                                                                    value={editedValues[medicine.lek_min_id]?.na_statku_spis_podstawowy || medicine.leki_min_na_statku_spis_podstawowy || ""}
+                                                                                    onChange={(e) => handleEdit(medicine.lek_min_id, "na_statku_spis_podstawowy", e.target.value)}
+                                                                                    className="border px-2 py-1 w-full"
+                                                                                >
+                                                                                    <option value="">Spis Podstawowy Brak na
+                                                                                        statku
+                                                                                    </option>
+                                                                                    <option value="1">Tak</option>
+                                                                                    <option value="0">Nie</option>
+                                                                                </select>
+                                                                            </>
+                                                                        ) : (
+                                                                            medicine.lek_min_nazwa
+                                                                        )}
+                                                                    </td>
+                                                                    <td className="px-4 py-3 border-r border-l border-gray-700">
+                                                                        {globalEditMode ? (
+                                                                            <select
+                                                                                value={editedValues[medicine.lek_min_id]?.pakowanie || ""}
+                                                                                onChange={(e) => handleEdit(medicine.lek_min_id, "pakowanie", e.target.value)}
+                                                                                className="border px-2 py-1 w-full"
                                                                             >
-                                                                                Edytuj
+                                                                                <option value="">Wybierz opakowanie</option>
+                                                                                {ConstantsMedicine.BoxTypeOptions.map(option => (
+                                                                                    <option key={option.value}
+                                                                                            value={option.value}>
+                                                                                        {option.label}
+                                                                                    </option>
+                                                                                ))}
+                                                                            </select>
+                                                                        ) : (
+                                                                            medicine.lek_min_pakowanie
+                                                                        )}
+                                                                    </td>
+                                                                    <td className="px-4 py-3 border-r border-l border-gray-700">
+                                                                        {globalEditMode ? (
+                                                                            <input
+                                                                                type="text"
+                                                                                value={editedValues[medicine.lek_min_id]?.w_opakowaniu || ""}
+                                                                                onChange={(e) => handleEdit(medicine.lek_min_id, "w_opakowaniu", e.target.value)}
+                                                                                className="border px-2 py-1 w-full"
+                                                                            />
+                                                                        ) : (
+                                                                            medicine.lek_min_w_opakowaniu
+                                                                        )}
+                                                                    </td>
+                                                                    <td className="px-4 py-3 border border-gray-700 w-20 ">
+                                                                        {!globalEditMode && (
+                                                                            <button
+                                                                                onClick={() => handleDelete(medicine.lek_min_id)}
+                                                                                className="bg-red-100 text-red-700 text-xs py-1 px-2 rounded flex items-center"
+                                                                            >
+                                                                                Usuń
                                                                             </button>
                                                                         )}
-                                                                    </div>
-                                                                )}
-                                                            </td>
-                                                        </tr>
+                                                                    </td>
+                                                                </tr>
                                                             ))}
                                                     </React.Fragment>
                                                 ) : null;
