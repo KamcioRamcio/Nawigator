@@ -1,0 +1,23 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+@layer utilities {
+    .nth-child-2n {
+        &:nth-child(2n) {
+            @apply bg-gray-200;
+        }
+    }
+}
+
+thead {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background-color: #fff;
+}
+
+input, select {
+    background-color: #e7e5e5;
+}
