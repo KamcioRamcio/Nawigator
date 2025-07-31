@@ -141,6 +141,7 @@ function MainMedicineList() {
             });
         });
 
+
         // Generate the PDF with the formatted date
         const formattedDate = currentDate.toLocaleDateString('pl-PL');
         generateMainMedicinePDF(allMedicineData, formattedDate);
@@ -509,7 +510,7 @@ function MainMedicineList() {
                             </button>
                         )}
                         <button
-                            className="bg-pink-500 hover:bg-pink-600 text-white font-bold rounded-2xl px-4 py-2 flex items-center z-40 relative"
+                            className="bg-pink-500 hover:bg-pink-600 text-white font-bold rounded-3xl mr-2 p-4 p4 flex items-center z-40 relative"
                             onClick={handleGeneratePDF}
                         >
                             <span className="mr-1">📄</span> Generuj PDF

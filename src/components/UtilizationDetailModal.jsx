@@ -20,7 +20,6 @@ function UtilizationDetailModal({ isOpen, onClose, utilizationId, onUtilizationU
 
     const statusOptions = [
         { value: 'Nowa', label: 'Nowa' },
-        { value: 'W realizacji', label: 'W realizacji' },
         { value: 'Zakończona', label: 'Zakończona' },
         { value: 'Anulowana', label: 'Anulowana' }
     ];

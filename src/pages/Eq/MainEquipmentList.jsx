@@ -9,6 +9,7 @@ import UtilizationButton from "../../components/UtilizationButton.jsx";
 import { showEditButton, showDeleteButton, showUtilizationButton, showAddButton, showPredictedStatusButton, showOrderButton } from "../../constants/permisions.js";
 import EquipmentStatusPreview from "../../components/EquipmentStatusPreview.jsx";
 import toastService from '../../utils/toast.js';
+import {generateMainEqPDF} from "../../utils/mainEqPdfGenerator.js";
 
 function MainEquipmentList() {
     const [equipments, setEquipments] = useState([]);
@@ -150,6 +151,35 @@ function MainEquipmentList() {
             setGlobalEditMode(true);
         }
     };
+
+    const handleGeneratePDF = () => {
+        const allEqData = [];
+
+        Object.keys(equipments).forEach(category => {
+            const categoryItems = equipments[category];
+            Object.keys(categoryItems).forEach(subcategory => {
+                const subcategoryItems = categoryItems[subcategory];
+                subcategoryItems.forEach(equipment => {
+                    if (matchesSearch(equipment)) {
+                        allEqData.push({
+                            nazwa: equipment.sprzet_nazwa,
+                            ilosc: equipment.sprzet_ilosc_aktualna,
+                            data: equipment.sprzet_data_waznosci,
+                            ilosc_wymagana: equipment.sprzet_ilosc_wymagana,
+                            uwagi: equipment.sprzet_status,
+                            termin: equipment.sprzet_termin,
+                            ilosc_termin: equipment.sprzet_ilosc_termin,
+                            id_kategorii: equipment.id_kategorii,
+                            id_pod_kategorii: equipment.id_pod_kategorii,
+                        });
+                    }
+                });
+            });
+        })
+
+        generateMainEqPDF(allEqData, currentDate);
+        toastService.success("PDF został wygenerowany i pobrany");
+    }
 
     const handleAddToOrderClick = (equipment) => {
         setSelectedEquipment(equipment);
@@ -406,6 +436,12 @@ function MainEquipmentList() {
                                 Anuluj
                             </button>
                         )}
+                        <button
+                            className="bg-pink-400 hover:bg-pink-600 text-white font-bold rounded-3xl p-4 mr-2 flex items-center z-40 relative"
+                            onClick={handleGeneratePDF}
+                            >
+                            <span className="mr-1">📄</span> Generuj PDF
+                        </button>
 
                         {/* Add Item Button */}
                         {showAddButton(userPosition) && (

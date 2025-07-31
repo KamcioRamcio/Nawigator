@@ -43,7 +43,6 @@ function SiteChange({isOpen, onClose}) {
     const medicineItems = [
         {path: '/main/leki', name: 'Główny spis leków', icon: '💊'},
         {path: '/zestawienie-lekow', name: 'Zestawienie leków', icon: '📋'},
-        {path: '/minimum-lekow', name: 'Spis minimum leków', icon: '📊'},
     ];
 
     // Equipment related navigation items

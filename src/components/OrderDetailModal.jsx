@@ -18,7 +18,6 @@ function OrderDetailModal({ isOpen, onClose, orderId, onOrderUpdate }) {
     const [showSettings, setShowSettings] = useState(false)
     const statusOptions = [
         { value: 'Nowe', label: 'Nowe' },
-        { value: 'W trakcie', label: 'W trakcie' },
         { value: 'Zamówione', label: 'Zamówione' },
         { value: 'Przyjęte', label: 'Przyjęte' },
         { value: 'Zakończone', label: 'Zakończone' },

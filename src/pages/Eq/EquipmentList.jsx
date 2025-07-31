@@ -5,7 +5,7 @@ import SiteChange from "../../components/SiteChange.jsx";
 import ConstantsEquipment from "../../constants/constantsEquipment.js";
 import { showEditButtonNoMain, showAddButton } from "../../constants/permisions.js";
 import toastService from '../../utils/toast.js';
-
+import {generateEqPDF} from "../../utils/EqPdfGenerator.js";
 /**
  * EquipmentList Component
  * Displays a list of medical equipment, allowing for viewing, searching, adding, editing, and deleting.
@@ -218,6 +218,30 @@ function EquipmentList() {
         fetchEquipment();
     };
 
+    const handleGeneratePDF = () => {
+        const allEqData = [];
+
+        Object.keys(equipments).forEach(category => {
+            const categoryItems = equipments[category];
+            Object.keys(categoryItems).forEach(subcategory => {
+                const subcategoryItems = categoryItems[subcategory];
+                subcategoryItems.forEach(equipment => {
+                    allEqData.push({
+                        nazwa: equipment.sprzet_nazwa,
+                        data_waznosci: equipment.sprzet_data_waznosci,
+                        ilosc: equipment.sprzet_ilosc_aktualna,
+                        termin: equipment.sprzet_termin,
+                        id_kategorii: equipment.id_kategorii,
+                        id_pod_kategorii: equipment.id_pod_kategorii,
+                    });
+                });
+            });
+        });
+
+        generateEqPDF(allEqData, currentDate);
+        toastService.success("PDF został wygenerowany i pobrany");
+    }
+
     /**
      * Handles the deletion of a single equipment item.
      * Prompts for user confirmation before proceeding with the deletion.
@@ -360,6 +384,12 @@ function EquipmentList() {
                                 {globalEditMode ? 'Zapisz wszystko' : 'Edytuj wszystko'}
                             </button>
                         )}
+
+                        <button className="bg-pink-400 hover:bg-pink-500 text-white font-bold p-4 rounded-3xl mr-2 flex items-center z-40 relative"
+                                onClick={handleGeneratePDF}
+                                >
+                            <span className="mr-1">📄</span> Generuj PDF
+                        </button>
 
                         {/* Cancel Edit Button */}
                         {globalEditMode && showEditButtonNoMain(userPosition) && (

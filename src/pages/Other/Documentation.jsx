@@ -56,10 +56,7 @@ const Documentation = () => {
                             <span className="text-blue-500 mr-2 mt-1">•</span>
                             <span className="text-gray-700"><strong>Zestawienie Leków</strong> - uproszczona lista leków z kluczowymi informacjami</span>
                         </li>
-                        <li className="flex items-start">
-                            <span className="text-blue-500 mr-2 mt-1">•</span>
-                            <span className="text-gray-700"><strong>Spis Minimum Leków</strong> - lista minimalnych wymagań dotyczących leków</span>
-                        </li>
+
                         <li className="flex items-start">
                             <span className="text-blue-500 mr-2 mt-1">•</span>
                             <span className="text-gray-700"><strong>Spis Minimum Sprzętu</strong> - lista minimalnych wymagań dotyczących sprzętu</span>
@@ -69,10 +66,7 @@ const Documentation = () => {
                             <span
                                 className="text-gray-700"><strong>Spis Sprzętu</strong> - uproszczona lista sprzętu</span>
                         </li>
-                        <li className="flex items-start">
-                            <span className="text-blue-500 mr-2 mt-1">•</span>
-                            <span className="text-gray-700"><strong>Zgrany Spis Sprzętu</strong> - zorganizowana lista sprzętu</span>
-                        </li>
+
                         <li className="flex items-start">
                             <span className="text-blue-500 mr-2 mt-1">•</span>
                             <span className="text-gray-700"><strong>Utylizacja</strong> - rejestr utylizowanych materiałów</span>
@@ -954,10 +948,6 @@ const Documentation = () => {
                                 <strong className="text-green-700">Nowa</strong>
                                 <p className="text-sm text-gray-600 mt-1">utylizacja została utworzona, można dodawać do niej pozycje</p>
                             </div>
-                            <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                                <strong className="text-blue-700">W trakcie</strong>
-                                <p className="text-sm text-gray-600 mt-1">utylizacja jest w trakcie realizacji</p>
-                            </div>
                         </div>
                         <div className="space-y-2">
                             <div className="p-3 bg-purple-50 rounded-lg border border-purple-200">
@@ -1045,12 +1035,11 @@ const Documentation = () => {
                                 zamówienia</p>
                         </div>
                         <div className="p-4 bg-blue-50 rounded-lg border-l-4 border-blue-500">
-                            <strong className="text-blue-700">W trakcie / Zamówione</strong>
-                            <p className="text-gray-600 mt-1">statusy używane do oznaczenia zamówień złożonych lub
-                                będących w realizacji</p>
+                            <strong className="text-blue-700">Zamówione</strong>
+                            <p className="text-gray-600 mt-1">status używany do oznaczenia zamówień złożonych</p>
                         </div>
                         <div className="p-4 bg-indigo-50 rounded-lg border-l-4 border-indigo-500">
-                            <strong className="text-indigo-700">Nowe / W trakcie / Zamówione</strong>
+                            <strong className="text-indigo-700">Nowe / Zamówione</strong>
                             <p className="text-gray-600 mt-1">każdy z tych statusów powoduje aktualizację
                                 pola <em>Status</em> (w arkuszu Leki) lub <em>Ilość/Termin</em> (w arkuszu Sprzęt) na
                                 "<em>W zamówieniu: [nazwa-zamówienia]</em>"</p>
@@ -1121,10 +1110,6 @@ const Documentation = () => {
                             <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
                                 <strong className="text-blue-700">Zamówione</strong>
                                 <p className="text-sm text-gray-600 mt-1">zamówienie zostało złożone u dostawcy.</p>
-                            </div>
-                            <div className="p-3 bg-indigo-50 rounded-lg border border-indigo-200">
-                                <strong className="text-indigo-700">W trakcie</strong>
-                                <p className="text-sm text-gray-600 mt-1">zamówienie jest w trakcie realizacji.</p>
                             </div>
                         </div>
                         <div className="space-y-2">
@@ -1310,22 +1295,6 @@ const Documentation = () => {
                         </a>
                     </div>
 
-                    <div className="bg-white rounded-lg shadow-md p-6">
-                        <h3 className="text-xl font-bold mb-4 text-gray-800 flex items-center">
-                            <span className="text-purple-500 mr-2">📝</span> Spis Minimum Leków
-                        </h3>
-
-                        <p className="mb-4 text-gray-600">
-                            Arkusz "Spis Minimum Leków" zawiera listę z informacjami odnośnie rodzaju opakowania danych
-                            leków.
-                        </p>
-
-                        <a
-                            href={"/minimum-lekow"}
-                            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors duration-200 shadow-md">
-                            Kliknij by przejść do arkusza
-                        </a>
-                    </div>
 
                     <div className="bg-white rounded-lg shadow-md p-6">
                         <h3 className="text-xl font-bold mb-4 text-gray-800 flex items-center">
@@ -1363,21 +1332,6 @@ const Documentation = () => {
                         </a>
                     </div>
 
-                    <div className="bg-white rounded-lg shadow-md p-6">
-                        <h3 className="text-xl font-bold mb-4 text-gray-800 flex items-center">
-                            <span className="text-teal-500 mr-2">📊</span> Zgrany Spis Sprzętu
-                        </h3>
-
-                        <p className="mb-4 text-gray-600">
-                            Arkusz "Zgrany Spis Sprzętu" zawiera zgrany spis sprzętu.
-                        </p>
-
-                        <a
-                            href={"/zgrany-sprzet"}
-                            className="mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors duration-200 shadow-md">
-                            Kliknij by przejść do arkusza
-                        </a>
-                    </div>
 
                     <div className="bg-white rounded-lg shadow-md p-6">
                         <h3 className="text-xl font-bold mb-4 text-gray-800 flex items-center">
