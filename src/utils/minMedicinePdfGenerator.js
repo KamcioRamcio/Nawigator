@@ -5,7 +5,7 @@ import logoImage from '../assets/logo_black.png';
 import {SUB_CATEGORIES, SUB_SUB_CATEGORIES, SUB_CATEGORIES_EQ} from './categories_map.js';
 import {useEffect} from "react";
 
-export const generateEqPDF = (data, selectedDate) => {
+export const generateMinMedicinePDF = (data, selectedDate) => {
     try {
         const doc = new jsPDF({
             orientation: 'landscape',
@@ -34,20 +34,21 @@ export const generateEqPDF = (data, selectedDate) => {
         doc.setFontSize(13);
         doc.text("MV NAWIGATOR XXI", doc.internal.pageSize.width / 2, 20, {align: 'center'});
         doc.setFontSize(10);
-        doc.text('Spis Sprzetu Medycznego', doc.internal.pageSize.width / 2, 30, {align: 'center'});
+        doc.text('Spis Minimum Leków', doc.internal.pageSize.width / 2, 30, {align: 'center'});
 
 
-        const tableColumn = ["Lp.", "Nazwa", "Data waznosci", "Ilosc Akt."];
+        const tableColumn = ["Lp.", "Nazwa", "Opakowanie", "W opakowaniu"];
 
-        const eqArray = Array.isArray(data) ? data : [data];
+        const medicineArray = Array.isArray(data) ? data : [data];
 
-        const tableRows = eqArray.map((item, index) => {
-            const mappedSubCategory = SUB_CATEGORIES_EQ[item.id_pod_kategorii] || item.id_pod_kategorii;
+        const tableRows = medicineArray.map((item, index) => {
+            const mappedSubCategory = SUB_CATEGORIES[item.id_pod_kategorii] || item.id_pod_kategorii;
+            const mappedSubSubCategory = SUB_SUB_CATEGORIES[item.id_pod_pod_kategorii] || item.id_pod_pod_kategorii;
             return [
-                (item.id_kategorii || '0') + '.' + (mappedSubCategory || '0'),
+                (item.id_kategorii || '0') + '.' + (mappedSubCategory || '0') + (mappedSubSubCategory || '0'),
                 item.nazwa ?? '',
-                item.data_waznosci ?? '',
-                item.ilosc ?? '',
+                item.pakowanie ?? '',
+                item.w_opakowaniu ?? '',
             ];
         });
 
@@ -75,10 +76,10 @@ export const generateEqPDF = (data, selectedDate) => {
                 lineColor: [0, 0, 0]
             },
             columnStyles: {
-                0: {halign: 'center', cellWidth: 10},  // Lp.
-                1: {cellWidth: 200},   // Nazwa
-                2: {halign: 'center', cellWidth: 30},  // Data ważności
-                3: {halign: 'center', cellWidth: 20},  // Ilość Akt.
+                0: {halign: 'center', cellWidth: 15},  // Lp.
+                1: {cellWidth: 160},                    // Nazwa
+                2: {halign: 'center', cellWidth: 30},  // Opakowanie
+                3: {halign: 'center', cellWidth: 50},  // W opakowaniu
             },
             didParseCell: function (data) {
                 if (data.cell.text) {

@@ -53,8 +53,23 @@ function Admin() {
                 return res.json();
             })
             .then((data) => {
+                const positionOrder = {
+                    "admin": 1,
+                    "user": 2,
+                    "viewer": 3
+                };
+
                 const sortedUsers = Array.isArray(data)
-                    ? [...data].sort((a, b) => a.username.localeCompare(b.username))
+                    ? [...data].sort((a, b) => {
+                        const posA = positionOrder[a.position] || 999;
+                        const posB = positionOrder[b.position] || 999;
+
+                        if (posA !== posB) {
+                            return posA - posB;
+                        }
+
+                        return a.username.localeCompare(b.username);
+                    })
                     : [];
                 setUsers(sortedUsers);
                 setLoading(false);

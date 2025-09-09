@@ -34,10 +34,10 @@ export const generateMainEqPDF = (data, selectedDate) => {
         doc.setFontSize(13);
         doc.text("MV NAWIGATOR XXI", doc.internal.pageSize.width / 2, 20, {align: 'center'});
         doc.setFontSize(10);
-        doc.text(`Stan Sprzętu na dzien: ${selectedDate || currentDate}`, doc.internal.pageSize.width / 2, 30, {align: 'center'});
+        doc.text(`Stan Sprzetu dzien: ${selectedDate || currentDate}`, doc.internal.pageSize.width / 2, 30, {align: 'center'});
 
 
-        const tableColumn = ["Lp.", "Nazwa", "Ilosc Akt.", "Data waznosci", "Ilosc Wymagana", "Uwagi", "Termin", "Ilosc Terminowa"];
+        const tableColumn = ["Lp.", "Nazwa", "Ilosc Akt.", "Data waznosci", "Uwagi"];
 
         const eqArray = Array.isArray(data) ? data : [data];
 
@@ -48,10 +48,7 @@ export const generateMainEqPDF = (data, selectedDate) => {
                 item.nazwa ?? '',
                 item.ilosc ?? '',
                 item.data ?? '',
-                item.ilosc_wymagana ?? '',
                 item.uwagi ?? '',
-                item.termin ?? '',
-                item.ilosc_termin ?? ''
             ];
         });
 
@@ -79,14 +76,11 @@ export const generateMainEqPDF = (data, selectedDate) => {
                 lineColor: [0, 0, 0]
             },
             columnStyles: {
-                0: {halign: 'center', cellWidth: 10},  // Lp.
-                1: {cellWidth: 60},                    // Nazwa
-                2: {halign: 'center', cellWidth: 20},  // Ilość
-                3: {halign: 'center', cellWidth: 25},  // Data ważności
-                4: {halign: 'center', cellWidth: 20},  // Ilość Minimalna
-                5: {halign: 'center', cellWidth: 60},  // Uwagi
-                6: {halign: 'center', cellWidth: 40},  // Termin
-                7: {cellWidth: 40}                     // Ilosc/termin
+                0: {halign: 'center', cellWidth: 15},  // Lp.
+                1: {cellWidth: 100},                    // Nazwa
+                2: {halign: 'center', cellWidth: 25},  // Ilość
+                3: {halign: 'center', cellWidth: 30},  // Data ważności
+                4: {cellWidth: 100},  // Uwagi
             },
             didParseCell: function (data) {
                 if (data.cell.text) {

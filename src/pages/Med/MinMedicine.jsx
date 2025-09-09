@@ -5,6 +5,7 @@ import SiteChange from "../../components/SiteChange.jsx";
 import ConstantsMedicine from "../../constants/constantsMedicine.js";
 import {showEditButtonNoMain, showAddButton} from "../../constants/permisions.js";
 import toastService from '../../utils/toast.js';
+import {generateMinMedicinePDF} from "../../utils/minMedicinePdfGenerator.js";
 
 
 function MinMedicine() {
@@ -128,6 +129,35 @@ function MinMedicine() {
 
         return true;
     };
+
+    const handleGeneratePDF = async () => {
+        const allMedicineData = [];
+        Object.keys(medicines).forEach(category => {
+            const categoryItems = medicines[category];
+            Object.keys(categoryItems).forEach(subcategory => {
+                const subcategoryItems = categoryItems[subcategory];
+                Object.keys(subcategoryItems).forEach(subsubcategory => {
+                    const medicineItems = subcategoryItems[subsubcategory];
+                    medicineItems.forEach(medicine => {
+                        if (matchesSearch(medicine)) {
+                            allMedicineData.push({
+                                nazwa : medicine.lek_min_nazwa,
+                                pakowanie: medicine.lek_min_pakowanie,
+                                w_opakowaniu: medicine.lek_min_w_opakowaniu,
+                                id_kategorii: ConstantsMedicine.CategoryOptions.find(cat => cat.label === category)?.value || null,
+                                id_pod_kategorii: category !== 'Uncategorized' && subcategory !== 'null' ?
+                                    ConstantsMedicine.SubCategoryOptions[ConstantsMedicine.CategoryOptions.find(cat => cat.label === category)?.value]?.find(subcat => subcat.label === subcategory)?.value || null : null,
+                                id_pod_pod_kategorii: subcategory !== 'null' && subsubcategory !== 'null' ? ConstantsMedicine.SubSubCategoryOptions[ConstantsMedicine.SubCategoryOptions[ConstantsMedicine.CategoryOptions.find(cat => cat.label === category)?.value]?.find(subcat => subcat.label === subcategory)?.value]?.find(subsubcat => subsubcat.label === subsubcategory)?.value || null : null
+                            });
+                        }
+                    });
+                });
+            });
+        });
+        const formattedDate = currentDate.toLocaleDateString('pl-PL');
+        generateMinMedicinePDF(allMedicineData, formattedDate);
+        toastService.success("PDF został wygenerowany i pobrany");
+    }
 
     const handleAddMedicine = async () => {
         if (!validateForm()) {
@@ -466,19 +496,25 @@ function MinMedicine() {
 
     return (
         <div className="bg-gray-100 min-h-screen pb-10">
-            <div className="mx-auto bg-white shadow-lg rounded-lg ">
-                <div className="flex justify-between items-center py-6 border-b bg-gray-200 sticky top-0 z-30">
-                    <button className="rounded-3xl bg-slate-900 text-white font-bold text-lg p-3 ml-8 z-10"
-                            onClick={handleSiteChangeOpen}>
+            <div className="mx-auto bg-white shadow-lg rounded-lg">
+                {/* Header Section */}
+                <div className="flex flex-col md:flex-row justify-between items-center py-3 md:py-3 px-4 md:px-8 border-b bg-gray-200 sticky top-0 z-30">
+                    {/* Site Change Button */}
+                    <button
+                        className="rounded-3xl bg-slate-900 text-white font-bold text-base md:text-lg p-2 md:p-3 mb-2 md:mb-0 md:ml-8 z-10"
+                        onClick={handleSiteChangeOpen}
+                    >
                         Zmiana Arkusza
                     </button>
 
-                    <h1 className="text-2xl font-bold text-gray-800 p-2 text-center mx-auto absolute left-0 right-0">
+                    {/* Page Title */}
+                    <h1 className="text-xl md:text-2xl font-bold text-gray-800 p-2 text-center md:mx-auto md:absolute md:left-0 md:right-0">
                         Spis Minimum Leków
                     </h1>
 
-                    <div className="flex items-center">
-                        <div className="flex flex-col items-end mr-6 text-sm">
+                    {/* User Info and Action Buttons */}
+                    <div className="flex flex-col md:flex-row items-center mt-2 md:mt-0">
+                        <div className="flex flex-col items-end mr-0 md:mr-6 text-sm text-center md:text-right">
                             <p className="text-red-800 font-semibold">
                                 Stan na dzień: {currentDate.toDateString()}
                             </p>
@@ -487,10 +523,10 @@ function MinMedicine() {
                             </p>
                         </div>
 
-                        {/* Global edit button added here */}
+                        {/* Global edit button */}
                         {showEditButtonNoMain(userPosition) && (
                             <button
-                                className={`rounded-3xl ${globalEditMode ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700'} text-white font-bold text-lg p-3 mr-3 z-10`}
+                                className={`rounded-3xl ${globalEditMode ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700'} text-white font-bold text-base md:text-lg p-2 md:p-3 mt-2 md:mt-0 md:mr-3 z-10`}
                                 onClick={globalEditMode ? handleSaveAll : handleGlobalEditToggle}
                             >
                                 {globalEditMode ? 'Zapisz wszystko' : 'Edytuj wszystko'}
@@ -500,24 +536,34 @@ function MinMedicine() {
                         {/* Cancel edit button, only appears when in edit mode */}
                         {globalEditMode && showEditButtonNoMain(userPosition) && (
                             <button
-                                className="rounded-3xl bg-gray-500 hover:bg-gray-600 text-white font-bold text-lg p-3 mr-3 z-10"
+                                className="rounded-3xl bg-gray-500 hover:bg-gray-600 text-white font-bold text-base md:text-lg p-2 md:p-3 mt-2 md:mt-0 md:mr-3 z-10"
                                 onClick={handleGlobalEditToggle}
                             >
                                 Anuluj
                             </button>
                         )}
+                        <button
+                            className="bg-pink-500 hover:bg-pink-600 text-white font-bold rounded-3xl mr-2 p-4 p4 flex items-center z-40 relative"
+                            onClick={handleGeneratePDF}
+                        >
+                            <span className="mr-1">📄</span> Generuj PDF
+                        </button>
 
+                        {/* Add Item Button */}
                         {showAddButton(userPosition) && (
-                            <button className="rounded-3xl bg-slate-900 text-white font-bold text-lg p-3 mr-10 z-10"
-                                    onClick={handleAddMedicineOpen}>
+                            <button
+                                className="rounded-3xl bg-slate-900 text-white font-bold text-base md:text-lg p-2 md:p-3 mt-2 md:mt-0 md:mr-10 z-10"
+                                onClick={handleAddMedicineOpen}
+                            >
                                 Dodaj Pozycję
                             </button>
                         )}
                     </div>
 
+                    {/* Add Medicine Modal */}
                     <AddItemModal isOpen={medicineAdd} onClose={handleAddMedicineClose} title="Dodaj Lek do Listy Minimalnej">
                         <h2 className="text-xl font-bold mb-4">Dodaj Lek do Listy Minimalnej</h2>
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
                                     Nazwa Leku*
@@ -533,7 +579,7 @@ function MinMedicine() {
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Jednostki
+                                    Opakowanie
                                 </label>
                                 <select
                                     name="pakowanie"
@@ -541,7 +587,7 @@ function MinMedicine() {
                                     onChange={handleInputMedicine}
                                     className="border rounded-md p-2 w-full"
                                 >
-                                    <option value="">Wybierz jednostki</option>
+                                    <option value="">Wybierz opakowanie</option>
                                     {ConstantsMedicine.BoxTypeOptions.map(option => (
                                         <option key={option.value} value={option.value}>
                                             {option.label}
@@ -656,247 +702,252 @@ function MinMedicine() {
                             </button>
                         </div>
                     </AddItemModal>
+
                     <SiteChange isOpen={siteChange} onClose={handleSiteChangeClose}/>
                 </div>
-                <div className="sticky top-[100px] bg-white z-20 p-1">
-                    <div className="flex justify-center items-center w-1/2 mx-auto my-4 relative">
-                        <div className="absolute left-3 text-gray-400">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24"
-                                 stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                            </svg>
+
+                {/* Search Section */}
+                <div className="sticky top-[100px] bg-white z-20">
+                    <div className="flex flex-col md:flex-row justify-center items-center gap-4 md:gap-6 py-3 border-b border-gray-200">
+                        <div className="relative w-full md:w-1/3">
+                            <input
+                                type="text"
+                                placeholder="Szukaj leków..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="border border-gray-300 rounded-md pl-10 pr-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                                </svg>
+                            </div>
                         </div>
-                        <input
-                            type="text"
-                            placeholder="Szukaj leków..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="border border-gray-300 rounded-md pl-10 pr-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
                     </div>
                 </div>
-                <table className="w-full border-collapse">
-                    <thead className="text-left sticky top-[182px] z-10">
-                    <tr className="bg-gray-200 text-gray-700 uppercase text-sm tracking-wide text-left">
-                        <th className="px-4 py-3">Nazwa Leku</th>
-                        <th className="px-4 py-3">Jednostki</th>
-                        <th className="px-4 py-3">W Opakowaniu</th>
-                        <th className="px-4 py-3 w-20">Akcje</th>
-                    </tr>
-                    </thead>
-                    <tbody className="text-left">
-                    {Object.keys(medicines).map((category, categoryIndex) => {
-                        const categoryItems = medicines[category];
-                        const hasCategoryMatches = searchQuery === "" || categoryHasMatches(categoryItems);
 
-                        return hasCategoryMatches ? (
-                            <React.Fragment key={category}>
-                                <tr className="bg-gray-300 text-xl">
-                                    <td colSpan="4" className="font-bold p-4 bg-slate-500">
-                                        {categoryIndex + 1}. {category === 'Uncategorized' ? 'Brak kategorii' : category}
+                {/* Medicines Table Section */}
+                <div className="z-20 top-[110px]">
+                    <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-200 sticky top-[180px] z-10">
+                            <tr className="text-gray-700 uppercase text-xs md:text-sm tracking-wider">
+                                <th scope="col" className="px-2 py-3 text-left">Nazwa Leku</th>
+                                <th scope="col" className="px-2 py-3 text-left">Opakowanie</th>
+                                <th scope="col" className="px-2 py-3 text-left">W Opakowaniu</th>
+                                <th scope="col" className="px-2 py-3 text-left w-20">Akcje</th>
+                            </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                            {Object.keys(medicines).map((category, categoryIndex) => {
+                                const categoryItems = medicines[category];
+                                const hasCategoryMatches = categoryHasMatches(categoryItems);
 
-                                    </td>
-                                </tr>
-                                {Object.keys(categoryItems).map((subcategory, subcategoryIndex) => {
-                                    const showSubcategoryName = subcategory !== "null";
-                                    const subcategoryItems = categoryItems[subcategory];
-                                    const hasSubcategoryMatches = searchQuery === "" || subcategoryHasMatches(subcategoryItems);
+                                return hasCategoryMatches ? (
+                                    <React.Fragment key={category}>
+                                        <tr className="bg-gray-300 text-base md:text-xl">
+                                            <td colSpan="4" className="font-bold p-2 md:p-4 bg-slate-500 text-white">
+                                                {categoryIndex + 1}. {category === 'Uncategorized' ? 'Brak kategorii' : category}
+                                            </td>
+                                        </tr>
+                                        {Object.keys(categoryItems).map((subcategory, subcategoryIndex) => {
+                                            const showSubcategoryName = subcategory !== "null";
+                                            const subcategoryItems = categoryItems[subcategory];
+                                            const hasSubcategoryMatches = subcategoryHasMatches(subcategoryItems);
 
-                                    return hasSubcategoryMatches ? (
-                                        <React.Fragment key={subcategory}>
-                                            {showSubcategoryName && (
-                                                <tr className="bg-gray-200">
-                                                    <td colSpan="4" className="p-2 pl-8 font-semibold text-lg bg-slate-400">
-                                                        {subcategoryIndex + 1}. {subcategory}
-                                                    </td>
-                                                </tr>
-                                            )}
-                                            {Object.keys(subcategoryItems).map((subsubcategory, subsubcategoryIndex) => {
-                                                const showSubsubcategoryName = subsubcategory !== "null";
-                                                const subsubcategoryItems = subcategoryItems[subsubcategory];
-                                                const hasSubsubcategoryMatches = searchQuery === "" || subsubcategoryHasMatches(subsubcategoryItems);
+                                            return hasSubcategoryMatches ? (
+                                                <React.Fragment key={subcategory}>
+                                                    {showSubcategoryName && (
+                                                        <tr className="bg-gray-200 text-sm md:text-base">
+                                                            <td colSpan="4" className="p-2 pl-4 md:p-4 md:pl-6 font-semibold bg-slate-400 text-white">
+                                                                {subcategoryIndex + 1}. {subcategory}
+                                                            </td>
+                                                        </tr>
+                                                    )}
+                                                    {Object.keys(subcategoryItems).map((subsubcategory, subsubcategoryIndex) => {
+                                                        const showSubsubcategoryName = subsubcategory !== "null";
+                                                        const subsubcategoryItems = subcategoryItems[subsubcategory];
+                                                        const hasSubsubcategoryMatches = subsubcategoryHasMatches(subsubcategoryItems);
 
-                                                return hasSubsubcategoryMatches ? (
-                                                    <React.Fragment key={subsubcategory}>
-                                                        {showSubsubcategoryName && (
-                                                            <tr className="bg-gray-100">
-                                                                <td colSpan="4" className="pl-12 text-lg bg-slate-300">
-                                                                    {subcategoryIndex + 1}.{indexToLetter(subsubcategoryIndex)}. {subsubcategory}
-                                                                </td>
-                                                            </tr>
-                                                        )}
-                                                        {subsubcategoryItems
-                                                            .filter(matchesSearch)
-                                                            .map(medicine => (
-                                                                <tr key={medicine.lek_min_id}
-                                                                    className={`${medicine.leki_min_przechowywanie === "freezer" ? "bg-blue-200" : medicine.leki_min_przechowywanie === "narkotyk" ? "bg-orange-200" : ""} ${medicine.leki_min_na_statku_spis_podstawowy === 1 ? "text-red-600" : ""} border border-gray-700`}>
-                                                                    <td className="pl-16 px-4 py-3 border-r border-l border-gray-700">
-                                                                        {globalEditMode ? (
-                                                                            <>
-                                                                                <input
-                                                                                    type="text"
-                                                                                    value={editedValues[medicine.lek_min_id]?.nazwa_leku || ""}
-                                                                                    onChange={(e) => handleEdit(medicine.lek_min_id, "nazwa_leku", e.target.value)}
-                                                                                    className="border px-2 py-1 w-full mb-1"
-                                                                                    required
-                                                                                />
-                                                                                <select
-                                                                                    value={editedValues[medicine.lek_min_id]?.id_kategorii || ""}
-                                                                                    onChange={(e) => {
-                                                                                        handleEdit(medicine.lek_min_id, "id_kategorii", e.target.value);
-                                                                                        setEditSelectedCategory({
-                                                                                            ...editSelectedCategory,
-                                                                                            [medicine.lek_min_id]: e.target.value
-                                                                                        });
-                                                                                        // Reset dependent fields when category changes
-                                                                                        setEditSelectedSubCategory({
-                                                                                            ...editSelectedSubCategory,
-                                                                                            [medicine.lek_min_id]: null
-                                                                                        });
-                                                                                        handleEdit(medicine.lek_min_id, "id_pod_kategorii", null);
-                                                                                        handleEdit(medicine.lek_min_id, "id_pod_pod_kategorii", null);
-                                                                                    }}
-                                                                                    className="border px-2 py-1 w-full mb-1"
-                                                                                >
-                                                                                    <option value="">Wybierz kategorię</option>
-                                                                                    {ConstantsMedicine.CategoryOptions.map(option => (
-                                                                                        <option key={option.value}
-                                                                                                value={option.value}>
-                                                                                            {option.label}
-                                                                                        </option>
-                                                                                    ))}
-                                                                                </select>
-                                                                                <select
-                                                                                    value={editedValues[medicine.lek_min_id]?.id_pod_kategorii || ""}
-                                                                                    onChange={(e) => {
-                                                                                        handleEdit(medicine.lek_min_id, "id_pod_kategorii", e.target.value);
-                                                                                        setEditSelectedSubCategory({
-                                                                                            ...editSelectedSubCategory,
-                                                                                            [medicine.lek_min_id]: e.target.value
-                                                                                        });
-                                                                                        // Reset sub-subcategory when subcategory changes
-                                                                                        handleEdit(medicine.lek_min_id, "id_pod_pod_kategorii", null);
-                                                                                    }}
-                                                                                    className="border px-2 py-1 w-full mb-1"
-                                                                                    disabled={!editedValues[medicine.lek_min_id]?.id_kategorii}
-                                                                                >
-                                                                                    <option value="">Wybierz podkategorię
-                                                                                    </option>
-                                                                                    {editedValues[medicine.lek_min_id]?.id_kategorii &&
-                                                                                        ConstantsMedicine.SubCategoryOptions[editedValues[medicine.lek_min_id]?.id_kategorii]?.map(option => (
-                                                                                            <option key={option.value}
-                                                                                                    value={option.value}>
+                                                        return hasSubsubcategoryMatches ? (
+                                                            <React.Fragment key={subsubcategory}>
+                                                                {showSubsubcategoryName && (
+                                                                    <tr className="bg-gray-100 text-xs md:text-sm">
+                                                                        <td colSpan="4" className="pl-4 md:pl-6 py-2 bg-slate-300 text-white">
+                                                                            {subcategoryIndex + 1}.{indexToLetter(subsubcategoryIndex)}. {subsubcategory}
+                                                                        </td>
+                                                                    </tr>
+                                                                )}
+                                                                {subsubcategoryItems
+                                                                    .filter(matchesSearch)
+                                                                    .map(medicine => (
+                                                                        <tr key={medicine.lek_min_id}
+                                                                            className={`${medicine.leki_min_przechowywanie === "freezer" ? "bg-blue-100" : medicine.leki_min_przechowywanie === "narkotyk" ? "bg-orange-100" : ""} ${medicine.leki_min_na_statku_spis_podstawowy === 1 ? "text-red-600" : "text-gray-900"} border-b border-gray-200 hover:bg-gray-50`}>
+                                                                            <td className="px-2 py-2 md:py-4 text-sm max-w-[150px] md:max-w-[250px] overflow-hidden text-ellipsis">
+                                                                                {globalEditMode ? (
+                                                                                    <div className="flex flex-col space-y-1">
+                                                                                        <input
+                                                                                            type="text"
+                                                                                            value={editedValues[medicine.lek_min_id]?.nazwa_leku || ""}
+                                                                                            onChange={(e) => handleEdit(medicine.lek_min_id, "nazwa_leku", e.target.value)}
+                                                                                            className="border px-2 py-1 w-full mb-1"
+                                                                                            required
+                                                                                        />
+                                                                                        <select
+                                                                                            value={editedValues[medicine.lek_min_id]?.id_kategorii || ""}
+                                                                                            onChange={(e) => {
+                                                                                                handleEdit(medicine.lek_min_id, "id_kategorii", e.target.value);
+                                                                                                setEditSelectedCategory({
+                                                                                                    ...editSelectedCategory,
+                                                                                                    [medicine.lek_min_id]: e.target.value
+                                                                                                });
+                                                                                                // Reset dependent fields when category changes
+                                                                                                setEditSelectedSubCategory({
+                                                                                                    ...editSelectedSubCategory,
+                                                                                                    [medicine.lek_min_id]: null
+                                                                                                });
+                                                                                                handleEdit(medicine.lek_min_id, "id_pod_kategorii", null);
+                                                                                                handleEdit(medicine.lek_min_id, "id_pod_pod_kategorii", null);
+                                                                                            }}
+                                                                                            className="border px-2 py-1 w-full mb-1"
+                                                                                        >
+                                                                                            <option value="">Wybierz kategorię</option>
+                                                                                            {ConstantsMedicine.CategoryOptions.map(option => (
+                                                                                                <option key={option.value}
+                                                                                                        value={option.value}>
+                                                                                                    {option.label}
+                                                                                                </option>
+                                                                                            ))}
+                                                                                        </select>
+                                                                                        <select
+                                                                                            value={editedValues[medicine.lek_min_id]?.id_pod_kategorii || ""}
+                                                                                            onChange={(e) => {
+                                                                                                handleEdit(medicine.lek_min_id, "id_pod_kategorii", e.target.value);
+                                                                                                setEditSelectedSubCategory({
+                                                                                                    ...editSelectedSubCategory,
+                                                                                                    [medicine.lek_min_id]: e.target.value
+                                                                                                });
+                                                                                                // Reset sub-subcategory when subcategory changes
+                                                                                                handleEdit(medicine.lek_min_id, "id_pod_pod_kategorii", null);
+                                                                                            }}
+                                                                                            className="border px-2 py-1 w-full mb-1"
+                                                                                            disabled={!editedValues[medicine.lek_min_id]?.id_kategorii}
+                                                                                        >
+                                                                                            <option value="">Wybierz podkategorię
+                                                                                            </option>
+                                                                                            {editedValues[medicine.lek_min_id]?.id_kategorii &&
+                                                                                                ConstantsMedicine.SubCategoryOptions[editedValues[medicine.lek_min_id]?.id_kategorii]?.map(option => (
+                                                                                                    <option key={option.value}
+                                                                                                            value={option.value}>
+                                                                                                        {option.label}
+                                                                                                    </option>
+                                                                                                ))
+                                                                                            }
+                                                                                        </select>
+                                                                                        <select
+                                                                                            value={editedValues[medicine.lek_min_id]?.id_pod_pod_kategorii || ""}
+                                                                                            onChange={(e) => handleEdit(medicine.lek_min_id, "id_pod_pod_kategorii", e.target.value)}
+                                                                                            className="border px-2 py-1 w-full"
+                                                                                            disabled={!editedValues[medicine.lek_min_id]?.id_pod_kategorii}
+                                                                                        >
+                                                                                            <option value="">Wybierz podpodkategorię
+                                                                                            </option>
+                                                                                            {editedValues[medicine.lek_min_id]?.id_kategorii &&
+                                                                                                editedValues[medicine.lek_min_id]?.id_pod_kategorii &&
+                                                                                                Array.isArray(ConstantsMedicine.SubSubCategoryOptions[editedValues[medicine.lek_min_id]?.id_kategorii]?.[editedValues[medicine.lek_min_id]?.id_pod_kategorii]) &&
+                                                                                                ConstantsMedicine.SubSubCategoryOptions[editedValues[medicine.lek_min_id]?.id_kategorii][editedValues[medicine.lek_min_id]?.id_pod_kategorii].map(option => (
+                                                                                                    <option key={option.value}
+                                                                                                            value={option.value}>
+                                                                                                        {option.label}
+                                                                                                    </option>
+                                                                                                ))
+                                                                                            }
+                                                                                        </select>
+                                                                                        <select
+                                                                                            name="przechowywanie"
+                                                                                            value={editedValues[medicine.lek_min_id]?.przechowywanie || medicine.leki_min_przechowywanie || ""}
+                                                                                            onChange={(e) => handleEdit(medicine.lek_min_id, "przechowywanie", e.target.value)}
+                                                                                            className="border px-2 py-1 my-1 w-full"
+                                                                                        >
+                                                                                            <option value="">Wybierz przechowywanie
+                                                                                            </option>
+                                                                                            {ConstantsMedicine.StoringOptions.map(option => (
+                                                                                                <option key={option.value}
+                                                                                                        value={option.value}>
+                                                                                                    {option.label}
+                                                                                                </option>
+                                                                                            ))}
+                                                                                        </select>
+                                                                                        <select
+                                                                                            name="na_statku_spis_podstawowy"
+                                                                                            value={editedValues[medicine.lek_min_id]?.na_statku_spis_podstawowy || medicine.leki_min_na_statku_spis_podstawowy || ""}
+                                                                                            onChange={(e) => handleEdit(medicine.lek_min_id, "na_statku_spis_podstawowy", e.target.value)}
+                                                                                            className="border px-2 py-1 w-full"
+                                                                                        >
+                                                                                            <option value="">Spis Podstawowy Brak na
+                                                                                                statku
+                                                                                            </option>
+                                                                                            <option value="1">Tak</option>
+                                                                                            <option value="0">Nie</option>
+                                                                                        </select>
+                                                                                    </div>
+                                                                                ) : (
+                                                                                    <div className="max-h-32 overflow-y-auto break-words">{medicine.lek_min_nazwa}</div>
+                                                                                )}
+                                                                            </td>
+                                                                            <td className="px-2 py-2 md:py-4 whitespace-nowrap text-sm">
+                                                                                {globalEditMode ? (
+                                                                                    <select
+                                                                                        value={editedValues[medicine.lek_min_id]?.pakowanie || ""}
+                                                                                        onChange={(e) => handleEdit(medicine.lek_min_id, "pakowanie", e.target.value)}
+                                                                                        className="border rounded-md px-2 py-1 w-full text-sm"
+                                                                                    >
+                                                                                        <option value="">Wybierz opakowanie</option>
+                                                                                        {ConstantsMedicine.BoxTypeOptions.map(option => (
+                                                                                            <option key={option.value} value={option.value}>
                                                                                                 {option.label}
                                                                                             </option>
-                                                                                        ))
-                                                                                    }
-                                                                                </select>
-                                                                                <select
-                                                                                    value={editedValues[medicine.lek_min_id]?.id_pod_pod_kategorii || ""}
-                                                                                    onChange={(e) => handleEdit(medicine.lek_min_id, "id_pod_pod_kategorii", e.target.value)}
-                                                                                    className="border px-2 py-1 w-full"
-                                                                                    disabled={!editedValues[medicine.lek_min_id]?.id_pod_kategorii}
-                                                                                >
-                                                                                    <option value="">Wybierz podpodkategorię
-                                                                                    </option>
-                                                                                    {editedValues[medicine.lek_min_id]?.id_kategorii &&
-                                                                                        editedValues[medicine.lek_min_id]?.id_pod_kategorii &&
-                                                                                        Array.isArray(ConstantsMedicine.SubSubCategoryOptions[editedValues[medicine.lek_min_id]?.id_kategorii]?.[editedValues[medicine.lek_min_id]?.id_pod_kategorii]) &&
-                                                                                        ConstantsMedicine.SubSubCategoryOptions[editedValues[medicine.lek_min_id]?.id_kategorii][editedValues[medicine.lek_min_id]?.id_pod_kategorii].map(option => (
-                                                                                            <option key={option.value}
-                                                                                                    value={option.value}>
-                                                                                                {option.label}
-                                                                                            </option>
-                                                                                        ))
-                                                                                    }
-                                                                                </select>
-                                                                                <select
-                                                                                    name="przechowywanie"
-                                                                                    value={editedValues[medicine.lek_min_id]?.przechowywanie || medicine.leki_min_przechowywanie || ""}
-                                                                                    onChange={(e) => handleEdit(medicine.lek_min_id, "przechowywanie", e.target.value)}
-                                                                                    className="border px-2 py-1 my-1 w-full"
-                                                                                >
-                                                                                    <option value="">Wybierz przechowywanie
-                                                                                    </option>
-                                                                                    {ConstantsMedicine.StoringOptions.map(option => (
-                                                                                        <option key={option.value}
-                                                                                                value={option.value}>
-                                                                                            {option.label}
-                                                                                        </option>
-                                                                                    ))}
-                                                                                </select>
-                                                                                <select
-                                                                                    name="na_statku_spis_podstawowy"
-                                                                                    value={editedValues[medicine.lek_min_id]?.na_statku_spis_podstawowy || medicine.leki_min_na_statku_spis_podstawowy || ""}
-                                                                                    onChange={(e) => handleEdit(medicine.lek_min_id, "na_statku_spis_podstawowy", e.target.value)}
-                                                                                    className="border px-2 py-1 w-full"
-                                                                                >
-                                                                                    <option value="">Spis Podstawowy Brak na
-                                                                                        statku
-                                                                                    </option>
-                                                                                    <option value="1">Tak</option>
-                                                                                    <option value="0">Nie</option>
-                                                                                </select>
-                                                                            </>
-                                                                        ) : (
-                                                                            medicine.lek_min_nazwa
-                                                                        )}
-                                                                    </td>
-                                                                    <td className="px-4 py-3 border-r border-l border-gray-700">
-                                                                        {globalEditMode ? (
-                                                                            <select
-                                                                                value={editedValues[medicine.lek_min_id]?.pakowanie || ""}
-                                                                                onChange={(e) => handleEdit(medicine.lek_min_id, "pakowanie", e.target.value)}
-                                                                                className="border px-2 py-1 w-full"
-                                                                            >
-                                                                                <option value="">Wybierz opakowanie</option>
-                                                                                {ConstantsMedicine.BoxTypeOptions.map(option => (
-                                                                                    <option key={option.value}
-                                                                                            value={option.value}>
-                                                                                        {option.label}
-                                                                                    </option>
-                                                                                ))}
-                                                                            </select>
-                                                                        ) : (
-                                                                            medicine.lek_min_pakowanie
-                                                                        )}
-                                                                    </td>
-                                                                    <td className="px-4 py-3 border-r border-l border-gray-700">
-                                                                        {globalEditMode ? (
-                                                                            <input
-                                                                                type="text"
-                                                                                value={editedValues[medicine.lek_min_id]?.w_opakowaniu || ""}
-                                                                                onChange={(e) => handleEdit(medicine.lek_min_id, "w_opakowaniu", e.target.value)}
-                                                                                className="border px-2 py-1 w-full"
-                                                                            />
-                                                                        ) : (
-                                                                            medicine.lek_min_w_opakowaniu
-                                                                        )}
-                                                                    </td>
-                                                                    <td className="px-4 py-3 border border-gray-700 w-20 ">
-                                                                        {!globalEditMode && (
-                                                                            <button
-                                                                                onClick={() => handleDelete(medicine.lek_min_id)}
-                                                                                className="bg-red-100 text-red-700 text-xs py-1 px-2 rounded flex items-center"
-                                                                            >
-                                                                                Usuń
-                                                                            </button>
-                                                                        )}
-                                                                    </td>
-                                                                </tr>
-                                                            ))}
-                                                    </React.Fragment>
-                                                ) : null;
-                                            })}
-                                        </React.Fragment>
-                                    ) : null;
-                                })}
-                            </React.Fragment>
-                        ) : null;
-                    })}
-                    </tbody>
-                </table>
+                                                                                        ))}
+                                                                                    </select>
+                                                                                ) : (
+                                                                                    medicine.lek_min_pakowanie
+                                                                                )}
+                                                                            </td>
+                                                                            <td className="px-2 py-2 md:py-4 whitespace-nowrap text-sm">
+                                                                                {globalEditMode ? (
+                                                                                    <input
+                                                                                        type="text"
+                                                                                        value={editedValues[medicine.lek_min_id]?.w_opakowaniu || ""}
+                                                                                        onChange={(e) => handleEdit(medicine.lek_min_id, "w_opakowaniu", e.target.value)}
+                                                                                        className="border rounded-md px-2 py-1 w-full text-sm"
+                                                                                    />
+                                                                                ) : (
+                                                                                    medicine.lek_min_w_opakowaniu
+                                                                                )}
+                                                                            </td>
+                                                                            <td className="px-2 py-2 md:py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                                                {!globalEditMode && (
+                                                                                    <button
+                                                                                        onClick={() => handleDelete(medicine.lek_min_id)}
+                                                                                        className="bg-red-100 text-red-700 text-xs py-1 px-2 rounded hover:bg-red-200 flex items-center justify-center"
+                                                                                    >
+                                                                                        <span className="mr-1">🗑️</span>Usuń
+                                                                                    </button>
+                                                                                )}
+                                                                            </td>
+                                                                        </tr>
+                                                                    ))}
+                                                            </React.Fragment>
+                                                        ) : null;
+                                                    })}
+                                                </React.Fragment>
+                                            ) : null;
+                                        })}
+                                    </React.Fragment>
+                                ) : null;
+                            })}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     );

@@ -110,7 +110,6 @@ function MainMedicineList() {
         // Prepare data for all medicines in the table
         const allMedicineData = [];
 
-        // Loop through the medicines data structure and extract all medicines
         Object.keys(medicines).forEach(category => {
             const categoryItems = medicines[category];
             Object.keys(categoryItems).forEach(subcategory => {
@@ -118,7 +117,6 @@ function MainMedicineList() {
                 Object.keys(subcategoryItems).forEach(subsubcategory => {
                     const medicineItems = subcategoryItems[subsubcategory];
                     medicineItems.forEach(medicine => {
-                        // Only include medicines that match the current search/filter
                         if (matchesSearch(medicine)) {
                             allMedicineData.push({
                                 nazwa: medicine.lek_nazwa,
@@ -463,7 +461,7 @@ function MainMedicineList() {
         <div className="bg-gray-100 min-h-screen pb-10">
             <div className="mx-auto bg-white shadow-lg rounded-lg">
                 {/* Header Section */}
-                <div className="flex flex-col md:flex-row justify-between items-center py-4 md:py-6 px-4 md:px-8 border-b bg-gray-200 sticky top-0 z-30">
+                <div className="flex flex-col md:flex-row justify-between items-center py-3 md:py-3 px-4 md:px-8 border-b bg-gray-200 sticky top-0 z-30">
                     {/* Site Change Button */}
                     <button
                         className="rounded-3xl bg-slate-900 text-white font-bold text-base md:text-lg p-2 md:p-3 mb-2 md:mb-0 md:ml-8 z-10"
@@ -795,10 +793,10 @@ function MainMedicineList() {
                 {/* Medicines Table Section */}
                 <div className="z-20 top-[110px]">
                     <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-200 sticky top-[168px] z-10">
+                        <thead className="bg-gray-200 sticky top-[185px] z-10">
                         <tr className="text-gray-700 uppercase text-xs md:text-sm tracking-wider">
-                            <th scope="col" className="px-2 py- text-left">Nazwa Leku</th>
-                            <th scope="col" className="px-2 py text-left">Ilość</th>
+                            <th scope="col" className="px-2 py-3 text-left">Nazwa Leku</th>
+                            <th scope="col" className="px-2 py-3 text-left">Ilość</th>
                             <th scope="col" className="px-2 py-3 text-left">Opakowanie</th>
                             <th scope="col" className="px-2 py-3 text-left">Data ważności</th>
                             <th scope="col" className="px-2 py-3 text-left">Status leku</th>
@@ -819,7 +817,8 @@ function MainMedicineList() {
                             return hasCategoryMatches ? (
                                 <React.Fragment key={category}>
                                     <tr className="bg-gray-300 text-base md:text-xl">
-                                        <td colSpan="12" className="font-bold p-2 md:p-4 bg-slate-500 text-white">        {categoryIndex + 1}. {category === 'Uncategorized' ? 'Brak kategorii' : category}
+                                        <td colSpan="12" className="font-bold p-2 md:p-4 bg-slate-500 text-white">
+                                            {categoryIndex + 1}. {category === 'Uncategorized' ? 'Brak kategorii' : category}
                                         </td>
                                     </tr>
                                     {Object.keys(categoryItems).map((subcategory, subcategoryIndex) => {

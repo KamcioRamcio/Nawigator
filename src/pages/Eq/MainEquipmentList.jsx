@@ -392,7 +392,7 @@ function MainEquipmentList() {
         <div className="bg-gray-100 min-h-screen pb-10">
             <div className="mx-auto bg-white shadow-lg rounded-lg">
                 {/* Header Section */}
-                <div className="flex flex-col md:flex-row justify-between items-center py-4 md:py-6 px-4 md:px-8 border-b bg-gray-200 sticky top-0 z-30">
+                <div className="flex flex-col md:flex-row justify-between items-center py-3 md:py-3 px-4 md:px-8 border-b bg-gray-200 sticky top-0 z-30">
                     {/* Site Change Button */}
                     <button
                         className="rounded-3xl bg-slate-900 text-white font-bold text-base md:text-lg p-2 md:p-3 mb-2 md:mb-0 md:ml-8 z-10"
@@ -681,9 +681,9 @@ function MainEquipmentList() {
                 </div>
 
                 {/* Equipment Table Section */}
-                <div className="z-20 top-[110px]">
+                <div className="z-20 top-[120px]">
                     <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-200 sticky top-[168px] z-10">
+                        <thead className="bg-gray-200 sticky top-[185px] z-10">
                         <tr className="text-gray-700 uppercase text-xs md:text-sm tracking-wider">
                             <th scope="col" className="px-2 py-3 text-left">Wyroby Medyczne</th>
                             <th scope="col" className="px-2 py-3 text-left">Ilość Aktualna</th>

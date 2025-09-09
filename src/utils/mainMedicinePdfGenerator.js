@@ -38,7 +38,7 @@ export const generateMainMedicinePDF = (data, selectedDate) => {
         doc.setFontSize(10);
         doc.text(`Stan Leków na dzien: ${selectedDate || currentDate}`, doc.internal.pageSize.width / 2, 30, {align: 'center'});
 
-        const tableColumn = ["Lp.", "Nazwa", "Ilosc", "Opakowanie", "Data waznosci", "Status Leku", "Ilosc Minimalna", "Rozchod", "Status", "Uwagi"]
+        const tableColumn = ["Lp.", "Nazwa", "Ilosc", "Opakowanie", "Data waznosci", "Uwagi"]
 
         // Make sure data is an array
         const medicineArray = Array.isArray(data) ? data : [data];
@@ -52,10 +52,6 @@ export const generateMainMedicinePDF = (data, selectedDate) => {
                 item.ilosc ?? '',
                 item.opakowanie ?? '',
                 item.data ?? '',
-                item.status ?? '',
-                item.ilos_mininalna ?? '',
-                item.rozchod_ilosc ?? '',
-                item.stan_magazynowy_status ?? '',
                 (item.stan_magazynowy_important_status === "0" || !item.stan_magazynowy_important_status) ? "" : item.stan_magazynowy_important_status
             ];
         });
@@ -85,15 +81,11 @@ export const generateMainMedicinePDF = (data, selectedDate) => {
             },
             columnStyles: {
                 0: {halign: 'center', cellWidth: 15},  // Lp.
-                1: {cellWidth: 50},                    // Nazwa
+                1: {cellWidth: 80},                    // Nazwa
                 2: {halign: 'center', cellWidth: 15},  // Ilość
                 3: {halign: 'center', cellWidth: 25},  // Opakowanie
-                4: {halign: 'center', cellWidth: 25},  // Data ważności
-                5: {halign: 'center', cellWidth: 25},  // Status Leku
-                6: {halign: 'center', cellWidth: 20},  // Ilość Minimalna
-                7: {halign: 'center', cellWidth: 20},  // Rozchód
-                8: {halign: 'center', cellWidth: 25},  // Status
-                9: {cellWidth: 50}                     // Uwagi
+                4: {halign: 'center', cellWidth: 30},  // Data ważności
+                5: {cellWidth: 100}                     // Uwagi
             },
             didParseCell: function (data) {
                 if (data.cell.text) {
