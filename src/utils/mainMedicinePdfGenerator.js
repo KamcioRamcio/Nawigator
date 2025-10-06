@@ -113,7 +113,7 @@ export const generateMainMedicinePDF = (data, selectedDate) => {
         doc.line(20, finalY + 10, 80, finalY + 10);
 
         const safeDate = selectedDate ? selectedDate.replace(/\./g, '-') : currentDate.replace(/\./g, '-');
-        doc.save(`Zestawienie_${safeDate}.pdf`);
+        doc.save(`Zestawienie_Glowne_Lekow${safeDate}.pdf`);
         console.log('PDF generated successfully');
     } catch (error) {
         console.error('Error generating PDF:', error);

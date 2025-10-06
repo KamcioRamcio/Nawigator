@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import apiUrl from "../../constants/api.js";
 import AddItemModal from "../../components/AddItemModal.jsx";
 import SiteChange from "../../components/SiteChange.jsx";
 import ConstantsEquipment from "../../constants/constantsEquipment.js";
-import { showEditButtonNoMain, showAddButton } from "../../constants/permisions.js";
+import {showEditButtonNoMain, showAddButton, showEditButton} from "../../constants/permisions.js";
 import toastService from '../../utils/toast.js';
 import {generateEqPDF} from "../../utils/EqPdfGenerator.js";
 /**
@@ -39,13 +39,33 @@ function EquipmentList() {
     const user = JSON.parse(localStorage.getItem("user"));
     const userPosition = user?.position || "viewer";
 
+    const [headerHeight, setHeaderHeight] = useState(0);
+    const headerRef = useRef(null);
+
+    useEffect(() => {
+        const calculateHeaderHeight = () => {
+            const headerElement = headerRef.current;
+
+            if (headerElement) {
+                const headerRect = headerElement.getBoundingClientRect();
+                setHeaderHeight(headerRect.height);
+            }
+        };
+
+        // Calculate on mount and window resize
+        calculateHeaderHeight();
+        window.addEventListener('resize', calculateHeaderHeight);
+
+        return () => window.removeEventListener('resize', calculateHeaderHeight);
+    }, []);
+
     /**
      * useEffect Hook
      * Fetches equipment data on component mount and sets the current date.
      */
     useEffect(() => {
         fetchEquipment();
-        setCurrentDate(new Date().toISOString().slice(0, 10));
+        setCurrentDate(new Date().toDateString());
     }, []);
 
     /**
@@ -346,27 +366,173 @@ function EquipmentList() {
         fetchEquipment();
     };
 
+    const addItemModalContent = (
+        <AddItemModal isOpen={addEquipment} onClose={handleAddEquipmentClose} title="Dodaj Wyposażenie">
+            <h2 className="text-xl font-bold mb-4">Dodaj Wyposażenie</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Nazwa*
+                    </label>
+                    <input
+                        type="text"
+                        name="eq_nazwa"
+                        value={newEquipment.eq_nazwa}
+                        onChange={handleInputEquipment}
+                        className="border rounded-md p-2 w-full"
+                        required
+                    />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Ilość wymagana
+                    </label>
+                    <input
+                        type="number"
+                        name="eq_ilosc_wymagana"
+                        value={newEquipment.eq_ilosc_wymagana}
+                        onChange={handleInputEquipment}
+                        className="border rounded-md p-2 w-full"
+                    />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Ilość aktualna
+                    </label>
+                    <input
+                        type="number"
+                        name="eq_ilosc_aktualna"
+                        value={newEquipment.eq_ilosc_aktualna}
+                        onChange={handleInputEquipment}
+                        className="border rounded-md p-2 w-full"
+                    />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Data ważności
+                    </label>
+                    <input
+                        type="date"
+                        name="eq_data"
+                        value={newEquipment.eq_data}
+                        onChange={handleInputEquipment}
+                        className="border rounded-md p-2 w-full"
+                    />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Termin
+                    </label>
+                    <select
+                        name="eq_termin"
+                        value={newEquipment.eq_termin}
+                        onChange={handleInputEquipment}
+                        className="border rounded-md p-2 w-full"
+                    >
+                        <option value="">Wybierz termin</option>
+                        {ConstantsEquipment.StatusOptions.map(option => (
+                            <option key={option.value} value={option.value}>
+                                {option.label}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Ilość/Termin
+                    </label>
+                    <select
+                        name="eq_ilosc_termin"
+                        value={newEquipment.eq_ilosc_termin}
+                        onChange={handleInputEquipment}
+                        className="border rounded-md p-2 w-full"
+                    >
+                        <option value="">Wybierz Ilość/Termin</option>
+                        {ConstantsEquipment.EquipmentStatusOptions.map(option => (
+                            <option key={option.value} value={option.value}>
+                                {option.label}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Kategoria*
+                    </label>
+                    <select
+                        name="eq_kategoria"
+                        value={newEquipment.eq_kategoria}
+                        onChange={(e) => {
+                            handleInputEquipment(e);
+                            setSelectedCategory(parseInt(e.target.value, 10))
+                        }}
+                        className="border rounded-md p-2 w-full"
+                        required
+                    >
+                        <option value="">Wybierz kategorię</option>
+                        {ConstantsEquipment.CategoryOptions.map(option => (
+                            <option key={option.value} value={option.value}>
+                                {option.label}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Podkategoria
+                    </label>
+                    <select
+                        name="eq_podkategoria"
+                        value={newEquipment.eq_podkategoria}
+                        onChange={handleInputEquipment}
+                        className="border rounded-md p-2 w-full"
+                        disabled={!selectedCategory}
+                    >
+                        <option value="">Wybierz podkategorię</option>
+                        {ConstantsEquipment.SubCategoryOptions[selectedCategory]?.map(option => (
+                            <option key={option.value} value={option.value}>
+                                {option.label}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+            </div>
+            <div className="mt-6 flex justify-end">
+                <button
+                    className="mr-2 px-4 py-2 bg-gray-300 rounded-md"
+                    onClick={handleAddEquipmentClose}
+                >
+                    Anuluj
+                </button>
+                <button
+                    className="px-4 py-2 bg-blue-500 text-white rounded-md"
+                    onClick={() => {
+                        handleAddEquipment();
+                        handleAddEquipmentClose();
+                    }}
+                >
+                    Dodaj
+                </button>
+            </div>
+        </AddItemModal>
+    )
+
     return (
         <div className="bg-gray-100 min-h-screen pb-10">
             <div className="mx-auto bg-white shadow-lg rounded-lg">
+                <div ref={headerRef} className="sticky top-0 z-30 bg-white">
                 {/* Header Section */}
-                <div className="flex flex-col md:flex-row justify-between items-center py-3 md:py-3 px-4 md:px-8 border-b bg-gray-200 sticky top-0 z-30">
+                <div className="flex flex-col md:flex-row justify-between items-center py-3 md:py-3 px-4 md:px-8 border-b bg-gray-200">
                     {/* Site Change Button */}
-                    <button
-                        className="rounded-3xl bg-slate-900 text-white font-bold text-base md:text-lg p-2 md:p-3 mb-2 md:mb-0 md:ml-8 z-10"
-                        onClick={handleSiteChangeOpen}
-                    >
-                        Zmiana Arkusza
-                    </button>
+                    <div className="flex flex-col md:flex-row items-center">
+                        <button
+                            className="rounded-3xl bg-slate-900 text-white font-bold text-base md:text-lg p-2 md:p-3 mb-2 md:mb-0 md:mr-6 z-10"
+                            onClick={handleSiteChangeOpen}
+                        >
+                            Zmiana Arkusza
+                        </button>
 
-                    {/* Page Title */}
-                    <h1 className="text-xl md:text-2xl font-bold text-gray-800 p-2 text-center md:mx-auto md:absolute md:left-0 md:right-0">
-                        Spis Sprzętu Medycznego
-                    </h1>
-
-                    {/* User Info and Action Buttons */}
-                    <div className="flex flex-col md:flex-row items-center mt-2 md:mt-0">
-                        <div className="flex flex-col items-end mr-0 md:mr-6 text-sm text-center md:text-right">
+                        <div className="flex flex-col items-start text-sm text-left">
                             <p className="text-red-800 font-semibold">
                                 Stan na dzień: {currentDate}
                             </p>
@@ -374,37 +540,47 @@ function EquipmentList() {
                                 Zalogowany jako {username}
                             </p>
                         </div>
+                    </div>
 
-                        {/* Global Edit Button */}
-                        {showEditButtonNoMain(userPosition) && (
+                    {/* Page Title */}
+                    <h1 className="text-xl md:text-2xl font-bold text-gray-800 p-2 text-center">
+                        Spis Sprzętu Medycznego
+                    </h1>
+
+                    {/* User Info and Action Buttons */}
+                    <div className="flex flex-col md:flex-row items-center gap-2 md:gap-3 mt-2 md:mt-0">
+                        {/* Global edit button */}
+                        {showEditButton(userPosition) && (
                             <button
-                                className={`rounded-3xl ${globalEditMode ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700'} text-white font-bold text-base md:text-lg p-2 md:p-3 mt-2 md:mt-0 md:mr-3 z-10`}
+                                className={`rounded-3xl ${globalEditMode ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700'} text-white font-bold text-base md:text-lg p-2 md:p-3 z-10`}
                                 onClick={globalEditMode ? handleSaveAll : handleGlobalEditToggle}
                             >
                                 {globalEditMode ? 'Zapisz wszystko' : 'Edytuj wszystko'}
                             </button>
                         )}
 
-                        <button className="bg-pink-400 hover:bg-pink-500 text-white font-bold p-4 rounded-3xl mr-2 flex items-center z-40 relative"
-                                onClick={handleGeneratePDF}
-                                >
-                            <span className="mr-1">📄</span> Generuj PDF
-                        </button>
-
-                        {/* Cancel Edit Button */}
-                        {globalEditMode && showEditButtonNoMain(userPosition) && (
+                        {/* Cancel edit button, only appears when in edit mode */}
+                        {globalEditMode && showEditButton(userPosition) && (
                             <button
-                                className="rounded-3xl bg-gray-500 hover:bg-gray-600 text-white font-bold text-base md:text-lg p-2 md:p-3 mt-2 md:mt-0 md:mr-3 z-10"
+                                className="rounded-3xl bg-gray-500 hover:bg-gray-600 text-white font-bold text-base md:text-lg p-2 md:p-3 z-10"
                                 onClick={handleGlobalEditToggle}
                             >
                                 Anuluj
                             </button>
                         )}
 
+                        {/* PDF Generation Button */}
+                        <button
+                            className="bg-pink-500 hover:bg-pink-600 text-white font-bold rounded-3xl p-2 md:p-3 flex items-center z-10"
+                            onClick={handleGeneratePDF}
+                        >
+                            <span className="mr-1">📄</span> Generuj PDF
+                        </button>
+
                         {/* Add Item Button */}
                         {showAddButton(userPosition) && (
                             <button
-                                className="rounded-3xl bg-slate-900 text-white font-bold text-base md:text-lg p-2 md:p-3 mt-2 md:mt-0 md:mr-10 z-10"
+                                className="rounded-3xl bg-slate-900 text-white font-bold text-base md:text-lg p-2 md:p-3 z-10"
                                 onClick={handleAddEquipmentOpen}
                             >
                                 Dodaj Pozycję
@@ -413,160 +589,14 @@ function EquipmentList() {
                     </div>
 
                     {/* Add Equipment Modal */}
-                    <AddItemModal isOpen={addEquipment} onClose={handleAddEquipmentClose} title="Dodaj Wyposażenie">
-                        <h2 className="text-xl font-bold mb-4">Dodaj Wyposażenie</h2>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Nazwa*
-                                </label>
-                                <input
-                                    type="text"
-                                    name="eq_nazwa"
-                                    value={newEquipment.eq_nazwa}
-                                    onChange={handleInputEquipment}
-                                    className="border rounded-md p-2 w-full"
-                                    required
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Ilość wymagana
-                                </label>
-                                <input
-                                    type="number"
-                                    name="eq_ilosc_wymagana"
-                                    value={newEquipment.eq_ilosc_wymagana}
-                                    onChange={handleInputEquipment}
-                                    className="border rounded-md p-2 w-full"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Ilość aktualna
-                                </label>
-                                <input
-                                    type="number"
-                                    name="eq_ilosc_aktualna"
-                                    value={newEquipment.eq_ilosc_aktualna}
-                                    onChange={handleInputEquipment}
-                                    className="border rounded-md p-2 w-full"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Data ważności
-                                </label>
-                                <input
-                                    type="date"
-                                    name="eq_data"
-                                    value={newEquipment.eq_data}
-                                    onChange={handleInputEquipment}
-                                    className="border rounded-md p-2 w-full"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Termin
-                                </label>
-                                <select
-                                    name="eq_termin"
-                                    value={newEquipment.eq_termin}
-                                    onChange={handleInputEquipment}
-                                    className="border rounded-md p-2 w-full"
-                                >
-                                    <option value="">Wybierz termin</option>
-                                    {ConstantsEquipment.StatusOptions.map(option => (
-                                        <option key={option.value} value={option.value}>
-                                            {option.label}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Ilość/Termin
-                                </label>
-                                <select
-                                    name="eq_ilosc_termin"
-                                    value={newEquipment.eq_ilosc_termin}
-                                    onChange={handleInputEquipment}
-                                    className="border rounded-md p-2 w-full"
-                                >
-                                    <option value="">Wybierz Ilość/Termin</option>
-                                    {ConstantsEquipment.EquipmentStatusOptions.map(option => (
-                                        <option key={option.value} value={option.value}>
-                                            {option.label}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Kategoria*
-                                </label>
-                                <select
-                                    name="eq_kategoria"
-                                    value={newEquipment.eq_kategoria}
-                                    onChange={(e) => {
-                                        handleInputEquipment(e);
-                                        setSelectedCategory(parseInt(e.target.value, 10))
-                                    }}
-                                    className="border rounded-md p-2 w-full"
-                                    required
-                                >
-                                    <option value="">Wybierz kategorię</option>
-                                    {ConstantsEquipment.CategoryOptions.map(option => (
-                                        <option key={option.value} value={option.value}>
-                                            {option.label}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Podkategoria
-                                </label>
-                                <select
-                                    name="eq_podkategoria"
-                                    value={newEquipment.eq_podkategoria}
-                                    onChange={handleInputEquipment}
-                                    className="border rounded-md p-2 w-full"
-                                    disabled={!selectedCategory}
-                                >
-                                    <option value="">Wybierz podkategorię</option>
-                                    {ConstantsEquipment.SubCategoryOptions[selectedCategory]?.map(option => (
-                                        <option key={option.value} value={option.value}>
-                                            {option.label}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                        </div>
-                        <div className="mt-6 flex justify-end">
-                            <button
-                                className="mr-2 px-4 py-2 bg-gray-300 rounded-md"
-                                onClick={handleAddEquipmentClose}
-                            >
-                                Anuluj
-                            </button>
-                            <button
-                                className="px-4 py-2 bg-blue-500 text-white rounded-md"
-                                onClick={() => {
-                                    handleAddEquipment();
-                                    handleAddEquipmentClose();
-                                }}
-                            >
-                                Dodaj
-                            </button>
-                        </div>
-                    </AddItemModal>
+                    {addItemModalContent}
+                    <SiteChange isOpen={siteChange} onClose={handleSiteChangeClose}/>
+
                 </div>
 
-                <SiteChange isOpen={siteChange} onClose={handleSiteChangeClose}/>
 
                 {/* Search Bar Section */}
-                <div className="sticky top-[100px] bg-white z-20 p-1">
+                <div className="bg-white z-20 p-1">
                     <div className="flex justify-center items-center w-full md:w-1/2 mx-auto my-4 relative">
                         <div className="absolute left-3 text-gray-400">
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24"
@@ -584,11 +614,16 @@ function EquipmentList() {
                         />
                     </div>
                 </div>
+                </div>
+
 
                 {/* Equipment Table Section */}
-                <div className="">
+                <div className="relative">
                     <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-200 sticky top-[200px] z-10">
+                        <thead
+                            className="bg-gray-200 z-10"
+                            style={{top: `${headerHeight}px`}}
+                        >
                         <tr>
                             <th scope="col" className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Wyroby Medyczne</th>
                             <th scope="col" className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data Ważności</th>

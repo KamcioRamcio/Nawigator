@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from "react";
+import React, {useEffect, useState, useRef} from "react";
 import apiUrl from "../../constants/api.js";
 import AddItemModal from "../../components/AddItemModal.jsx";
 import SiteChange from "../../components/SiteChange.jsx";
@@ -48,9 +48,29 @@ function MainEquipmentList() {
         eq_podkategoria: "",
     });
 
+    const [headerHeight, setHeaderHeight] = useState(0);
+    const headerRef = useRef(null);
+
+    useEffect(() => {
+        const calculateHeaderHeight = () => {
+            const headerElement = headerRef.current;
+
+            if (headerElement) {
+                const headerRect = headerElement.getBoundingClientRect();
+                setHeaderHeight(headerRect.height);
+            }
+        };
+
+        // Calculate on mount and window resize
+        calculateHeaderHeight();
+        window.addEventListener('resize', calculateHeaderHeight);
+
+        return () => window.removeEventListener('resize', calculateHeaderHeight);
+    }, []);
+
     useEffect(() => {
         fetchEquipment();
-        setCurrentDate(new Date().toISOString().slice(0, 10));
+        setCurrentDate(new Date().toDateString());
     }, []);
 
     const categoryHasMatches = (categoryItems) => {
@@ -388,302 +408,310 @@ function MainEquipmentList() {
         setConfirmDialogOpen(true);
     };
 
+    const addItemModalContent = (
+        <AddItemModal isOpen={addEquipment} onClose={handleAddEquipmentClose} title="Dodaj Wyposażenie">
+            <h2 className="text-xl font-bold mb-4">Dodaj Wyposażenie</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Nazwa*
+                    </label>
+                    <input
+                        type="text"
+                        name="eq_nazwa"
+                        value={newEquipment.eq_nazwa}
+                        onChange={handleInputEquipment}
+                        className="border rounded-md p-2 w-full"
+                        required
+                    />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Ilość wymagana
+                    </label>
+                    <input
+                        type="number"
+                        name="eq_ilosc_wymagana"
+                        value={newEquipment.eq_ilosc_wymagana}
+                        onChange={handleInputEquipment}
+                        className="border rounded-md p-2 w-full"
+                    />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Ilość aktualna
+                    </label>
+                    <input
+                        type="number"
+                        name="eq_ilosc_aktualna"
+                        value={newEquipment.eq_ilosc_aktualna}
+                        onChange={handleInputEquipment}
+                        className="border rounded-md p-2 w-full"
+                    />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Data ważności
+                    </label>
+                    <input
+                        type="date"
+                        name="eq_data"
+                        value={newEquipment.eq_data}
+                        onChange={handleInputEquipment}
+                        className="border rounded-md p-2 w-full"
+                    />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Termin
+                    </label>
+                    <select
+                        name="eq_termin"
+                        value={newEquipment.eq_termin}
+                        onChange={handleInputEquipment}
+                        className="border rounded-md p-2 w-full"
+                    >
+                        <option value="">Wybierz termin</option>
+                        {ConstantsEquipment.EquipmentStatusOptions.map(option => (
+                            <option key={option.value} value={option.value}>
+                                {option.label}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Ilość/Termin
+                    </label>
+                    <select
+                        name="eq_ilosc_termin"
+                        value={newEquipment.eq_ilosc_termin}
+                        onChange={handleInputEquipment}
+                        className="border rounded-md p-2 w-full"
+                    >
+                        <option value="">Wybierz Ilość/Termin</option>
+                        {ConstantsEquipment.StatusOptions.map(option => (
+                            <option key={option.value} value={option.value}>
+                                {option.label}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Na statku
+                    </label>
+                    <select
+                        name="eq_na_statku"
+                        value={newEquipment.eq_na_statku}
+                        onChange={handleInputEquipment}
+                        className="border rounded-md p-2 w-full"
+                    >
+                        <option value="">Wybierz</option>
+                        <option value="true">Tak</option>
+                        <option value="false">Nie</option>
+                    </select>
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                        W torbie ratownika
+                    </label>
+                    <select
+                        name="eq_torba_ratownika"
+                        value={newEquipment.eq_torba_ratownka}
+                        onChange={handleInputEquipment}
+                        className="border rounded-md p-2 w-full"
+                    >
+                        <option value="">Wybierz</option>
+                        <option value="true">Tak</option>
+                        <option value="false">Nie</option>
+                    </select>
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Kategoria*
+                    </label>
+                    <select
+                        name="eq_kategoria"
+                        value={newEquipment.eq_kategoria}
+                        onChange={(e) => {
+                            handleInputEquipment(e);
+                            setSelectedCategory(parseInt(e.target.value, 10))
+                        }}
+                        className="border rounded-md p-2 w-full"
+                        required
+                    >
+                        <option value="">Wybierz kategorię</option>
+                        {ConstantsEquipment.CategoryOptions.map(option => (
+                            <option key={option.value} value={option.value}>
+                                {option.label}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Podkategoria
+                    </label>
+                    <select
+                        name="eq_podkategoria"
+                        value={newEquipment.eq_podkategoria}
+                        onChange={handleInputEquipment}
+                        className="border rounded-md p-2 w-full"
+                        disabled={!selectedCategory}
+                    >
+                        <option value="">Wybierz podkategorię</option>
+                        {ConstantsEquipment.SubCategoryOptions[selectedCategory]?.map(option => (
+                            <option key={option.value} value={option.value}>
+                                {option.label}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+            </div>
+            <div className="mt-6 flex justify-end">
+                <button
+                    className="mr-2 px-4 py-2 bg-gray-300 rounded-md"
+                    onClick={handleAddEquipmentClose}
+                >
+                    Anuluj
+                </button>
+                <button
+                    className="px-4 py-2 bg-blue-500 text-white rounded-md"
+                    onClick={() => {
+                        handleAddEquipment();
+                        handleAddEquipmentClose();
+                    }}
+                >
+                    Dodaj
+                </button>
+            </div>
+        </AddItemModal>
+    )
+
     return (
         <div className="bg-gray-100 min-h-screen pb-10">
             <div className="mx-auto bg-white shadow-lg rounded-lg">
                 {/* Header Section */}
-                <div className="flex flex-col md:flex-row justify-between items-center py-3 md:py-3 px-4 md:px-8 border-b bg-gray-200 sticky top-0 z-30">
-                    {/* Site Change Button */}
-                    <button
-                        className="rounded-3xl bg-slate-900 text-white font-bold text-base md:text-lg p-2 md:p-3 mb-2 md:mb-0 md:ml-8 z-10"
-                        onClick={handleSiteChangeOpen}
-                    >
-                        Zmiana Arkusza
-                    </button>
+                <div ref={headerRef} className="sticky top-0 z-30 bg-white">
+                    <div className="flex flex-col md:flex-row items-center justify-between py-3 md:py-3 px-4 md:px-8 border-b bg-gray-200">
+                        {/* Left Section - Site Change Button and User Info */}
+                        <div className="flex flex-col md:flex-row items-center">
+                            <button
+                                className="rounded-3xl bg-slate-900 text-white font-bold text-base md:text-lg p-2 md:p-3 mb-2 md:mb-0 md:mr-6 z-10"
+                                onClick={handleSiteChangeOpen}
+                            >
+                                Zmiana Arkusza
+                            </button>
 
-                    {/* Page Title */}
-                    <h1 className="text-xl md:text-2xl font-bold text-gray-800 p-2 text-center md:mx-auto md:absolute md:left-0 md:right-0">
-                        Spis Minimum Sprzętu
-                    </h1>
-
-                    {/* User Info and Action Buttons */}
-                    <div className="flex flex-col md:flex-row items-center mt-2 md:mt-0">
-                        <div className="flex flex-col items-end mr-0 md:mr-6 text-sm text-center md:text-right">
-                            <p className="text-red-800 font-semibold">
-                                Stan na dzień: {currentDate}
-                            </p>
-                            <p className="font-medium">
-                                Zalogowany jako {username}
-                            </p>
+                            <div className="flex flex-col items-start text-sm text-left">
+                                <p className="text-red-800 font-semibold">
+                                    Stan na dzień: {currentDate}
+                                </p>
+                                <p className="font-medium">
+                                    Zalogowany jako {username}
+                                </p>
+                            </div>
                         </div>
 
-                        {/* Global edit button added here */}
-                        {showEditButton(userPosition) && (
-                            <button
-                                className={`rounded-3xl ${globalEditMode ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700'} text-white font-bold text-base md:text-lg p-2 md:p-3 mt-2 md:mt-0 md:mr-3 z-10`}
-                                onClick={globalEditMode ? handleSaveAll : handleGlobalEditToggle}
-                            >
-                                {globalEditMode ? 'Zapisz wszystko' : 'Edytuj wszystko'}
-                            </button>
-                        )}
+                        {/* Center Section - Page Title */}
+                        <h1 className="text-xl md:text-2xl font-bold text-gray-800 p-2 text-center">
+                            Główny Spis Leków
+                        </h1>
 
-                        {/* Cancel edit button, only appears when in edit mode */}
-                        {globalEditMode && showEditButton(userPosition) && (
-                            <button
-                                className="rounded-3xl bg-gray-500 hover:bg-gray-600 text-white font-bold text-base md:text-lg p-2 md:p-3 mt-2 md:mt-0 md:mr-3 z-10"
-                                onClick={handleGlobalEditToggle}
-                            >
-                                Anuluj
-                            </button>
-                        )}
-                        <button
-                            className="bg-pink-400 hover:bg-pink-600 text-white font-bold rounded-3xl p-4 mr-2 flex items-center z-40 relative"
-                            onClick={handleGeneratePDF}
-                            >
-                            <span className="mr-1">📄</span> Generuj PDF
-                        </button>
+                        {/* Right Section - Action Buttons */}
+                        <div className="flex flex-col md:flex-row items-center gap-2 md:gap-3 mt-2 md:mt-0">
+                            {/* Global edit button */}
+                            {showEditButton(userPosition) && (
+                                <button
+                                    className={`rounded-3xl ${globalEditMode ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700'} text-white font-bold text-base md:text-lg p-2 md:p-3 z-10`}
+                                    onClick={globalEditMode ? handleSaveAll : handleGlobalEditToggle}
+                                >
+                                    {globalEditMode ? 'Zapisz wszystko' : 'Edytuj wszystko'}
+                                </button>
+                            )}
 
-                        {/* Add Item Button */}
-                        {showAddButton(userPosition) && (
+                            {/* Cancel edit button, only appears when in edit mode */}
+                            {globalEditMode && showEditButton(userPosition) && (
+                                <button
+                                    className="rounded-3xl bg-gray-500 hover:bg-gray-600 text-white font-bold text-base md:text-lg p-2 md:p-3 z-10"
+                                    onClick={handleGlobalEditToggle}
+                                >
+                                    Anuluj
+                                </button>
+                            )}
+
+                            {/* PDF Generation Button */}
                             <button
-                                className="rounded-3xl bg-slate-900 text-white font-bold text-base md:text-lg p-2 md:p-3 mt-2 md:mt-0 md:mr-10 z-10"
-                                onClick={handleAddEquipmentOpen}
+                                className="bg-pink-500 hover:bg-pink-600 text-white font-bold rounded-3xl p-2 md:p-3 flex items-center z-10"
+                                onClick={handleGeneratePDF}
                             >
-                                Dodaj Pozycję
+                                <span className="mr-1">📄</span> Generuj PDF
                             </button>
-                        )}
+
+                            {/* Add Item Button */}
+                            {showAddButton(userPosition) && (
+                                <button
+                                    className="rounded-3xl bg-slate-900 text-white font-bold text-base md:text-lg p-2 md:p-3 z-10"
+                                    onClick={handleAddEquipment}
+                                >
+                                    Dodaj Pozycję
+                                </button>
+                            )}
+                        </div>
+
+                        {/* Add Medicine Modal */}
+                        {addItemModalContent}
+
+                        <SiteChange isOpen={siteChange} onClose={handleSiteChangeClose}/>
                     </div>
 
-                    {/* Add Equipment Modal */}
-                    <AddItemModal isOpen={addEquipment} onClose={handleAddEquipmentClose} title="Dodaj Wyposażenie">
-                        <h2 className="text-xl font-bold mb-4">Dodaj Wyposażenie</h2>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Nazwa*
-                                </label>
+                    {/* Search and Filter Section */}
+                    <div className="bg-white z-20">
+                        <div className="flex flex-col md:flex-row justify-center items-center gap-4 md:gap-6 py-3 border-b border-gray-200">
+                            {renderStatusCheckButton()}
+
+                            <div className="relative w-full md:w-1/3">
                                 <input
                                     type="text"
-                                    name="eq_nazwa"
-                                    value={newEquipment.eq_nazwa}
-                                    onChange={handleInputEquipment}
-                                    className="border rounded-md p-2 w-full"
-                                    required
+                                    placeholder="Szukaj sprzęt..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="border border-gray-300 rounded-md pl-10 pr-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 />
+                                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                                    </svg>
+                                </div>
                             </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Ilość wymagana
-                                </label>
-                                <input
-                                    type="number"
-                                    name="eq_ilosc_wymagana"
-                                    value={newEquipment.eq_ilosc_wymagana}
-                                    onChange={handleInputEquipment}
-                                    className="border rounded-md p-2 w-full"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Ilość aktualna
-                                </label>
-                                <input
-                                    type="number"
-                                    name="eq_ilosc_aktualna"
-                                    value={newEquipment.eq_ilosc_aktualna}
-                                    onChange={handleInputEquipment}
-                                    className="border rounded-md p-2 w-full"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Data ważności
-                                </label>
-                                <input
-                                    type="date"
-                                    name="eq_data"
-                                    value={newEquipment.eq_data}
-                                    onChange={handleInputEquipment}
-                                    className="border rounded-md p-2 w-full"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Termin
-                                </label>
-                                <select
-                                    name="eq_termin"
-                                    value={newEquipment.eq_termin}
-                                    onChange={handleInputEquipment}
-                                    className="border rounded-md p-2 w-full"
-                                >
-                                    <option value="">Wybierz termin</option>
-                                    {ConstantsEquipment.EquipmentStatusOptions.map(option => (
-                                        <option key={option.value} value={option.value}>
-                                            {option.label}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Ilość/Termin
-                                </label>
-                                <select
-                                    name="eq_ilosc_termin"
-                                    value={newEquipment.eq_ilosc_termin}
-                                    onChange={handleInputEquipment}
-                                    className="border rounded-md p-2 w-full"
-                                >
-                                    <option value="">Wybierz Ilość/Termin</option>
-                                    {ConstantsEquipment.StatusOptions.map(option => (
-                                        <option key={option.value} value={option.value}>
-                                            {option.label}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Na statku
-                                </label>
-                                <select
-                                    name="eq_na_statku"
-                                    value={newEquipment.eq_na_statku}
-                                    onChange={handleInputEquipment}
-                                    className="border rounded-md p-2 w-full"
-                                >
-                                    <option value="">Wybierz</option>
-                                    <option value="true">Tak</option>
-                                    <option value="false">Nie</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    W torbie ratownika
-                                </label>
-                                <select
-                                    name="eq_torba_ratownika"
-                                    value={newEquipment.eq_torba_ratownka}
-                                    onChange={handleInputEquipment}
-                                    className="border rounded-md p-2 w-full"
-                                >
-                                    <option value="">Wybierz</option>
-                                    <option value="true">Tak</option>
-                                    <option value="false">Nie</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Kategoria*
-                                </label>
-                                <select
-                                    name="eq_kategoria"
-                                    value={newEquipment.eq_kategoria}
-                                    onChange={(e) => {
-                                        handleInputEquipment(e);
-                                        setSelectedCategory(parseInt(e.target.value, 10))
-                                    }}
-                                    className="border rounded-md p-2 w-full"
-                                    required
-                                >
-                                    <option value="">Wybierz kategorię</option>
-                                    {ConstantsEquipment.CategoryOptions.map(option => (
-                                        <option key={option.value} value={option.value}>
-                                            {option.label}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Podkategoria
-                                </label>
-                                <select
-                                    name="eq_podkategoria"
-                                    value={newEquipment.eq_podkategoria}
-                                    onChange={handleInputEquipment}
-                                    className="border rounded-md p-2 w-full"
-                                    disabled={!selectedCategory}
-                                >
-                                    <option value="">Wybierz podkategorię</option>
-                                    {ConstantsEquipment.SubCategoryOptions[selectedCategory]?.map(option => (
-                                        <option key={option.value} value={option.value}>
-                                            {option.label}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                        </div>
-                        <div className="mt-6 flex justify-end">
-                            <button
-                                className="mr-2 px-4 py-2 bg-gray-300 rounded-md"
-                                onClick={handleAddEquipmentClose}
-                            >
-                                Anuluj
-                            </button>
-                            <button
-                                className="px-4 py-2 bg-blue-500 text-white rounded-md"
-                                onClick={() => {
-                                    handleAddEquipment();
-                                    handleAddEquipmentClose();
-                                }}
-                            >
-                                Dodaj
-                            </button>
-                        </div>
-                    </AddItemModal>
 
-                    <SiteChange isOpen={siteChange} onClose={handleSiteChangeClose}/>
-                </div>
-
-                {/* Search and Filter Section */}
-                <div className="sticky top-[100px] bg-white z-20">
-                    <div className="flex flex-col md:flex-row justify-center items-center gap-4 md:gap-6 py-3 border-b border-gray-200">
-                        {renderStatusCheckButton()}
-
-                        <div className="relative w-full md:w-1/3">
-                            <input
-                                type="text"
-                                placeholder="Szukaj sprzęt..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="border border-gray-300 rounded-md pl-10 pr-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                                </svg>
-                            </div>
-                        </div>
-
-                        {/* Status Filter dropdown */}
-                        <div className="relative w-full md:w-1/4">
-                            <select
-                                value={statusFilter}
-                                onChange={(e) => setStatusFilter(e.target.value)}
-                                className="border border-gray-300 rounded-md px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            >
-                                <option value="all">Wszystkie statusy</option>
-                                <option value="W porządku">W porządku</option>
-                                <option value="Zamówione">Zamówione</option>
-                                <option value="W zamówieniu">W zamówieniu</option>
-                                <option value="Uwaga Ilość">Uwaga Ilość</option>
-                                <option value="Do zamówienia">Do zamówienia</option>
-                            </select>
-                            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                </svg>
+                            {/* Status Filter dropdown */}
+                            <div className="relative w-full md:w-1/4">
+                                <select
+                                    value={statusFilter}
+                                    onChange={(e) => setStatusFilter(e.target.value)}
+                                    className="border border-gray-300 rounded-md px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                >
+                                    <option value="all">Wszystkie statusy</option>
+                                    <option value="W porządku">W porządku</option>
+                                    <option value="Zamówione">Zamówione</option>
+                                    <option value="W zamówieniu">W zamówieniu</option>
+                                    <option value="Uwaga Ilość">Uwaga Ilość</option>
+                                    <option value="Do zamówienia">Do zamówienia</option>
+                                </select>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 {/* Equipment Table Section */}
-                <div className="z-20 top-[120px]">
+                <div className="relative">
                     <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-200 sticky top-[185px] z-10">
+                        <thead
+                            className="bg-gray-200 z-10"
+                            style={{top: `${headerHeight}px`}}
+                        >
                         <tr className="text-gray-700 uppercase text-xs md:text-sm tracking-wider">
                             <th scope="col" className="px-2 py-3 text-left">Wyroby Medyczne</th>
                             <th scope="col" className="px-2 py-3 text-left">Ilość Aktualna</th>
