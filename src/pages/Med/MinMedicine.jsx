@@ -12,7 +12,7 @@ function MinMedicine() {
     const username = localStorage.getItem("username");
     const user = JSON.parse(localStorage.getItem("user"));
     const userPosition = user.position || "viewer";
-    const [currentDate, setCurrentDate] = useState(new Date());
+    const [currentDate, setCurrentDate] = useState("");
     const [medicines, setMedicines] = useState({});
     // Change from individual edit mode to global edit mode
     const [globalEditMode, setGlobalEditMode] = useState(false);
@@ -76,6 +76,7 @@ function MinMedicine() {
 
     useEffect(() => {
         fetchMedicines();
+        setCurrentDate(new Date().toLocaleDateString('pl-PL'));
     }, []);
 
     const fetchMedicines = async () => {
@@ -174,8 +175,7 @@ function MinMedicine() {
                 });
             });
         });
-        const formattedDate = currentDate.toLocaleDateString('pl-PL');
-        generateMinMedicinePDF(allMedicineData, formattedDate);
+        generateMinMedicinePDF(allMedicineData, currentDate);
         toastService.success("PDF został wygenerowany i pobrany");
     }
 
@@ -676,7 +676,7 @@ function MinMedicine() {
 
                             <div className="flex flex-col items-start text-sm text-left">
                                 <p className="text-red-800 font-semibold">
-                                    Stan na dzień: {currentDate.toDateString()}
+                                    Stan na dzień: {currentDate}
                                 </p>
                                 <p className="font-medium">
                                     Zalogowany jako {username}
@@ -799,7 +799,7 @@ function MinMedicine() {
                                                     <tr className="bg-gray-200 text-sm md:text-base">
                                                         <td colSpan="4"
                                                             className="p-2 pl-4 md:p-4 md:pl-6 font-semibold bg-slate-400 text-white">
-                                                            {subcategoryIndex + 1}. {subcategory}
+                                                            {categoryIndex + 1}.{subcategoryIndex + 1}. {subcategory}
                                                         </td>
                                                     </tr>
                                                 )}
@@ -814,7 +814,7 @@ function MinMedicine() {
                                                                 <tr className="bg-gray-100 text-xs md:text-sm">
                                                                     <td colSpan="4"
                                                                         className="pl-4 md:pl-6 py-2 bg-slate-300 text-white">
-                                                                        {subcategoryIndex + 1}.{indexToLetter(subsubcategoryIndex)}. {subsubcategory}
+                                                                        {categoryIndex + 1}.{subcategoryIndex + 1}.{indexToLetter(subsubcategoryIndex)}. {subsubcategory}
                                                                     </td>
                                                                 </tr>
                                                             )}

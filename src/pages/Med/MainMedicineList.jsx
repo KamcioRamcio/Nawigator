@@ -71,7 +71,7 @@ function MainMedicineList() {
 
     useEffect(() => {
         fetchAllData();
-        setCurrentDate(new Date().toDateString());
+        setCurrentDate(new Date().toLocaleDateString('pl-PL'));
     }, []);
 
     useEffect(() => {
@@ -162,8 +162,7 @@ function MainMedicineList() {
 
 
         // Generate the PDF with the formatted date
-        const formattedDate = currentDate.toLocaleDateString('pl-PL');
-        generateMainMedicinePDF(allMedicineData, formattedDate);
+        generateMainMedicinePDF(allMedicineData, currentDate);
         toastService.success("PDF został wygenerowany i pobrany");
     }
 
@@ -859,7 +858,7 @@ function MainMedicineList() {
                                             <React.Fragment key={subcategory}>
                                                 {showSubcategoryName && (
                                                     <tr className="bg-gray-200 text-sm md:text-base">
-                                                        <td colSpan="12" className="p-2 pl-4 md:p-4 md:pl-6 font-semibold bg-slate-400 text-white">{subcategoryIndex + 1}. {subcategory}</td>
+                                                        <td colSpan="12" className="p-2 pl-4 md:p-4 md:pl-6 font-semibold bg-slate-400 text-white">{categoryIndex + 1}.{subcategoryIndex + 1}. {subcategory}</td>
                                                     </tr>
                                                 )}
                                                 {Object.keys(subcategoryItems).map((subsubcategory, subsubcategoryIndex) => {
@@ -872,7 +871,7 @@ function MainMedicineList() {
                                                             {showSubsubcategoryName && (
                                                                 <tr className="bg-gray-100 text-xs md:text-sm">
                                                                     <td colSpan="12" className="pl-4 md:pl-6 py-2 bg-slate-300 text-white">
-                                                                        {subcategoryIndex + 1}.{indexToLetter(subsubcategoryIndex)}. {subsubcategory}
+                                                                        {categoryIndex + 1}.{subcategoryIndex + 1}.{indexToLetter(subsubcategoryIndex)}. {subsubcategory}
                                                                     </td>
                                                                 </tr>
                                                             )}

@@ -70,7 +70,7 @@ function MainEquipmentList() {
 
     useEffect(() => {
         fetchEquipment();
-        setCurrentDate(new Date().toDateString());
+        setCurrentDate(new Date().toLocaleDateString('pl-PL'));
     }, []);
 
     const categoryHasMatches = (categoryItems) => {
@@ -616,7 +616,7 @@ function MainEquipmentList() {
 
                         {/* Center Section - Page Title */}
                         <h1 className="text-xl md:text-2xl font-bold text-gray-800 p-2 text-center">
-                            Główny Spis Leków
+                            Główny Spis Sprzętu
                         </h1>
 
                         {/* Right Section - Action Buttons */}
@@ -747,7 +747,7 @@ function MainEquipmentList() {
                                                     <tr className="bg-gray-200 text-sm md:text-base">
                                                         <td colSpan="9"
                                                             className="p-2 pl-4 md:p-4 md:pl-6 font-semibold bg-slate-400 text-white">
-                                                            {subcategoryIndex + 1}. {subcategory}
+                                                            {categoryIndex + 1}.{subcategoryIndex + 1}. {subcategory}
                                                         </td>
                                                     </tr>
                                                 )}

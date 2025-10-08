@@ -60,7 +60,7 @@ export const generateUtilizationPDF = (data) => {
     doc.setFontSize(12);
     doc.text(`Utylizacja`, doc.internal.pageSize.width / 2, 30, {align: 'center'});
     doc.setFontSize(10);
-    doc.text(`Data: ${formatDateToDDMMYYYY(data.data_utworzenia) || currentDate}`, doc.internal.pageSize.width / 2, 35, {align: 'center'});
+    doc.text(`Data: `, doc.internal.pageSize.width / 2, 35, {align: 'center'});
 
     let startY = 45;
 

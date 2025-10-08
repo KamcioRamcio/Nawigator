@@ -96,7 +96,7 @@ export async function updateOrderStatus(orderId, newStatus) {
       SET status = 'Zamówione'
       WHERE id IN (
         SELECT id_leku FROM Zamowienia_Leki WHERE id_zamowienia = ?
-      ) AND status = 'Do zamówienia'
+      )
     `, [orderId]);
 
         // Update equipment statuses
@@ -105,7 +105,7 @@ export async function updateOrderStatus(orderId, newStatus) {
       SET ilosc_termin = 'Zamówione'
       WHERE id IN (
         SELECT id_sprzetu FROM Zamowienia_Sprzet WHERE id_zamowienia = ?
-      ) AND ilosc_termin = 'Do zamówienia'
+      )
     `, [orderId]);
     }
 
@@ -176,6 +176,7 @@ export async function updateOrderStatus(orderId, newStatus) {
                 [item.id_sprzetu]
             );
 
+            const formattedNewExpDate = formatDateToEuropean(item.data_waznosci);
 
             const hasExpDate = item.data_waznosci && item.data_waznosci.trim() !== '';
 
@@ -190,9 +191,9 @@ export async function updateOrderStatus(orderId, newStatus) {
 
             if (hasExpDate) {
                 if (!currentEquipment.status || currentEquipment.status === '' || currentEquipment.status === '0') {
-                    newStatus = `${item.ilosc}x${item.data_waznosci}`;
+                    newStatus = `${item.ilosc}x${formattedNewExpDate}`;
                 } else {
-                    newStatus = `${currentEquipment.status}; ${item.ilosc}x${item.data_waznosci}`;
+                    newStatus = `${currentEquipment.status}; ${item.ilosc}x${formattedNewExpDate}`;
                 }
             } else {
                 newStatus = currentEquipment.status || '';

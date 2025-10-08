@@ -2,7 +2,7 @@
 import express from 'express';
 import multer from 'multer';
 import { exportDatabase, importDatabase } from '../utils/helpers.js';
-import {updateDateFormatToEuropean, updateExpiryStatusTrigger} from "../db/schema.js";
+import {createTables, updateDateFormatToEuropean, updateExpiryStatusTrigger} from "../db/schema.js";
 import { getDb } from '../db/index.js';
 
 const router = express.Router();
@@ -77,6 +77,17 @@ router.post('/import-database', upload.single('database'), async (req, res, next
         res.status(500).json({
             success: false,
             message: 'Nie udało się zaktualizować statusu ważności'
+        });
+    }
+    try {
+        const db = await getDb();
+        await createTables();
+        console.log('Tables created or verified successfully');
+    } catch (error) {
+        console.error('Table creation error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Nie udało się utworzyć lub zweryfikować tabel'
         });
     }
 

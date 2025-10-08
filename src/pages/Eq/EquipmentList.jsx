@@ -65,7 +65,7 @@ function EquipmentList() {
      */
     useEffect(() => {
         fetchEquipment();
-        setCurrentDate(new Date().toDateString());
+        setCurrentDate(new Date().toLocaleDateString('pl-PL'));
     }, []);
 
     /**
@@ -652,7 +652,7 @@ function EquipmentList() {
                                             <React.Fragment key={subcategory}>
                                                 {showSubcategoryName && (
                                                     <tr className="bg-gray-200 text-sm md:text-base">
-                                                        <td colSpan="6" className="font-semibold p-2 md:p-4 bg-slate-400 text-white">{subcategoryIndex + 1}. {subcategory}</td>
+                                                        <td colSpan="6" className="font-semibold p-2 md:p-4 bg-slate-400 text-white">{categoryIndex + 1}.{subcategoryIndex + 1}. {subcategory}</td>
                                                     </tr>
                                                 )}
                                                 {subcategoryItems

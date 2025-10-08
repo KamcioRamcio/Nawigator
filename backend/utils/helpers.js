@@ -3,6 +3,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
 import { getDb, closeDb } from '../db/index.js';
+import { updateExpiryStatusTrigger } from '../db/schema.js';
 
 const DB_PATH = 'db.sqlite3';
 const BACKUP_PATH = './protected/db_backup.sqlite3';
