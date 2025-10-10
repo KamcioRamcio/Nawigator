@@ -694,11 +694,17 @@ function MainEquipmentList() {
                                     className="border border-gray-300 rounded-md px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 >
                                     <option value="all">Wszystkie statusy</option>
+                                    <option value="all">------------</option>
                                     <option value="W porządku">W porządku</option>
                                     <option value="Zamówione">Zamówione</option>
                                     <option value="W zamówieniu">W zamówieniu</option>
                                     <option value="Uwaga Ilość">Uwaga Ilość</option>
                                     <option value="Do zamówienia">Do zamówienia</option>
+                                    <option value="all">------------</option>
+                                    <option value="Ważny">Ważny</option>
+                                    <option value="Przeterminowane">Przeterminowany</option>
+                                    <option value="Ważność 1 miesiąc">Ważność 1 miesiąc</option>
+                                    <option value="Ważność 3 miesiące">Ważność 3 miesiące</option>
                                 </select>
                             </div>
                         </div>
