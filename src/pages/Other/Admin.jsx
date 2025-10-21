@@ -222,7 +222,7 @@ function Admin() {
             const downloadUrl = window.URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = downloadUrl;
-            link.download = `database_export_${currentDate.toISOString().slice(0, 10)}.db`;
+            link.download = `database_export_${currentDate.toISOString().slice(0, 10)}__${currentDate.getHours()}:${currentDate.getMinutes()}.db`;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);

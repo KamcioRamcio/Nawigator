@@ -1,6 +1,16 @@
 // backend/db/schema.js
 import {getDb} from './index.js';
 
+// export async function addPrzechowywanie() {
+//     const db = await getDb();
+//
+//     await db.exec(`
+//     ALTER TABLE Utylizacja
+//     ADD COLUMN powod_utylizacji TEXT;
+//   `);
+//
+//     console.log('Added przehowywanie column to Leki table');
+// }
 
 export async function createTables() {
     const db = await getDb();
@@ -86,44 +96,17 @@ export async function createTables() {
             torba_ratownika  BOOLEAN
         );
 
-        CREATE TABLE IF NOT EXISTS Utylizacje (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            nazwa TEXT NOT NULL,
-            status TEXT DEFAULT 'Nowe',
-            data_utworzenia DATE NOT NULL DEFAULT (strftime('%d-%m-%Y', 'now')),
-            data_realizacji DATE DEFAULT NULL,
-            uwagi TEXT,
-            kto_utworzyl TEXT
+        CREATE TABLE IF NOT EXISTS Utylizacja
+        (
+            id               INTEGER PRIMARY KEY AUTOINCREMENT,
+            nazwa            TEXT,
+            ilosc            INTEGER,
+            opakowanie       TEXT,
+            data_waznosci    DATE,
+            ilosc_nominalna  TEXT,
+            grupa            TEXT,
+            powod_utylizacji TEXT
         );
-
-        CREATE TABLE IF NOT EXISTS Utylizacje_Leki (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            id_utylizacji INTEGER NOT NULL,
-            id_leku INTEGER NOT NULL,
-            ilosc REAL NOT NULL,
-            uwagi TEXT,
-            data_waznosci DATE,
-            powod_utylizacji TEXT,
-            ilosc_nominalna TEXT,
-            opakowanie TEXT,
-            nazwa_leku TEXT,
-            FOREIGN KEY (id_utylizacji) REFERENCES Utylizacje(id),
-            FOREIGN KEY (id_leku) REFERENCES Leki(id)
-        );
-
-        CREATE TABLE IF NOT EXISTS Utylizacje_Sprzet (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            id_utylizacji INTEGER NOT NULL,
-            id_sprzetu INTEGER NOT NULL,
-            ilosc REAL NOT NULL,
-            uwagi TEXT,
-            data_waznosci DATE,
-            powod_utylizacji TEXT,
-            nazwa_sprzetu TEXT,
-            FOREIGN KEY (id_utylizacji) REFERENCES Utylizacje(id),
-            FOREIGN KEY (id_sprzetu) REFERENCES Sprzet(id)
-        );
-
 
         CREATE TABLE IF NOT EXISTS Leki_spis_min
         (
@@ -432,71 +415,44 @@ export async function addExpiryStatusTrigger() {
 export async function updateExpiryStatusTrigger() {
     const db = await getDb();
 
-    // First, recreate the triggers with corrected date logic
-    await db.exec(`
-        DROP TRIGGER IF EXISTS update_medicine_status_on_change;
-        CREATE TRIGGER IF NOT EXISTS update_medicine_status_on_change
-        AFTER UPDATE OF data_waznosci ON Leki
-        FOR EACH ROW
-        BEGIN
-            UPDATE Leki
-            SET status_leku = CASE
-                WHEN date(substr(NEW.data_waznosci, 7, 4) || '-' || substr(NEW.data_waznosci, 4, 2) || '-' || substr(NEW.data_waznosci, 1, 2)) < date('now') THEN 'Przeterminowane'
-                WHEN date(substr(NEW.data_waznosci, 7, 4) || '-' || substr(NEW.data_waznosci, 4, 2) || '-' || substr(NEW.data_waznosci, 1, 2)) <= date('now', '+1 month') THEN 'Ważność 1 miesiąc'
-                WHEN date(substr(NEW.data_waznosci, 7, 4) || '-' || substr(NEW.data_waznosci, 4, 2) || '-' || substr(NEW.data_waznosci, 1, 2)) <= date('now', '+3 month') THEN 'Ważność 3 miesiące'
-                WHEN ilosc_wstepna = 0 THEN 'Brak na stanie'
-                ELSE 'Ważny'
-            END
-            WHERE id = NEW.id;
-        END;
-
-        DROP TRIGGER IF EXISTS update_medicine_status_on_insert;
-        CREATE TRIGGER IF NOT EXISTS update_medicine_status_on_insert
-        AFTER INSERT ON Leki
-        FOR EACH ROW
-        WHEN NEW.data_waznosci IS NOT NULL AND NEW.data_waznosci != ''
-        BEGIN
-            UPDATE Leki
-            SET status_leku = CASE
-                WHEN date(substr(NEW.data_waznosci, 7, 4) || '-' || substr(NEW.data_waznosci, 4, 2) || '-' || substr(NEW.data_waznosci, 1, 2)) < date('now') THEN 'Przeterminowane'
-                WHEN date(substr(NEW.data_waznosci, 7, 4) || '-' || substr(NEW.data_waznosci, 4, 2) || '-' || substr(NEW.data_waznosci, 1, 2)) <= date('now', '+1 month') THEN 'Ważność 1 miesiąc'
-                WHEN date(substr(NEW.data_waznosci, 7, 4) || '-' || substr(NEW.data_waznosci, 4, 2) || '-' || substr(NEW.data_waznosci, 1, 2)) <= date('now', '+3 month') THEN 'Ważność 3 miesiące'
-                WHEN ilosc_wstepna = 0 THEN 'Brak na stanie'
-                ELSE 'Ważny'
-            END
-            WHERE id = NEW.id;
-        END;
-    `);
-
-    // Then update all existing records with the corrected date logic
     await db.run(`
+        DROP TRIGGER IF EXISTS update_status_on_change_medicine;
+        DROP TRIGGER IF EXISTS update_status_on_insert_medicine;
         UPDATE Leki
         SET status_leku = CASE
-            WHEN data_waznosci IS NULL OR data_waznosci = '' THEN 'Ważny'
-            WHEN date(substr(data_waznosci, 7, 4) || '-' || substr(data_waznosci, 4, 2) || '-' || substr(data_waznosci, 1, 2)) < date('now') THEN 'Przeterminowane'
-            WHEN date(substr(data_waznosci, 7, 4) || '-' || substr(data_waznosci, 4, 2) || '-' || substr(data_waznosci, 1, 2)) <= date('now', '+1 month') THEN 'Ważność 1 miesiąc'
-            WHEN date(substr(data_waznosci, 7, 4) || '-' || substr(data_waznosci, 4, 2) || '-' || substr(data_waznosci, 1, 2)) <= date('now', '+3 month') THEN 'Ważność 3 miesiące'
-            WHEN ilosc_wstepna = 0 THEN 'Brak na stanie'
+--                               WHEN data_waznosci IS NULL OR data_waznosci = '' THEN 'Przeterminowane'
+                              WHEN datetime(substr(data_waznosci, 7, 4) || '-' || substr(data_waznosci, 4, 2) || '-' ||
+                                            substr(data_waznosci, 1, 2)) < datetime('now') THEN 'Przeterminowane'
+                              WHEN datetime(substr(data_waznosci, 7, 4) || '-' || substr(data_waznosci, 4, 2) || '-' ||
+                                            substr(data_waznosci, 1, 2)) <= datetime('now', '+1 month')
+                                  THEN 'Ważność 1 miesiąc'
+                              WHEN datetime(substr(data_waznosci, 7, 4) || '-' || substr(data_waznosci, 4, 2) || '-' ||
+                                            substr(data_waznosci, 1, 2)) <= datetime('now', '+3 month')
+                                  THEN 'Ważność 3 miesiące'
+                              WHEN ilosc_wstepna = 0 THEN 'Brak na stanie'                  
             ELSE 'Ważny'
-        END
+            END
     `);
 
-    // Update Sprzet table as well
     await db.run(`
         UPDATE Sprzet
         SET termin = CASE
-            WHEN data_waznosci IS NULL OR data_waznosci = '' THEN 'Ważny'
-            WHEN date(substr(data_waznosci, 7, 4) || '-' || substr(data_waznosci, 4, 2) || '-' || substr(data_waznosci, 1, 2)) < date('now') THEN 'Przeterminowane'
-            WHEN date(substr(data_waznosci, 7, 4) || '-' || substr(data_waznosci, 4, 2) || '-' || substr(data_waznosci, 1, 2)) <= date('now', '+1 month') THEN 'Ważność 1 miesiąc'
-            WHEN date(substr(data_waznosci, 7, 4) || '-' || substr(data_waznosci, 4, 2) || '-' || substr(data_waznosci, 1, 2)) <= date('now', '+3 month') THEN 'Ważność 3 miesiące'
-            WHEN ilosc_aktualna = 0 THEN 'Brak na stanie'
-            ELSE 'Ważny'
-        END
+--                          WHEN data_waznosci IS NULL OR data_waznosci = '' THEN 'Ważny'
+                         WHEN datetime(substr(data_waznosci, 7, 4) || '-' || substr(data_waznosci, 4, 2) || '-' ||
+                                       substr(data_waznosci, 1, 2)) < datetime('now') THEN 'Przeterminowane'
+                         WHEN datetime(substr(data_waznosci, 7, 4) || '-' || substr(data_waznosci, 4, 2) || '-' ||
+                                       substr(data_waznosci, 1, 2)) <= datetime('now', '+1 month')
+                             THEN 'Ważność 1 miesiąc'
+                         WHEN datetime(substr(data_waznosci, 7, 4) || '-' || substr(data_waznosci, 4, 2) || '-' ||
+                                       substr(data_waznosci, 1, 2)) <= datetime('now', '+3 month')
+                             THEN 'Ważność 3 miesiące'
+                        WHEN ilosc_aktualna = 0 THEN 'Brak na stanie'
+                         ELSE 'Ważny'
+            END
     `);
 
     console.log('Expiry status triggers updated successfully');
 }
-
 
 export async function addStatusMedicineTrigger() {
     const db = await getDb();

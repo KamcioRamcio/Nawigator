@@ -851,7 +851,7 @@ function MainMedicineList() {
                             return hasCategoryMatches ? (
                                 <React.Fragment key={category}>
                                     <tr className="bg-gray-300 text-base md:text-xl">
-                                        <td colSpan="12" className="font-bold p-2 md:p-4 bg-slate-500 text-white">
+                                        <td colSpan="12" className="font-bold p-2 md:p-4 bg-slate-900 text-white">
                                             {categoryIndex + 1}. {category === 'Uncategorized' ? 'Brak kategorii' : category}
                                         </td>
                                     </tr>
@@ -864,7 +864,7 @@ function MainMedicineList() {
                                             <React.Fragment key={subcategory}>
                                                 {showSubcategoryName && (
                                                     <tr className="bg-gray-200 text-sm md:text-base">
-                                                        <td colSpan="12" className="p-2 pl-4 md:p-4 md:pl-6 font-semibold bg-slate-400 text-white">{categoryIndex + 1}.{subcategoryIndex + 1}. {subcategory}</td>
+                                                        <td colSpan="12" className="p-2 pl-4 md:p-4 md:pl-6 font-semibold bg-slate-700 text-white">{categoryIndex + 1}.{subcategoryIndex + 1}. {subcategory}</td>
                                                     </tr>
                                                 )}
                                                 {Object.keys(subcategoryItems).map((subsubcategory, subsubcategoryIndex) => {
@@ -876,7 +876,7 @@ function MainMedicineList() {
                                                         <React.Fragment key={subsubcategory}>
                                                             {showSubsubcategoryName && (
                                                                 <tr className="bg-gray-100 text-xs md:text-sm">
-                                                                    <td colSpan="12" className="pl-4 md:pl-6 py-2 bg-slate-300 text-white">
+                                                                    <td colSpan="12" className="pl-4 md:pl-6 py-2 bg-slate-600 text-white">
                                                                         {categoryIndex + 1}.{subcategoryIndex + 1}.{indexToLetter(subsubcategoryIndex)}. {subsubcategory}
                                                                     </td>
                                                                 </tr>

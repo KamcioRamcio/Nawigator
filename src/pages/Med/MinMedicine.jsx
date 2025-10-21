@@ -784,7 +784,7 @@ function MinMedicine() {
                             return hasCategoryMatches ? (
                                 <React.Fragment key={category}>
                                     <tr className="bg-gray-300 text-base md:text-xl">
-                                        <td colSpan="4" className="font-bold p-2 md:p-4 bg-slate-500 text-white">
+                                        <td colSpan="4" className="font-bold p-2 md:p-4 bg-slate-900 text-white">
                                             {categoryIndex + 1}. {category === 'Uncategorized' ? 'Brak kategorii' : category}
                                         </td>
                                     </tr>
@@ -798,7 +798,7 @@ function MinMedicine() {
                                                 {showSubcategoryName && (
                                                     <tr className="bg-gray-200 text-sm md:text-base">
                                                         <td colSpan="4"
-                                                            className="p-2 pl-4 md:p-4 md:pl-6 font-semibold bg-slate-400 text-white">
+                                                            className="p-2 pl-4 md:p-4 md:pl-6 font-semibold bg-slate-700 text-white">
                                                             {categoryIndex + 1}.{subcategoryIndex + 1}. {subcategory}
                                                         </td>
                                                     </tr>

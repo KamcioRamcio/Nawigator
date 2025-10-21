@@ -279,6 +279,13 @@ function MainEquipmentList() {
         fetchEquipment();
     };
 
+    const formatDateForInput = (dateString) => {
+        if (!dateString) return '';
+        // Convert from dd-mm-yyyy to yyyy-mm-dd
+        const [day, month, year] = dateString.split('-');
+        return `${year}-${month}-${day}`;
+    };
+
     // Original save method preserved for compatibility
     const handleSave = async (equipmentId) => {
         try {
@@ -738,7 +745,7 @@ function MainEquipmentList() {
                             return hasCategoryMatches ? (
                                 <React.Fragment key={category}>
                                     <tr className="bg-gray-300 text-base md:text-xl">
-                                        <td colSpan="9" className="font-bold p-2 md:p-4 bg-slate-500 text-white">
+                                        <td colSpan="9" className="font-bold p-2 md:p-4 bg-slate-900 text-white">
                                             {categoryIndex + 1}. {category}
                                         </td>
                                     </tr>
@@ -752,7 +759,7 @@ function MainEquipmentList() {
                                                 {showSubcategoryName && (
                                                     <tr className="bg-gray-200 text-sm md:text-base">
                                                         <td colSpan="9"
-                                                            className="p-2 pl-4 md:p-4 md:pl-6 font-semibold bg-slate-400 text-white">
+                                                            className="p-2 pl-4 md:p-4 md:pl-6 font-semibold bg-slate-700 text-white">
                                                             {categoryIndex + 1}.{subcategoryIndex + 1}. {subcategory}
                                                         </td>
                                                     </tr>
@@ -846,7 +853,7 @@ function MainEquipmentList() {
                                                                 {globalEditMode ? (
                                                                     <input
                                                                         type="date"
-                                                                        value={editedEquipment[equipment.sprzet_id]?.sprzet_data_waznosci || ""}
+                                                                        value={formatDateForInput(editedEquipment[equipment.sprzet_id]?.sprzet_data_waznosci) || ""}
                                                                         onChange={(e) => handleEdit(equipment.sprzet_id, "sprzet_data_waznosci", e.target.value)}
                                                                         className="border rounded-md px-2 py-1 w-full text-sm"
                                                                     />

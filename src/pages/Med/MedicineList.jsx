@@ -637,7 +637,7 @@ function MedicineList() {
                                             <React.Fragment key={subcategory}>
                                                 {showSubcategoryName && (
                                                     <tr className="bg-gray-200 text-sm md:text-base">
-                                                        <td colSpan="7" className="p-2 pl-4 md:p-4 md:pl-6 font-semibold bg-slate-400 text-white">{subcategoryIndex + 1}. {subcategory}</td>
+                                                        <td colSpan="7" className="p-2 pl-4 md:p-4 md:pl-6 font-semibold bg-slate-900 text-white">{subcategoryIndex + 1}. {subcategory}</td>
                                                     </tr>
                                                 )}
                                                 {Object.keys(subcategoryItems).map((subsubcategory, subsubcategoryIndex) => {
