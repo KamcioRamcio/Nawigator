@@ -23,6 +23,11 @@ function OrderList() {
         fetchOrders();
     }, []);
 
+    const parseDateSafe = (dateString) => {
+        const d = dateString ? new Date(dateString) : new Date(0);
+        return isNaN(d.getTime()) ? new Date(0) : d;
+    };
+
     const fetchOrders = async () => {
         try {
             const response = await fetch(`${apiUrl}zamowienia`);
@@ -30,6 +35,7 @@ function OrderList() {
                 throw new Error('Failed to fetch orders');
             }
             const data = await response.json();
+            data.sort((a, b) => parseDateSafe(b.data_zamowienia) - parseDateSafe(a.data_zamowienia));
             setOrders(data);
         } catch (error) {
             console.error('Error fetching orders:', error);
@@ -38,6 +44,7 @@ function OrderList() {
             setLoading(false);
         }
     };
+
 
     const formatDate = (dateString) => {
         if (!dateString) return '';

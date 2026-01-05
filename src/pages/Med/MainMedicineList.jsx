@@ -40,6 +40,7 @@ function MainMedicineList() {
     const [selectedCategory, setSelectedCategory] = useState(null);
     const [statusFilter, setStatusFilter] = useState("all");
     const [actionsVisibility, setActionsVisibility] = useState({});
+    const [singleEditMode, setSingleEditMode] = useState({}); // Track which items are in single edit mode
     const [selectedSubCategory, setSelectedSubCategory] = useState(null);
     const [newMedicine, setNewMedicine] = useState({
         lek_nazwa: "",
@@ -348,7 +349,115 @@ function MainMedicineList() {
         fetchMedicines();
     };
 
+    // Function to enable editing for a single medicine item
+    const handleSingleEditToggle = (medicineId) => {
+        if (userPosition === "viewer") {
+            return;
+        }
 
+        if (singleEditMode[medicineId]) {
+            // Exiting single edit mode for this item
+            if (editedValues[medicineId]) {
+                if (!confirm("Masz niezapisane zmiany. Czy na pewno chcesz anulować edycję?")) {
+                    return;
+                }
+            }
+            setSingleEditMode(prev => ({
+                ...prev,
+                [medicineId]: false
+            }));
+            // Clear edited values for this item
+            setEditedValues(prev => {
+                const newEdited = { ...prev };
+                delete newEdited[medicineId];
+                return newEdited;
+            });
+        } else {
+            // Entering single edit mode - find and initialize the medicine
+            let foundMedicine = null;
+            Object.keys(medicines).forEach(category => {
+                const categoryItems = medicines[category];
+                Object.keys(categoryItems).forEach(subcategory => {
+                    const subcategoryItems = categoryItems[subcategory];
+                    Object.keys(subcategoryItems).forEach(subsubcategory => {
+                        const medicineItems = subcategoryItems[subsubcategory];
+                        const found = medicineItems.find(med => med.lek_id === medicineId);
+                        if (found) {
+                            foundMedicine = found;
+                        }
+                    });
+                });
+            });
+
+            if (foundMedicine) {
+                setEditedValues(prev => ({
+                    ...prev,
+                    [medicineId]: { ...foundMedicine }
+                }));
+                setSingleEditMode(prev => ({
+                    ...prev,
+                    [medicineId]: true
+                }));
+            }
+        }
+    };
+
+    // Function to save a single edited medicine item
+    const handleSaveSingle = async (medicineId) => {
+        if (!editedValues[medicineId]) {
+            toastService.info('Brak zmian do zapisania');
+            return;
+        }
+
+        try {
+            const dataToSend = {...editedValues[medicineId]};
+
+            if (dataToSend.id_kategorii === '') dataToSend.id_kategorii = null;
+            if (dataToSend.id_pod_kategorii === '') dataToSend.id_pod_kategorii = null;
+            if (dataToSend.id_pod_pod_kategorii === '') dataToSend.id_pod_pod_kategorii = null;
+            if (dataToSend.lek_data) {
+                // Check if it's already in yyyy-MM-dd format
+                if (/^\d{4}-\d{2}-\d{2}$/.test(dataToSend.lek_data)) {
+                    const [year, month, day] = dataToSend.lek_data.split('-');
+                    dataToSend.lek_data = `${day}-${month}-${year}`;
+                }
+                // If it's already in dd-MM-yyyy format, no conversion needed
+            }
+
+            const response = await fetch(apiUrl + "leki/" + medicineId, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(dataToSend),
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            toastService.success('Zmiany zostały zapisane');
+
+            // Exit single edit mode for this item
+            setSingleEditMode(prev => ({
+                ...prev,
+                [medicineId]: false
+            }));
+
+            // Clear edited values for this item
+            setEditedValues(prev => {
+                const newEdited = { ...prev };
+                delete newEdited[medicineId];
+                return newEdited;
+            });
+
+            // Refresh data
+            fetchMedicines();
+        } catch (error) {
+            console.error(`Error updating medicine ${medicineId}:`, error);
+            toastService.error('Błąd podczas zapisywania zmian');
+        }
+    };
 
 
     const handleInputMedicine = (e) => {
@@ -887,7 +996,7 @@ function MainMedicineList() {
                                                                     <tr key={medicine.lek_id}
                                                                         className={`${medicine.lek_przechowywanie === "freezer" ? "bg-blue-100" : medicine.lek_przechowywanie === "narkotyk" ? "bg-orange-100" : ""} ${medicine.lek_na_statku_spis_podstawowy === 1 ? "text-red-600" : "text-gray-900"} border-b border-gray-200 hover:bg-gray-50`}>
                                                                         <td className="px-2 py-2 md:py-4  text-sm max-w-[150px] md:max-w-[250px] overflow-hidden text-ellipsis">
-                                                                            {globalEditMode ? (
+                                                                            {(globalEditMode || singleEditMode[medicine.lek_id]) ? (
                                                                                 <div className="flex flex-col space-y-1">
                                                                                     <textarea
                                                                                         rows={3}
@@ -979,7 +1088,7 @@ function MainMedicineList() {
                                                                             )}
                                                                         </td>
                                                                         <td className="px-2 py-2 md:py-4 whitespace-nowrap text-sm">
-                                                                            {globalEditMode ? (
+                                                                            {(globalEditMode || singleEditMode[medicine.lek_id]) ? (
                                                                                 <input
                                                                                     type="number"
                                                                                     value={editedValues[medicine.lek_id]?.lek_ilosc || ""}
@@ -991,7 +1100,7 @@ function MainMedicineList() {
                                                                             )}
                                                                         </td>
                                                                         <td className="px-2 py-2 md:py-4 whitespace-nowrap text-sm">
-                                                                            {globalEditMode ? (
+                                                                            {(globalEditMode || singleEditMode[medicine.lek_id]) ? (
                                                                                 <select
                                                                                     value={editedValues[medicine.lek_id]?.lek_opakowanie || ""}
                                                                                     onChange={(e) => handleEdit(medicine.lek_id, "lek_opakowanie", e.target.value)}
@@ -1008,7 +1117,7 @@ function MainMedicineList() {
                                                                             )}
                                                                         </td>
                                                                         <td className="px-2 py-2 md:py-4 whitespace-nowrap text-sm">
-                                                                            {globalEditMode ? (
+                                                                            {(globalEditMode || singleEditMode[medicine.lek_id]) ? (
                                                                                 <input
                                                                                     type="date"
                                                                                     value={formatDateForInput(editedValues[medicine.lek_id]?.lek_data) || ""}
@@ -1023,7 +1132,7 @@ function MainMedicineList() {
                                                                             {medicine.lek_status}
                                                                         </td>
                                                                         <td className="px-2 py-2 md:py-4 whitespace-nowrap text-sm">
-                                                                            {globalEditMode ? (
+                                                                            {(globalEditMode || singleEditMode[medicine.lek_id]) ? (
                                                                                 <input
                                                                                     type="number"
                                                                                     value={editedValues[medicine.lek_id]?.lek_ilosc_minimalna || ""}
@@ -1035,7 +1144,7 @@ function MainMedicineList() {
                                                                             )}
                                                                         </td>
                                                                         <td className="px-2 py-2 md:py-4 whitespace-nowrap text-sm">
-                                                                            {globalEditMode ? (
+                                                                            {(globalEditMode || singleEditMode[medicine.lek_id]) ? (
                                                                                 <input
                                                                                     type="number"
                                                                                     value={editedValues[medicine.lek_id]?.rozchod_ilosc || ""}
@@ -1059,7 +1168,7 @@ function MainMedicineList() {
                                                                             {medicine.stan_magazynowy_status}
                                                                         </td>
                             <td className="px-2 py-2 md:py-4 text-sm">
-                                {globalEditMode ? (
+                                {(globalEditMode || singleEditMode[medicine.lek_id]) ? (
                                     <textarea
                                         value={editedValues[medicine.lek_id]?.stan_magazynowy_important_status || ""}
                                         onChange={(e) => handleEdit(medicine.lek_id, "stan_magazynowy_important_status", e.target.value)}
@@ -1090,7 +1199,34 @@ function MainMedicineList() {
 
                                                                                 {actionsVisibility[medicine.lek_id] && (
                                                                                     <div className="flex flex-col space-y-1 mt-1">
-                                                                                        {showDeleteButton(userPosition) && !globalEditMode && (
+                                                                                        {/* Show Edit/Save button when not in global edit mode */}
+                                                                                        {showEditButton(userPosition) && !globalEditMode && (
+                                                                                            singleEditMode[medicine.lek_id] ? (
+                                                                                                <div className="flex flex-col space-y-1">
+                                                                                                    <button
+                                                                                                        onClick={() => handleSaveSingle(medicine.lek_id)}
+                                                                                                        className="bg-green-100 text-green-700 text-xs py-1 px-2 rounded hover:bg-green-200 flex items-center justify-center"
+                                                                                                    >
+                                                                                                        <span className="mr-1">💾</span>Zapisz
+                                                                                                    </button>
+                                                                                                    <button
+                                                                                                        onClick={() => handleSingleEditToggle(medicine.lek_id)}
+                                                                                                        className="bg-gray-100 text-gray-700 text-xs py-1 px-2 rounded hover:bg-gray-200 flex items-center justify-center"
+                                                                                                    >
+                                                                                                        <span className="mr-1">✖️</span>Anuluj
+                                                                                                    </button>
+                                                                                                </div>
+                                                                                            ) : (
+                                                                                                <button
+                                                                                                    onClick={() => handleSingleEditToggle(medicine.lek_id)}
+                                                                                                    className="bg-yellow-100 text-yellow-700 text-xs py-1 px-2 rounded hover:bg-yellow-200 flex items-center justify-center"
+                                                                                                >
+                                                                                                    <span className="mr-1">✏️</span>Edytuj
+                                                                                                </button>
+                                                                                            )
+                                                                                        )}
+
+                                                                                        {showDeleteButton(userPosition) && !globalEditMode && !singleEditMode[medicine.lek_id] && (
                                                                                             <button
                                                                                                 onClick={() => handleDeleteMedicine(medicine.lek_id)}
                                                                                                 className="bg-red-100 text-red-700 text-xs py-1 px-2 rounded hover:bg-red-200 flex items-center justify-center"
@@ -1099,7 +1235,7 @@ function MainMedicineList() {
                                                                                             </button>
                                                                                         )}
 
-                                                                                        {showOrderButton(userPosition) && !globalEditMode && (
+                                                                                        {showOrderButton(userPosition) && !globalEditMode && !singleEditMode[medicine.lek_id] && (
                                                                                             <button
                                                                                                 onClick={() => handleAddToOrderClick(medicine)}
                                                                                                 className="bg-blue-100 text-blue-700 text-xs py-1 px-2 rounded hover:bg-blue-200 flex items-center justify-center"
@@ -1108,7 +1244,7 @@ function MainMedicineList() {
                                                                                             </button>
                                                                                         )}
 
-                                                                                        {showUtilizationButton(userPosition) && !globalEditMode && (
+                                                                                        {showUtilizationButton(userPosition) && !globalEditMode && !singleEditMode[medicine.lek_id] && (
                                                                                             <UtilizationButton item={medicine} itemType="medicine" onUtilizationComplete={fetchMedicines} />
                                                                                         )}
                                                                                     </div>

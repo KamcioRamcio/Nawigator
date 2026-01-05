@@ -35,6 +35,7 @@ function MainEquipmentList() {
     const [selectedCategory, setSelectedCategory] = useState(0);
     const [addEquipment, setAddEquipment] = useState(false);
     const [showActions, setShowActions] = useState({}) // Changed from boolean to object
+    const [singleEditMode, setSingleEditMode] = useState({}); // Track which items are in single edit mode
     const [newEquipment, setNewEquipment] = useState({
         eq_nazwa: "",
         eq_ilosc_wymagana: "",
@@ -277,6 +278,103 @@ function MainEquipmentList() {
         }
 
         fetchEquipment();
+    };
+
+    // Function to enable editing for a single item
+    const handleSingleEditToggle = (equipmentId) => {
+        if (userPosition === "viewer") {
+            return;
+        }
+
+        if (singleEditMode[equipmentId]) {
+            // Exiting single edit mode for this item
+            if (editedEquipment[equipmentId]) {
+                if (!confirm("Masz niezapisane zmiany. Czy na pewno chcesz anulować edycję?")) {
+                    return;
+                }
+            }
+            setSingleEditMode(prev => ({
+                ...prev,
+                [equipmentId]: false
+            }));
+            // Clear edited values for this item
+            setEditedEquipment(prev => {
+                const newEdited = { ...prev };
+                delete newEdited[equipmentId];
+                return newEdited;
+            });
+        } else {
+            // Entering single edit mode - find and initialize the equipment
+            let foundEquipment = null;
+            Object.keys(equipments).forEach(category => {
+                const categoryItems = equipments[category];
+                Object.keys(categoryItems).forEach(subcategory => {
+                    const subcategoryItems = categoryItems[subcategory];
+                    const found = subcategoryItems.find(eq => eq.sprzet_id === equipmentId);
+                    if (found) {
+                        foundEquipment = found;
+                    }
+                });
+            });
+
+            if (foundEquipment) {
+                setEditedEquipment(prev => ({
+                    ...prev,
+                    [equipmentId]: {
+                        ...foundEquipment,
+                        sprzet_na_statku: foundEquipment.sprzet_na_statku === 1 ? "true" : "false",
+                        sprzet_torba_ratownika: foundEquipment.sprzet_torba_ratownika === 1 ? "true" : "false"
+                    }
+                }));
+                setSingleEditMode(prev => ({
+                    ...prev,
+                    [equipmentId]: true
+                }));
+            }
+        }
+    };
+
+    // Function to save a single edited item
+    const handleSaveSingle = async (equipmentId) => {
+        if (!editedEquipment[equipmentId]) {
+            toastService.info('Brak zmian do zapisania');
+            return;
+        }
+
+        try {
+            const response = await fetch(apiUrl + "sprzet/" + equipmentId, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(editedEquipment[equipmentId])
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            toastService.success('Zmiany zostały zapisane');
+
+            // Exit single edit mode for this item
+            setSingleEditMode(prev => ({
+                ...prev,
+                [equipmentId]: false
+            }));
+
+            // Clear edited values for this item
+            setEditedEquipment(prev => {
+                const newEdited = { ...prev };
+                delete newEdited[equipmentId];
+                return newEdited;
+            });
+
+            // Refresh data
+            fetchEquipment();
+        } catch (error) {
+            console.error(`Error updating equipment ${equipmentId}:`, error);
+            toastService.error('Błąd podczas zapisywania zmian');
+        }
     };
 
     const formatDateForInput = (dateString) => {
@@ -770,7 +868,7 @@ function MainEquipmentList() {
                                                         <tr key={equipment.sprzet_id}
                                                             className={`${equipment.sprzet_torba_ratownika === 1 ? "bg-green-100" : ""} border-b border-gray-200 hover:bg-gray-50`}>
                                                             <td className="px-2 py-2 md:py-4  text-sm max-w-[150px] md:max-w-[250px] overflow-hidden text-ellipsis">
-                                                                {globalEditMode ? (
+                                                                {(globalEditMode || singleEditMode[equipment.sprzet_id]) ? (
                                                                     <div className="flex flex-col space-y-1">
                                                                         <textarea
                                                                             value={editedEquipment[equipment.sprzet_id]?.sprzet_nazwa || ""}
@@ -838,7 +936,7 @@ function MainEquipmentList() {
                                                                 )}
                                                             </td>
                                                             <td className="px-2 py-2 md:py-4 whitespace-nowrap text-sm">
-                                                                {globalEditMode ? (
+                                                                {(globalEditMode || singleEditMode[equipment.sprzet_id]) ? (
                                                                     <input
                                                                         type="number"
                                                                         value={editedEquipment[equipment.sprzet_id]?.sprzet_ilosc_aktualna || ""}
@@ -850,7 +948,7 @@ function MainEquipmentList() {
                                                                 )}
                                                             </td>
                                                             <td className="px-2 py-2 md:py-4 whitespace-nowrap text-sm">
-                                                                {globalEditMode ? (
+                                                                {(globalEditMode || singleEditMode[equipment.sprzet_id]) ? (
                                                                     <input
                                                                         type="date"
                                                                         value={formatDateForInput(editedEquipment[equipment.sprzet_id]?.sprzet_data_waznosci) || ""}
@@ -862,7 +960,7 @@ function MainEquipmentList() {
                                                                 )}
                                                             </td>
                                                             <td className="px-2 py-2 md:py-4 whitespace-nowrap text-sm">
-                                                                {globalEditMode ? (
+                                                                {(globalEditMode || singleEditMode[equipment.sprzet_id]) ? (
                                                                     <input
                                                                         type="number"
                                                                         value={editedEquipment[equipment.sprzet_id]?.sprzet_ilosc_wymagana || ""}
@@ -874,7 +972,7 @@ function MainEquipmentList() {
                                                                 )}
                                                             </td>
                                                             <td className="px-2 py-2 md:py-4 text-sm">
-                                                                {globalEditMode ? (
+                                                                {(globalEditMode || singleEditMode[equipment.sprzet_id]) ? (
                                                                     <textarea
                                                                         value={editedEquipment[equipment.sprzet_id]?.sprzet_status || ""}
                                                                         onChange={(e) => handleEdit(equipment.sprzet_id, "sprzet_status", e.target.value)}
@@ -917,7 +1015,34 @@ function MainEquipmentList() {
 
                                                                     {showActions[equipment.sprzet_id] && (
                                                                         <div className="flex flex-col space-y-1 mt-1">
-                                                                            {showDeleteButton(userPosition) && !globalEditMode && (
+                                                                            {/* Show Edit/Save button when not in global edit mode */}
+                                                                            {showEditButton(userPosition) && !globalEditMode && (
+                                                                                singleEditMode[equipment.sprzet_id] ? (
+                                                                                    <div className="flex flex-col space-y-1">
+                                                                                        <button
+                                                                                            onClick={() => handleSaveSingle(equipment.sprzet_id)}
+                                                                                            className="bg-green-100 text-green-700 text-xs py-1 px-2 rounded hover:bg-green-200 flex items-center justify-center"
+                                                                                        >
+                                                                                            <span className="mr-1">💾</span>Zapisz
+                                                                                        </button>
+                                                                                        <button
+                                                                                            onClick={() => handleSingleEditToggle(equipment.sprzet_id)}
+                                                                                            className="bg-gray-100 text-gray-700 text-xs py-1 px-2 rounded hover:bg-gray-200 flex items-center justify-center"
+                                                                                        >
+                                                                                            <span className="mr-1">✖️</span>Anuluj
+                                                                                        </button>
+                                                                                    </div>
+                                                                                ) : (
+                                                                                    <button
+                                                                                        onClick={() => handleSingleEditToggle(equipment.sprzet_id)}
+                                                                                        className="bg-yellow-100 text-yellow-700 text-xs py-1 px-2 rounded hover:bg-yellow-200 flex items-center justify-center"
+                                                                                    >
+                                                                                        <span className="mr-1">✏️</span>Edytuj
+                                                                                    </button>
+                                                                                )
+                                                                            )}
+
+                                                                            {showDeleteButton(userPosition) && !globalEditMode && !singleEditMode[equipment.sprzet_id] && (
                                                                                 <button
                                                                                     onClick={() => handleDeleteEquipment(equipment.sprzet_id)}
                                                                                     className="bg-red-100 text-red-700 text-xs py-1 px-2 rounded hover:bg-red-200 flex items-center justify-center"
@@ -926,7 +1051,7 @@ function MainEquipmentList() {
                                                                                 </button>
                                                                             )}
 
-                                                                            {showOrderButton(userPosition) && !globalEditMode && (
+                                                                            {showOrderButton(userPosition) && !globalEditMode && !singleEditMode[equipment.sprzet_id] && (
                                                                                 <button
                                                                                     onClick={() => handleAddToOrderClick(equipment)}
                                                                                     className="bg-blue-100 text-blue-700 text-xs py-1 px-2 rounded hover:bg-blue-200 flex items-center justify-center"
@@ -935,7 +1060,7 @@ function MainEquipmentList() {
                                                                                 </button>
                                                                             )}
 
-                                                                            {showUtilizationButton(userPosition) && !globalEditMode && (
+                                                                            {showUtilizationButton(userPosition) && !globalEditMode && !singleEditMode[equipment.sprzet_id] && (
                                                                                 <UtilizationButton item={equipment} itemType="equipment" onUtilizationComplete={fetchEquipment} />
                                                                             )}
                                                                         </div>

@@ -90,7 +90,7 @@ export const generateOrderPDF = (orderData) => {
         doc.text("Sprzet:", 15, startY - 5);
         doc.setFont("Roboto", "normal");
 
-        const equipmentColumns = ["Nazwa", "Ilosc"];
+        const equipmentColumns = ["Lp.","Nazwa", "Ilosc"];
         const equipmentRows = orderData.equipment.map(item => {
             const mappedSubCategory = SUB_CATEGORIES_EQ[item.id_pod_kategorii] || item.id_pod_kategorii;
 
