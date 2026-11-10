@@ -20,6 +20,14 @@ thead {
     background-color: #fff;
 }
 
+/* Phones: tables scroll sideways in their own box and the tall page header is not sticky,
+   so a sticky table header (offset by that header) would only cover the rows. */
+@media (max-width: 767px) {
+    thead {
+        position: static !important;
+    }
+}
+
 input, select {
     background-color: #e7e5e5;
 }

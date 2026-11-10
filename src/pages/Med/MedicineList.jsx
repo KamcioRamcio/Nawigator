@@ -338,7 +338,7 @@ function MedicineList() {
         <div className="bg-gray-100 min-h-screen pb-10">
             <div className="mx-auto bg-white shadow-lg rounded-lg">
                 {/* Header Section */}
-                <div className="flex flex-col md:flex-row justify-between items-center py-4 md:py-6 px-4 md:px-8 border-b bg-gray-200 sticky top-0 z-30">
+                <div className="flex flex-col md:flex-row justify-between items-center py-4 md:py-6 px-4 md:px-8 border-b bg-gray-200 md:sticky top-0 z-30">
                     {/* Site Change Button */}
                     <button
                         className="rounded-3xl bg-slate-900 text-white font-bold text-base md:text-lg p-2 md:p-3 mb-2 md:mb-0 md:ml-8 z-10"
@@ -353,10 +353,10 @@ function MedicineList() {
                     </h1>
 
                     {/* User Info and Action Buttons */}
-                    <div className="flex flex-col md:flex-row items-center mt-2 md:mt-0">
+                    <div className="flex flex-row flex-wrap justify-center items-center gap-2 mt-2 md:mt-0">
                         <div className="flex flex-col items-end mr-0 md:mr-6 text-sm text-center md:text-right">
                             <p className="text-red-800 font-semibold">
-                                Stan na dzień: {currentDate.toDateString()}
+                                Stan na dzień: {currentDate.toLocaleDateString('pl-PL')}
                             </p>
                             <p className="font-medium">
                                 Zalogowany jako {username}
@@ -586,7 +586,7 @@ function MedicineList() {
                 </div>
 
                 {/* Search Bar Section */}
-                <div className="sticky top-[100px] bg-white z-20 p-1">
+                <div className="md:sticky top-[100px] bg-white z-20 p-1">
                     <div className="flex justify-center items-center w-full md:w-1/2 mx-auto my-4 relative">
                         <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -604,7 +604,7 @@ function MedicineList() {
                 </div>
 
                 {/* Medicines Table Section */}
-                <div className="">
+                <div className="relative max-md:overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-200 sticky top-[180px] z-10">
                         <tr className="text-gray-700 uppercase text-xs md:text-sm tracking-wider">

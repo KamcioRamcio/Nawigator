@@ -114,7 +114,7 @@ function OrderList() {
                     <div className="flex items-center">
                         <div className="flex flex-col items-end mr-6 text-sm">
                             <p className="text-red-800 font-semibold">
-                                Stan na dzień: {currentDate.toLocaleDateString()}
+                                Stan na dzień: {currentDate.toLocaleDateString('pl-PL')}
                             </p>
                             <p className="font-medium">
                                 Zalogowany jako {username}

@@ -186,7 +186,7 @@ function UtilizationList() {
                     <div className="flex justify-center md:justify-end px-4 md:mr-10">
                         <div className="flex flex-col items-center md:items-end text-xs md:text-sm">
                             <p className="text-red-800 font-semibold">
-                                Stan na dzień: {currentDate.toLocaleDateString()}
+                                Stan na dzień: {currentDate.toLocaleDateString('pl-PL')}
                             </p>
                             <p className="font-medium">
                                 Zalogowany jako {username}

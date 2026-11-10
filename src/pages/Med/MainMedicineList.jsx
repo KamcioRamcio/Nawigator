@@ -812,7 +812,7 @@ function MainMedicineList() {
         <div className="bg-gray-100 min-h-screen pb-10">
             <div className="mx-auto bg-white shadow-lg rounded-lg">
                 {/* Header Section */}
-                <div ref={headerRef} className="sticky top-0 z-30 bg-white">
+                <div ref={headerRef} className="md:sticky top-0 z-30 bg-white">
                     <div className="flex flex-col md:flex-row items-center justify-between py-3 md:py-3 px-4 md:px-8 border-b bg-gray-200">
                         {/* Left Section - Site Change Button and User Info */}
                         <div className="flex flex-col md:flex-row items-center">
@@ -839,7 +839,7 @@ function MainMedicineList() {
                         </h1>
 
                         {/* Right Section - Action Buttons */}
-                        <div className="flex flex-col md:flex-row items-center gap-2 md:gap-3 mt-2 md:mt-0">
+                        <div className="flex flex-row flex-wrap justify-center items-center gap-2 md:gap-3 mt-2 md:mt-0">
                             {/* Global edit button */}
                             {showEditButton(userPosition) && (
                                 <button
@@ -887,7 +887,7 @@ function MainMedicineList() {
 
                     {/* Search and Filter Section - Sticks below header */}
                     <div className="bg-white z-20 border-b border-gray-200">
-                        <div className="flex flex-col md:flex-row justify-center items-center gap-4 md:gap-6 py-3">
+                        <div className="flex flex-col md:flex-row justify-center items-center gap-3 md:gap-6 py-3 px-3 md:px-0">
                             {renderStatusCheckButton()}
 
                             <div className="relative w-full md:w-1/3">
@@ -932,7 +932,7 @@ function MainMedicineList() {
                 </div>
 
                 {/* Medicines Table Section */}
-                <div className="relative">
+                <div className="relative max-md:overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
                         <thead
                             className="bg-gray-200 sticky"

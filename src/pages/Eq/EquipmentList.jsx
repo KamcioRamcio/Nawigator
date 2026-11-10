@@ -521,7 +521,7 @@ function EquipmentList() {
     return (
         <div className="bg-gray-100 min-h-screen pb-10">
             <div className="mx-auto bg-white shadow-lg rounded-lg">
-                <div ref={headerRef} className="sticky top-0 z-30 bg-white">
+                <div ref={headerRef} className="md:sticky top-0 z-30 bg-white">
                 {/* Header Section */}
                 <div className="flex flex-col md:flex-row justify-between items-center py-3 md:py-3 px-4 md:px-8 border-b bg-gray-200">
                     {/* Site Change Button */}
@@ -549,7 +549,7 @@ function EquipmentList() {
                     </h1>
 
                     {/* User Info and Action Buttons */}
-                    <div className="flex flex-col md:flex-row items-center gap-2 md:gap-3 mt-2 md:mt-0">
+                    <div className="flex flex-row flex-wrap justify-center items-center gap-2 md:gap-3 mt-2 md:mt-0">
                         {/* Global edit button */}
                         {showEditButton(userPosition) && (
                             <button
@@ -619,7 +619,7 @@ function EquipmentList() {
 
 
                 {/* Equipment Table Section */}
-                <div className="relative">
+                <div className="relative max-md:overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
                         <thead
                             className="bg-gray-200 z-10"
