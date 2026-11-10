@@ -8,7 +8,6 @@ pnpm-debug.log*
 lerna-debug.log*
 
 # Testing
-backend/__tests__
 backend/coverage/
 coverage/
 *.lcov
@@ -44,9 +43,6 @@ dist-ssr/
 build/
 *.local
 
-# Lock files
-/backend/package-lock.json
-package-lock.json
 yarn.lock
 
 # IDE and editor files
@@ -63,9 +59,6 @@ yarn.lock
 *.swp
 *.swo
 
-# Test configuration
-jest.config.js
-jest.setup.js
 
 # Temp files
 .cache/
@@ -84,8 +77,15 @@ Thumbs.db
 
 src/todo
 docker-compose.yml
-.dockerignore
-backend/Dockerfile
 node_modules
 backend/node_modules
-src/__tests__
+
+# Local-only (deploy script, runtime data, test output)
+navi.sh
+data/
+backend/data/
+backend/backups/
+backups/
+test-results/
+playwright-report/
+e2e/.tmp/
