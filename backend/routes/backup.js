@@ -16,7 +16,7 @@ const upload = multer({
 router.get('/export-database', async (req, res, next) => {
     const exportPath = await exportDatabase();
     const date = path.basename(exportPath).slice(7, 15).replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3');
-    res.download(exportPath, `database_export_${date}.db`, (err) => {
+    res.download(exportPath, `database_export_${date}.db`, {dotfiles: 'allow'}, (err) => {
         fs.rm(exportPath, {force: true});
         if (err && !res.headersSent) next(err);
     });
