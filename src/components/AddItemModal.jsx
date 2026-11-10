@@ -24,7 +24,7 @@ function AddItemModal({isOpen, onClose, title, children}) {
         <div className="fixed inset-0 z-50" role="dialog" aria-modal="true">
             {/* Backdrop */}
             <div
-                className="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity backdrop-blur-sm"
+                className="fixed inset-0 bg-gray-900/75 transition-opacity backdrop-blur-xs"
                 onClick={onClose}
             />
 
@@ -40,7 +40,7 @@ function AddItemModal({isOpen, onClose, title, children}) {
                             </h2>
                             <button
                                 onClick={onClose}
-                                className="rounded-full p-2 hover:bg-gray-100 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="rounded-full p-2 hover:bg-gray-100 transition-colors duration-200 focus:outline-hidden focus:ring-2 focus:ring-blue-500"
                                 aria-label="Close"
                             >
                                 <svg

@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import apiUrl from '../constants/api';
 import toastService from '../utils/toast';
-import { generateUtilizationPDF } from '../utils/utilizationPdfGenerator';
+// jsPDF + embedded font (~2MB) load only when a PDF is generated
+const generateUtilizationPDF = (...args) => import("../utils/utilizationPdfGenerator").then((m) => m.generateUtilizationPDF(...args));
 import ConfirmDialog from './ConfirmDialog';
+import {formatDate} from "../utils/dates.js";
 
 function UtilizationDetailModal({ isOpen, onClose, utilizationId, onUtilizationUpdate }) {
     const [utilization, setUtilization] = useState(null);
@@ -238,27 +240,6 @@ function UtilizationDetailModal({ isOpen, onClose, utilizationId, onUtilizationU
         toastService.success('Generowanie PDF');
     };
 
-    const formatDate = (dateString) => {
-        if (!dateString) return '';
-        try {
-            if (/^\d{2}[-\.]\d{2}[-\.]\d{4}$/.test(dateString)) {
-                return dateString.replace(/\./g, '-');
-            }
-
-            const date = new Date(dateString);
-            if (isNaN(date.getTime())) {
-                return dateString;
-            }
-
-            const day = String(date.getDate()).padStart(2, '0');
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const year = date.getFullYear();
-            return `${day}-${month}-${year}`;
-        } catch (error) {
-            console.error('Error formatting date:', error);
-            return dateString;
-        }
-    };
 
     const deleteItem = async (itemType, itemId) => {
         setConfirmMessage('Czy na pewno chcesz usunąć tę pozycję z utylizacji?');
@@ -315,14 +296,14 @@ function UtilizationDetailModal({ isOpen, onClose, utilizationId, onUtilizationU
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 max-w-4xl w-full max-h-[90vh] overflow-auto">
                 <div className="flex justify-between items-center mb-4">
                     <h2 className="text-2xl font-bold">Szczegóły utylizacji</h2>
                     <div className="flex gap-2">
                         <button
                             onClick={() => setShowSettings(!showSettings)}
-                            className="bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded text-sm flex items-center gap-1"
+                            className="bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-sm text-sm flex items-center gap-1"
                         >
                             <span>{showSettings ? '⚙️' : '🔧'}</span>
                             <span>{showSettings ? 'Ukryj' : 'Opcje'}</span>
@@ -335,21 +316,21 @@ function UtilizationDetailModal({ isOpen, onClose, utilizationId, onUtilizationU
                                     <>
                                         <button
                                             onClick={handleGeneratePDF}
-                                            className="bg-purple-100 text-purple-700 px-2 py-1 rounded text-sm flex items-center gap-1"
+                                            className="bg-purple-100 text-purple-700 px-2 py-1 rounded-sm text-sm flex items-center gap-1"
                                         >
                                             <span>📄</span>
                                             <span>PDF</span>
                                         </button>
                                         <button
                                             onClick={() => setEditMode(true)}
-                                            className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-sm flex items-center gap-1"
+                                            className="bg-blue-100 text-blue-700 px-2 py-1 rounded-sm text-sm flex items-center gap-1"
                                         >
                                             <span>✏️</span>
                                             <span>Edytuj</span>
                                         </button>
                                         <button
                                             onClick={deleteUtilization}
-                                            className="bg-red-100 text-red-700 px-2 py-1 rounded text-sm flex items-center gap-1"
+                                            className="bg-red-100 text-red-700 px-2 py-1 rounded-sm text-sm flex items-center gap-1"
                                         >
                                             <span>🗑️</span>
                                             <span>Usuń</span>
@@ -361,7 +342,7 @@ function UtilizationDetailModal({ isOpen, onClose, utilizationId, onUtilizationU
                                         <button
                                             onClick={saveChanges}
                                             disabled={loading}
-                                            className="bg-green-100 text-green-700 px-2 py-1 rounded text-sm flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                                            className="bg-green-100 text-green-700 px-2 py-1 rounded-sm text-sm flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
                                             {loading ? (
                                                 <>
@@ -381,7 +362,7 @@ function UtilizationDetailModal({ isOpen, onClose, utilizationId, onUtilizationU
                                                 fetchUtilizationDetails();
                                             }}
                                             disabled={loading}
-                                            className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-sm flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                                            className="bg-gray-100 text-gray-700 px-2 py-1 rounded-sm text-sm flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
                                             <span>❌</span>
                                             <span>Anuluj</span>
@@ -393,7 +374,7 @@ function UtilizationDetailModal({ isOpen, onClose, utilizationId, onUtilizationU
 
                         <button
                             onClick={onClose}
-                            className="text-black bg-gray-200 rounded px-2 py-1 text-sm"
+                            className="text-black bg-gray-200 rounded-sm px-2 py-1 text-sm"
                         >
                             Zamknij
                         </button>
@@ -414,7 +395,7 @@ function UtilizationDetailModal({ isOpen, onClose, utilizationId, onUtilizationU
                                         type="text"
                                         value={editedName}
                                         onChange={handleNameChange}
-                                        className="border rounded px-2 py-1 w-full"
+                                        className="border rounded-sm px-2 py-1 w-full"
                                     />
                                 ) : (
                                     <p>{utilization.nazwa}</p>
@@ -427,7 +408,7 @@ function UtilizationDetailModal({ isOpen, onClose, utilizationId, onUtilizationU
                                         type="date"
                                         value={editedCreationDate}
                                         onChange={handleCreationDateChange}
-                                        className="border rounded px-2 py-1 w-full"
+                                        className="border rounded-sm px-2 py-1 w-full"
                                     />
                                 ) : (
                                     <p>{formatDate(utilization.data_utworzenia)}</p>
@@ -439,7 +420,7 @@ function UtilizationDetailModal({ isOpen, onClose, utilizationId, onUtilizationU
                                     <select
                                         value={editedStatus}
                                         onChange={handleStatusChange}
-                                        className="border rounded px-2 py-1 w-full"
+                                        className="border rounded-sm px-2 py-1 w-full"
                                     >
                                         {statusOptions.map(option => (
                                             <option key={option.value} value={option.value}>
@@ -467,7 +448,7 @@ function UtilizationDetailModal({ isOpen, onClose, utilizationId, onUtilizationU
                                 <textarea
                                     value={editedNotes}
                                     onChange={handleNotesChange}
-                                    className="border rounded px-2 py-1 w-full"
+                                    className="border rounded-sm px-2 py-1 w-full"
                                     rows="3"
                                 />
                             ) : (
@@ -501,7 +482,7 @@ function UtilizationDetailModal({ isOpen, onClose, utilizationId, onUtilizationU
                                                         min="1"
                                                         value={editedItems[`lek_${item.id}`]?.ilosc || ''}
                                                         onChange={(e) => handleItemChange('lek', item.id, 'ilosc', e.target.value)}
-                                                        className="border rounded px-2 py-1 w-full"
+                                                        className="border rounded-sm px-2 py-1 w-full"
                                                     />
                                                 ) : (
                                                     item.ilosc
@@ -513,7 +494,7 @@ function UtilizationDetailModal({ isOpen, onClose, utilizationId, onUtilizationU
                                                         type="text"
                                                         value={editedItems[`lek_${item.id}`]?.opakowanie || ''}
                                                         onChange={(e) => handleItemChange('lek', item.id, 'opakowanie', e.target.value)}
-                                                        className="border rounded px-2 py-1 w-full"
+                                                        className="border rounded-sm px-2 py-1 w-full"
                                                     />
                                                 ) : (
                                                     item.opakowanie || '-'
@@ -525,7 +506,7 @@ function UtilizationDetailModal({ isOpen, onClose, utilizationId, onUtilizationU
                                                         type="date"
                                                         value={editedItems[`lek_${item.id}`]?.data_waznosci || ''}
                                                         onChange={(e) => handleItemChange('lek', item.id, 'data_waznosci', e.target.value)}
-                                                        className="border rounded px-2 py-1 w-full"
+                                                        className="border rounded-sm px-2 py-1 w-full"
                                                     />
                                                 ) : (
                                                     formatDate(item.data_waznosci) || '-'
@@ -537,7 +518,7 @@ function UtilizationDetailModal({ isOpen, onClose, utilizationId, onUtilizationU
                                                         type="text"
                                                         value={editedItems[`lek_${item.id}`]?.powod_utylizacji || ''}
                                                         onChange={(e) => handleItemChange('lek', item.id, 'powod_utylizacji', e.target.value)}
-                                                        className="border rounded px-2 py-1 w-full"
+                                                        className="border rounded-sm px-2 py-1 w-full"
                                                     />
                                                 ) : (
                                                     item.powod_utylizacji || '-'
@@ -546,7 +527,7 @@ function UtilizationDetailModal({ isOpen, onClose, utilizationId, onUtilizationU
                                             <td className="border px-4 py-2">
                                                 <button
                                                     onClick={() => deleteItem('lek', item.id)}
-                                                    className="bg-red-100 text-red-700 text-xs py-1 px-2 rounded flex items-center"
+                                                    className="bg-red-100 text-red-700 text-xs py-1 px-2 rounded-sm flex items-center"
                                                     disabled={loading || editMode}
                                                 >
                                                     Usuń
@@ -584,7 +565,7 @@ function UtilizationDetailModal({ isOpen, onClose, utilizationId, onUtilizationU
                                                         min="1"
                                                         value={editedItems[`sprzet_${item.id}`]?.ilosc || ''}
                                                         onChange={(e) => handleItemChange('sprzet', item.id, 'ilosc', e.target.value)}
-                                                        className="border rounded px-2 py-1 w-full"
+                                                        className="border rounded-sm px-2 py-1 w-full"
                                                     />
                                                 ) : (
                                                     item.ilosc
@@ -596,7 +577,7 @@ function UtilizationDetailModal({ isOpen, onClose, utilizationId, onUtilizationU
                                                         type="date"
                                                         value={editedItems[`sprzet_${item.id}`]?.data_waznosci || ''}
                                                         onChange={(e) => handleItemChange('sprzet', item.id, 'data_waznosci', e.target.value)}
-                                                        className="border rounded px-2 py-1 w-full"
+                                                        className="border rounded-sm px-2 py-1 w-full"
                                                     />
                                                 ) : (
                                                     formatDate(item.data_waznosci) || '-'
@@ -608,7 +589,7 @@ function UtilizationDetailModal({ isOpen, onClose, utilizationId, onUtilizationU
                                                         type="text"
                                                         value={editedItems[`sprzet_${item.id}`]?.powod_utylizacji || ''}
                                                         onChange={(e) => handleItemChange('sprzet', item.id, 'powod_utylizacji', e.target.value)}
-                                                        className="border rounded px-2 py-1 w-full"
+                                                        className="border rounded-sm px-2 py-1 w-full"
                                                     />
                                                 ) : (
                                                     item.powod_utylizacji || '-'
@@ -617,7 +598,7 @@ function UtilizationDetailModal({ isOpen, onClose, utilizationId, onUtilizationU
                                             <td className="border px-4 py-2">
                                                 <button
                                                     onClick={() => deleteItem('sprzet', item.id)}
-                                                    className="bg-red-100 text-red-700 text-xs py-1 px-2 rounded flex items-center"
+                                                    className="bg-red-100 text-red-700 text-xs py-1 px-2 rounded-sm flex items-center"
                                                     disabled={loading || editMode}
                                                 >
                                                     Usuń

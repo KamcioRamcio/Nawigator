@@ -348,7 +348,7 @@ function Admin() {
                             </div>
                             <button
                                 onClick={() => setError(null)}
-                                className="ml-auto text-red-500 hover:text-red-700 focus:outline-none"
+                                className="ml-auto text-red-500 hover:text-red-700 focus:outline-hidden"
                             >
                                 <span className="sr-only">Close</span>
                                 <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -372,7 +372,7 @@ function Admin() {
                                     id="username"
                                     value={newUser.username}
                                     onChange={(e) => handleNewUserChange("username", e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-hidden focus:ring-2 focus:ring-blue-500"
                                     required
                                 />
                             </div>
@@ -385,7 +385,7 @@ function Admin() {
                                     id="password"
                                     value={newUser.password}
                                     onChange={(e) => handleNewUserChange("password", e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-hidden focus:ring-2 focus:ring-blue-500"
                                 />
                             </div>
                             <div>
@@ -396,7 +396,7 @@ function Admin() {
                                     id="position"
                                     value={newUser.position}
                                     onChange={(e) => handleNewUserChange("position", e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-hidden focus:ring-2 focus:ring-blue-500"
                                     required
                                 >
                                     <option value="">Wybierz pozycję</option>

@@ -3,6 +3,7 @@ import apiUrl from "../../constants/api.js";
 import OrderDetailModal from "../../components/OrderDetailModal.jsx";
 import toastService from '../../utils/toast';
 import SiteChange from "../../components/SiteChange.jsx";
+import {formatDate} from "../../utils/dates.js";
 
 function OrderList() {
     const [orders, setOrders] = useState([]);
@@ -23,10 +24,6 @@ function OrderList() {
         fetchOrders();
     }, []);
 
-    const parseDateSafe = (dateString) => {
-        const d = dateString ? new Date(dateString) : new Date(0);
-        return isNaN(d.getTime()) ? new Date(0) : d;
-    };
 
     const fetchOrders = async () => {
         try {
@@ -35,7 +32,6 @@ function OrderList() {
                 throw new Error('Failed to fetch orders');
             }
             const data = await response.json();
-            data.sort((a, b) => parseDateSafe(b.data_zamowienia) - parseDateSafe(a.data_zamowienia));
             setOrders(data);
         } catch (error) {
             console.error('Error fetching orders:', error);
@@ -46,22 +42,6 @@ function OrderList() {
     };
 
 
-    const formatDate = (dateString) => {
-        if (!dateString) return '';
-        try {
-            const date = new Date(dateString);
-            if (isNaN(date.getTime())) {
-                return dateString; // Return original if can't parse
-            }
-            const month = String(date.getDate()).padStart(2, '0');
-            const day = String(date.getMonth() + 1).padStart(2, '0');
-            const year = date.getFullYear();
-            return `${day}-${month}-${year}`;
-        } catch (error) {
-            console.error('Error formatting date:', error);
-            return dateString;
-        }
-    };
 
     const getStatusClass = (status) => {
         switch (status) {
@@ -153,7 +133,7 @@ function OrderList() {
                                 placeholder="Szukaj zamówień..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="border border-gray-300 rounded-md pl-10 pr-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="border border-gray-300 rounded-md pl-10 pr-4 py-2 w-full focus:outline-hidden focus:ring-2 focus:ring-blue-500"
                             />
                             <div className="absolute left-3 top-2.5 text-gray-400">
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none"
@@ -167,7 +147,7 @@ function OrderList() {
                             <select
                                 value={statusFilter}
                                 onChange={(e) => setStatusFilter(e.target.value)}
-                                className="border border-gray-300 rounded-md px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="border border-gray-300 rounded-md px-4 py-2 w-full focus:outline-hidden focus:ring-2 focus:ring-blue-500"
                             >
                                 <option value="all">Wszystkie statusy</option>
                                 {statuses.map(status => (

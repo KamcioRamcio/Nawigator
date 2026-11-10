@@ -16,7 +16,8 @@ import {
 } from "../../constants/permisions.js";
 import MedicineStatusPreview from "../../components/MedicineStatusPreview.jsx";
 import toastService from '../../utils/toast.js';
-import {generateMainMedicinePDF} from '../../utils/mainMedicinePdfGenerator.js';
+// jsPDF + embedded font (~2MB) load only when a PDF is generated
+const generateMainMedicinePDF = (...args) => import("../../utils/mainMedicinePdfGenerator.js").then((m) => m.generateMainMedicinePDF(...args));
 
 
 function MainMedicineList() {
@@ -895,7 +896,7 @@ function MainMedicineList() {
                                     placeholder="Szukaj leków..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="border border-gray-300 rounded-md pl-10 pr-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    className="border border-gray-300 rounded-md pl-10 pr-4 py-2 w-full focus:outline-hidden focus:ring-2 focus:ring-blue-500"
                                 />
                                 <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -909,7 +910,7 @@ function MainMedicineList() {
                                 <select
                                     value={statusFilter}
                                     onChange={(e) => setStatusFilter(e.target.value)}
-                                    className="border border-gray-300 rounded-md px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    className="border border-gray-300 rounded-md px-4 py-2 w-full focus:outline-hidden focus:ring-2 focus:ring-blue-500"
                                 >
                                     <option value="all">Wszystkie statusy</option>
                                     <option value="all">------------</option>
@@ -1084,7 +1085,7 @@ function MainMedicineList() {
                                                                                     </select>
                                                                                 </div>
                                                                             ) : (
-                                                                                <div className="max-h-32 overflow-y-auto break-words">{medicine.lek_nazwa}</div>
+                                                                                <div className="max-h-32 overflow-y-auto wrap-break-word">{medicine.lek_nazwa}</div>
                                                                             )}
                                                                         </td>
                                                                         <td className="px-2 py-2 md:py-4 whitespace-nowrap text-sm">
@@ -1176,7 +1177,7 @@ function MainMedicineList() {
                                         rows="3"
                                     />
                                 ) : (
-                                    <div className="max-h-32 max-w-72 overflow-y-auto break-words">
+                                    <div className="max-h-32 max-w-72 overflow-y-auto wrap-break-word">
                                         {medicine.stan_magazynowy_important_status === "0" ? "" : medicine.stan_magazynowy_important_status}
                                     </div>
                                 )}
@@ -1192,7 +1193,7 @@ function MainMedicineList() {
                                                                                         ...prev,
                                                                                         [medicine.lek_id]: !prev[medicine.lek_id]
                                                                                     }))}
-                                                                                    className="text-gray-600 text-sm py-1 px-1 rounded hover:bg-gray-200"
+                                                                                    className="text-gray-600 text-sm py-1 px-1 rounded-sm hover:bg-gray-200"
                                                                                 >
                                                                                     {actionsVisibility[medicine.lek_id] ? '⬆️' : '⚙️'}
                                                                                 </button>
@@ -1205,13 +1206,13 @@ function MainMedicineList() {
                                                                                                 <div className="flex flex-col space-y-1">
                                                                                                     <button
                                                                                                         onClick={() => handleSaveSingle(medicine.lek_id)}
-                                                                                                        className="bg-green-100 text-green-700 text-xs py-1 px-2 rounded hover:bg-green-200 flex items-center justify-center"
+                                                                                                        className="bg-green-100 text-green-700 text-xs py-1 px-2 rounded-sm hover:bg-green-200 flex items-center justify-center"
                                                                                                     >
                                                                                                         <span className="mr-1">💾</span>Zapisz
                                                                                                     </button>
                                                                                                     <button
                                                                                                         onClick={() => handleSingleEditToggle(medicine.lek_id)}
-                                                                                                        className="bg-gray-100 text-gray-700 text-xs py-1 px-2 rounded hover:bg-gray-200 flex items-center justify-center"
+                                                                                                        className="bg-gray-100 text-gray-700 text-xs py-1 px-2 rounded-sm hover:bg-gray-200 flex items-center justify-center"
                                                                                                     >
                                                                                                         <span className="mr-1">✖️</span>Anuluj
                                                                                                     </button>
@@ -1219,7 +1220,7 @@ function MainMedicineList() {
                                                                                             ) : (
                                                                                                 <button
                                                                                                     onClick={() => handleSingleEditToggle(medicine.lek_id)}
-                                                                                                    className="bg-yellow-100 text-yellow-700 text-xs py-1 px-2 rounded hover:bg-yellow-200 flex items-center justify-center"
+                                                                                                    className="bg-yellow-100 text-yellow-700 text-xs py-1 px-2 rounded-sm hover:bg-yellow-200 flex items-center justify-center"
                                                                                                 >
                                                                                                     <span className="mr-1">✏️</span>Edytuj
                                                                                                 </button>
@@ -1229,7 +1230,7 @@ function MainMedicineList() {
                                                                                         {showDeleteButton(userPosition) && !globalEditMode && !singleEditMode[medicine.lek_id] && (
                                                                                             <button
                                                                                                 onClick={() => handleDeleteMedicine(medicine.lek_id)}
-                                                                                                className="bg-red-100 text-red-700 text-xs py-1 px-2 rounded hover:bg-red-200 flex items-center justify-center"
+                                                                                                className="bg-red-100 text-red-700 text-xs py-1 px-2 rounded-sm hover:bg-red-200 flex items-center justify-center"
                                                                                             >
                                                                                                 <span className="mr-1">🗑️</span>Usuń
                                                                                             </button>
@@ -1238,7 +1239,7 @@ function MainMedicineList() {
                                                                                         {showOrderButton(userPosition) && !globalEditMode && !singleEditMode[medicine.lek_id] && (
                                                                                             <button
                                                                                                 onClick={() => handleAddToOrderClick(medicine)}
-                                                                                                className="bg-blue-100 text-blue-700 text-xs py-1 px-2 rounded hover:bg-blue-200 flex items-center justify-center"
+                                                                                                className="bg-blue-100 text-blue-700 text-xs py-1 px-2 rounded-sm hover:bg-blue-200 flex items-center justify-center"
                                                                                             >
                                                                                                 <span className="mr-1">🛒</span>Zamów
                                                                                             </button>

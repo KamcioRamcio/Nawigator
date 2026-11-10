@@ -171,20 +171,20 @@ function AddToOrderModal({ isOpen, onClose, medicine, equipment }) {
     if (!isOpen) return null
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-xs">
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto transform transition-all duration-300 scale-100">
                 {/* Header */}
                 <div className="bg-blue-800 text-white p-6 rounded-t-2xl">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-3">
-                            <div className="bg-white bg-opacity-20 p-2 rounded-lg">
+                            <div className="bg-white/20 p-2 rounded-lg">
                                 <span className="text-xl">🛒</span>
                             </div>
                             <h2 className="text-xl font-bold">Dodaj do zamówienia</h2>
                         </div>
                         <button
                             onClick={onClose}
-                            className="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-2 transition-colors duration-200"
+                            className="text-white hover:bg-white/20 rounded-full p-2 transition-colors duration-200"
                             disabled={loading}
                         >
                             <span className="text-xl">✕</span>
@@ -194,7 +194,7 @@ function AddToOrderModal({ isOpen, onClose, medicine, equipment }) {
 
                 <div className="p-6 space-y-6">
                     {/* Item Information Card */}
-                    <div className="bg-gradient-to-r from-gray-50 to-gray-100 border-l-4 border-l-blue-500 rounded-lg p-4">
+                    <div className="bg-linear-to-r from-gray-50 to-gray-100 border-l-4 border-l-blue-500 rounded-lg p-4">
                         <div className="flex items-center space-x-3">
                             <div className={`p-3 rounded-full ${itemType === "medicine" ? "bg-green-100" : "bg-blue-100"}`}>
                                 <span className="text-xl">{itemType === "medicine" ? "💊" : "🔧"}</span>

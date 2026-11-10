@@ -21,6 +21,7 @@ import toastService from '../../utils/toast';
 import SiteChange from "../../components/SiteChange.jsx";
 import CreateUtilizationModal from "../../components/CreateUtilizationModal.jsx";
 import AddItemToUtilizationModal from "../../components/AddItemToUtilizationModal.jsx";
+import {formatDate} from "../../utils/dates.js";
 
 function UtilizationList() {
     // ===========================================
@@ -81,27 +82,6 @@ function UtilizationList() {
     // UTILITY FUNCTIONS
     // ===========================================
 
-    /**
-     * Formats date string to DD-MM-YYYY format
-     * @param {string} dateString - ISO date string
-     * @returns {string} Formatted date string
-     */
-    const formatDate = (dateString) => {
-        if (!dateString) return '';
-        try {
-            const date = new Date(dateString);
-            if (isNaN(date.getTime())) {
-                return dateString; // Return original if can't parse
-            }
-            const day = String(date.getDate()).padStart(2, '0');
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const year = date.getFullYear();
-            return `${day}-${month}-${year}`;
-        } catch (error) {
-            console.error('Error formatting date:', error);
-            return dateString;
-        }
-    };
 
     /**
      * Returns appropriate CSS classes for utilization status badges
@@ -337,13 +317,13 @@ function UtilizationList() {
                             {/* Mobile Card View */}
                             <div className="md:hidden space-y-4">
                                 {utilizations.filter(matchesSearch).map((utilization) => (
-                                    <div key={utilization.id} className="bg-white border border-gray-200 rounded-lg shadow-sm p-4 space-y-3">
+                                    <div key={utilization.id} className="bg-white border border-gray-200 rounded-lg shadow-xs p-4 space-y-3">
                                         {/* Utilization Header */}
                                         <div className="flex justify-between items-start">
                                             <h3 className="text-lg font-semibold text-gray-900 flex-1 pr-2">
                                                 {utilization.nazwa}
                                             </h3>
-                                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusClass(utilization.status)} flex-shrink-0`}>
+                                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusClass(utilization.status)} shrink-0`}>
                                                 {utilization.status}
                                             </span>
                                         </div>

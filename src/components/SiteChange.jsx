@@ -60,7 +60,7 @@ function SiteChange({isOpen, onClose}) {
     ];
 
     return (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-xs z-50 flex items-center justify-center p-4">
             <div
                 ref={modalRef}
                 className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden transform transition-all duration-300 ease-in-out"
@@ -73,7 +73,7 @@ function SiteChange({isOpen, onClose}) {
                 aria-labelledby="navigation-title"
             >
                 <div
-                    className="bg-gradient-to-r from-slate-900 to-slate-700 px-8 py-5 flex justify-between items-center">
+                    className="bg-linear-to-r from-slate-900 to-slate-700 px-8 py-5 flex justify-between items-center">
                     <h2 id="navigation-title" className="text-2xl font-bold text-white">Wybierz Arkusz</h2>
                     <button
                         onClick={onClose}
@@ -97,7 +97,7 @@ function SiteChange({isOpen, onClose}) {
                                 <a
                                     key={item.path}
                                     href={item.path}
-                                    className="group p-4 rounded-xl hover:bg-blue-50 border border-gray-200 transition-all duration-200 font-medium text-gray-700 hover:text-blue-600 hover:border-blue-300 hover:shadow flex items-center gap-3"
+                                    className="group p-4 rounded-xl hover:bg-blue-50 border border-gray-200 transition-all duration-200 font-medium text-gray-700 hover:text-blue-600 hover:border-blue-300 hover:shadow-sm flex items-center gap-3"
                                 >
                                     <span
                                         className="text-2xl group-hover:scale-110 transition-transform">{item.icon}</span>
@@ -115,7 +115,7 @@ function SiteChange({isOpen, onClose}) {
                                 <a
                                     key={item.path}
                                     href={item.path}
-                                    className="group p-4 rounded-xl hover:bg-blue-50 border border-gray-200 transition-all duration-200 font-medium text-gray-700 hover:text-blue-600 hover:border-blue-300 hover:shadow flex items-center gap-3"
+                                    className="group p-4 rounded-xl hover:bg-blue-50 border border-gray-200 transition-all duration-200 font-medium text-gray-700 hover:text-blue-600 hover:border-blue-300 hover:shadow-sm flex items-center gap-3"
                                 >
                                     <span
                                         className="text-2xl group-hover:scale-110 transition-transform">{item.icon}</span>
@@ -134,7 +134,7 @@ function SiteChange({isOpen, onClose}) {
                                 <a
                                     key={item.path}
                                     href={item.path}
-                                    className="group p-4 rounded-xl hover:bg-blue-50 border border-gray-200 transition-all duration-200 font-medium text-gray-700 hover:text-blue-600 hover:border-blue-300 hover:shadow flex items-center gap-3"
+                                    className="group p-4 rounded-xl hover:bg-blue-50 border border-gray-200 transition-all duration-200 font-medium text-gray-700 hover:text-blue-600 hover:border-blue-300 hover:shadow-sm flex items-center gap-3"
                                 >
                                     <span
                                         className="text-2xl group-hover:scale-110 transition-transform">{item.icon}</span>
@@ -146,7 +146,7 @@ function SiteChange({isOpen, onClose}) {
                             {userPosition === 'admin' && (
                                 <a
                                     href="/admin"
-                                    className="group p-4 rounded-xl hover:bg-blue-50 border border-red-200 bg-red-50 transition-all duration-200 font-medium text-gray-700 hover:text-red-600 hover:border-red-300 hover:shadow flex items-center gap-3"
+                                    className="group p-4 rounded-xl hover:bg-blue-50 border border-red-200 bg-red-50 transition-all duration-200 font-medium text-gray-700 hover:text-red-600 hover:border-red-300 hover:shadow-sm flex items-center gap-3"
                                 >
                                     <span className="text-2xl group-hover:scale-110 transition-transform">👑</span>
                                     <span>Panel Administratora</span>

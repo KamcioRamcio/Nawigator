@@ -127,7 +127,7 @@ function Login() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-blue-100 to-gray-100 flex items-center justify-center py-6 px-4 sm:px-6 lg:px-8">
+        <div className="min-h-screen bg-linear-to-b from-blue-100 to-gray-100 flex items-center justify-center py-6 px-4 sm:px-6 lg:px-8">
             <div className="max-w-md w-full space-y-6 bg-white p-6 sm:p-8 rounded-xl shadow-xl border border-gray-200">
                 {/* Logo and Title Section */}
                 <div className="flex flex-col items-center text-center">
@@ -154,7 +154,7 @@ function Login() {
                         <div className="relative">
                             <select
                                 id="user-select"
-                                className="w-full px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white shadow-sm text-base"
+                                className="w-full px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white shadow-xs text-base"
                                 onChange={(e) => setSelectedUser(e.target.value ? JSON.parse(e.target.value) : null)}
                                 defaultValue=""
                                 disabled={loading}
@@ -166,11 +166,6 @@ function Login() {
                                     </option>
                                 ))}
                             </select>
-                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
-                                <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd"/>
-                                </svg>
-                            </div>
                         </div>
                         {loading && (
                             <div className="flex items-center mt-2 text-sm text-gray-500">
@@ -191,7 +186,7 @@ function Login() {
                             <input
                                 id="password"
                                 type="password"
-                                className="w-full px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm text-base"
+                                className="w-full px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-xs text-base"
                                 placeholder="Wprowadź hasło"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
@@ -202,7 +197,7 @@ function Login() {
                     <div className="pt-4">
                         <button
                             type="submit"
-                            className="w-full py-2 sm:py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors disabled:opacity-50 shadow-md flex items-center justify-center text-base"
+                            className="w-full py-2 sm:py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors disabled:opacity-50 shadow-md flex items-center justify-center text-base"
                             disabled={!selectedUser || loading}
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
@@ -217,7 +212,7 @@ function Login() {
                 <div className="flex justify-center mt-6">
                     <button
                         onClick={handleImportDatabase}
-                        className="py-2 px-4 bg-slate-900 text-white font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 transition-colors flex items-center justify-center text-base"
+                        className="py-2 px-4 bg-slate-900 text-white font-medium rounded-lg focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 transition-colors flex items-center justify-center text-base"
                     >
                         <span>Importuj bazę danych</span>
                         <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

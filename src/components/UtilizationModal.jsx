@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import apiUrl from "../constants/api.js";
 import toastService from "../utils/toast.js";
 
@@ -265,20 +264,20 @@ const UtilizationModal = ({isOpen, onClose, item, itemType, onUtilizationComplet
     };
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-2 sm:p-4 backdrop-blur-sm overflow-y-auto">
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-2 sm:p-4 backdrop-blur-xs overflow-y-auto">
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto transform transition-all duration-300 scale-100">
                 {/* Header */}
                 <div className="bg-red-700 text-white p-4 sm:p-6 rounded-t-2xl sticky top-0 z-10">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-3">
-                            <div className="bg-white bg-opacity-20 p-2 rounded-lg">
+                            <div className="bg-white/20 p-2 rounded-lg">
                                 <span className="text-xl">{itemType === 'medicine' ? '💊' : '🔧'}</span>
                             </div>
                             <h2 className="text-lg sm:text-xl font-bold">Utylizacja {itemType === 'medicine' ? 'Leku' : 'Sprzętu'}</h2>
                         </div>
                         <button
                             onClick={onClose}
-                            className="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-2 transition-colors duration-200"
+                            className="text-white hover:bg-white/20 rounded-full p-2 transition-colors duration-200"
                             disabled={isSubmitting}
                             aria-label="Zamknij"
                         >
@@ -290,9 +289,9 @@ const UtilizationModal = ({isOpen, onClose, item, itemType, onUtilizationComplet
                 {/* Content */}
                 <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
                     {/* Item Information Card */}
-                    <div className="bg-gradient-to-r from-gray-50 to-gray-100 border-l-4 border-l-red-500 rounded-lg p-3 sm:p-4">
+                    <div className="bg-linear-to-r from-gray-50 to-gray-100 border-l-4 border-l-red-500 rounded-lg p-3 sm:p-4">
                         <div className="flex items-center space-x-3">
-                            <div className={`flex-shrink-0 p-2 sm:p-3 rounded-full ${itemType === "medicine" ? "bg-green-100" : "bg-blue-100"}`}>
+                            <div className={`shrink-0 p-2 sm:p-3 rounded-full ${itemType === "medicine" ? "bg-green-100" : "bg-blue-100"}`}>
                                 <span className="text-xl">{itemType === "medicine" ? "💊" : "🔧"}</span>
                             </div>
                             <div className="flex-1 min-w-0">

@@ -598,7 +598,7 @@ function MedicineList() {
                             placeholder="Szukaj leków..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="border border-gray-300 rounded-md pl-10 pr-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="border border-gray-300 rounded-md pl-10 pr-4 py-2 w-full focus:outline-hidden focus:ring-2 focus:ring-blue-500"
                         />
                     </div>
                 </div>
@@ -760,7 +760,7 @@ function MedicineList() {
                                                                             {!globalEditMode && (
                                                                                 <button
                                                                                     onClick={() => handleDeleteMedicine(medicine.lek_id)}
-                                                                                    className="bg-red-100 text-red-700 text-xs py-1 px-2 rounded hover:bg-red-200"
+                                                                                    className="bg-red-100 text-red-700 text-xs py-1 px-2 rounded-sm hover:bg-red-200"
                                                                                 >
                                                                                     Usuń
                                                                                 </button>

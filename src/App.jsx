@@ -1,16 +1,16 @@
-import React from 'react'
+import React, {lazy, Suspense} from 'react'
 import {Route, Routes, Navigate, BrowserRouter} from 'react-router-dom'
-import MainMedicineList from './pages/Med/MainMedicineList.jsx';
-import MainEquipmentList from './pages/Eq/MainEquipmentList.jsx';
-import MedicineList from "./pages/Med/MedicineList.jsx";
-import EquipmentList from "./pages/Eq/EquipmentList.jsx";
-import Login from './pages/Other/Login.jsx';
-import MinMedicine from "./pages/Med/MinMedicine.jsx";
-import Documentation from "./pages/Other/Documentation.jsx";
-import OrderList from "./pages/Other/OrderList.jsx";
-import Admin from "./pages/Other/Admin.jsx";
+const MainMedicineList = lazy(() => import("./pages/Med/MainMedicineList.jsx"));
+const MainEquipmentList = lazy(() => import("./pages/Eq/MainEquipmentList.jsx"));
+const MedicineList = lazy(() => import("./pages/Med/MedicineList.jsx"));
+const EquipmentList = lazy(() => import("./pages/Eq/EquipmentList.jsx"));
+const Login = lazy(() => import("./pages/Other/Login.jsx"));
+const MinMedicine = lazy(() => import("./pages/Med/MinMedicine.jsx"));
+const Documentation = lazy(() => import("./pages/Other/Documentation.jsx"));
+const OrderList = lazy(() => import("./pages/Other/OrderList.jsx"));
+const Admin = lazy(() => import("./pages/Other/Admin.jsx"));
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute.jsx";
-import UtilizationList from "./pages/Other/UtilizationList.jsx";
+const UtilizationList = lazy(() => import("./pages/Other/UtilizationList.jsx"));
 import './index.css';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -20,6 +20,7 @@ function App(){
     return (
         <BrowserRouter>
             <div className="">
+                <Suspense fallback={<div className="p-4 text-gray-500">Ładowanie…</div>}>
                 <Routes>
                     <Route path="/" element={<Login />} />
                     <Route element={<ProtectedAdminRoute />}>
@@ -35,6 +36,7 @@ function App(){
                     <Route path="/zamowienia" element={<OrderList/>}></Route>
                     <Route path="*" element={<Navigate to="/" />} />
                 </Routes>
+                </Suspense>
                 <ToastContainer/>
             </div>
         </BrowserRouter>

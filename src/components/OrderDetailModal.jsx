@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import apiUrl from '../constants/api';
 import toastService from '../utils/toast';
-import { generateOrderPDF } from '../utils/orderPdfGenerator';
+// jsPDF + embedded font (~2MB) load only when a PDF is generated
+const generateOrderPDF = (...args) => import("../utils/orderPdfGenerator").then((m) => m.generateOrderPDF(...args));
 import ConfirmDialog from './ConfirmDialog';
+import {formatDate} from "../utils/dates.js";
 
 function OrderDetailModal({ isOpen, onClose, orderId, onOrderUpdate }) {
     const [order, setOrder] = useState(null);
@@ -214,29 +216,6 @@ function OrderDetailModal({ isOpen, onClose, orderId, onOrderUpdate }) {
         toastService.success('Generowanie PDF');
     };
 
-    const formatDate = (dateString) => {
-        if (!dateString) return '';
-        try {
-            // Check if it's already in dd-MM-yyyy or dd.MM.yyyy format
-            if (/^\d{2}[-\.]\d{2}[-\.]\d{4}$/.test(dateString)) {
-                return dateString.replace(/\./g, '-');
-            }
-
-            // Convert from ISO format if needed
-            const date = new Date(dateString);
-            if (isNaN(date.getTime())) {
-                return dateString; // Return original if can't parse
-            }
-
-            const day = String(date.getDate()).padStart(2, '0');
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const year = date.getFullYear();
-            return `${day}-${month}-${year}`;
-        } catch (error) {
-            console.error('Error formatting date:', error);
-            return dateString;
-        }
-    };
     const deleteItem = async (itemType, itemId) => {
         setConfirmMessage('Czy na pewno chcesz usunąć tę pozycję z zamówienia?');
         setConfirmAction(() => async () => {
@@ -292,14 +271,14 @@ function OrderDetailModal({ isOpen, onClose, orderId, onOrderUpdate }) {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 max-w-4xl w-full max-h-[90vh] overflow-auto">
                 <div className="flex justify-between items-center mb-4">
                     <h2 className="text-2xl font-bold">Szczegóły zamówienia</h2>
                     <div className="flex gap-2">
                         <button
                             onClick={() => setShowSettings(!showSettings)}
-                            className="bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded text-sm flex items-center gap-1"
+                            className="bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-sm text-sm flex items-center gap-1"
                         >
                             <span>{showSettings ? '⚙️' : '🔧'}</span>
                             <span>{showSettings ? 'Ukryj' : 'Opcje'}</span>
@@ -313,21 +292,21 @@ function OrderDetailModal({ isOpen, onClose, orderId, onOrderUpdate }) {
                                     <>
                                         <button
                                             onClick={handleGeneratePDF}
-                                            className="bg-purple-100 text-purple-700 px-2 py-1 rounded text-sm flex items-center gap-1"
+                                            className="bg-purple-100 text-purple-700 px-2 py-1 rounded-sm text-sm flex items-center gap-1"
                                         >
                                             <span>📄</span>
                                             <span>PDF</span>
                                         </button>
                                         <button
                                             onClick={() => setEditMode(true)}
-                                            className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-sm flex items-center gap-1"
+                                            className="bg-blue-100 text-blue-700 px-2 py-1 rounded-sm text-sm flex items-center gap-1"
                                         >
                                             <span>✏️</span>
                                             <span>Edytuj</span>
                                         </button>
                                         <button
                                             onClick={deleteOrder}
-                                            className="bg-red-100 text-red-700 px-2 py-1 rounded text-sm flex items-center gap-1"
+                                            className="bg-red-100 text-red-700 px-2 py-1 rounded-sm text-sm flex items-center gap-1"
                                         >
                                             <span>🗑️</span>
                                             <span>Usuń</span>
@@ -339,7 +318,7 @@ function OrderDetailModal({ isOpen, onClose, orderId, onOrderUpdate }) {
                                         <button
                                             onClick={saveChanges}
                                             disabled={loading}
-                                            className="bg-green-100 text-green-700 px-2 py-1 rounded text-sm flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                                            className="bg-green-100 text-green-700 px-2 py-1 rounded-sm text-sm flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
                                             {loading ? (
                                                 <>
@@ -359,7 +338,7 @@ function OrderDetailModal({ isOpen, onClose, orderId, onOrderUpdate }) {
                                                 fetchOrderDetails();
                                             }}
                                             disabled={loading}
-                                            className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-sm flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                                            className="bg-gray-100 text-gray-700 px-2 py-1 rounded-sm text-sm flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
                                             <span>❌</span>
                                             <span>Anuluj</span>
@@ -372,7 +351,7 @@ function OrderDetailModal({ isOpen, onClose, orderId, onOrderUpdate }) {
                         {/* Close Button - Always Visible */}
                         <button
                             onClick={onClose}
-                            className="text-black bg-gray-200 rounded px-2 py-1 text-sm"
+                            className="text-black bg-gray-200 rounded-sm px-2 py-1 text-sm"
                         >
                             Zamknij
                         </button>
@@ -393,7 +372,7 @@ function OrderDetailModal({ isOpen, onClose, orderId, onOrderUpdate }) {
                                         type="text"
                                         value={editedName}
                                         onChange={handleNameChange}
-                                        className="border rounded px-2 py-1 w-full"
+                                        className="border rounded-sm px-2 py-1 w-full"
                                     />
                                 ) : (
                                     <p>{order.nazwa}</p>
@@ -406,7 +385,7 @@ function OrderDetailModal({ isOpen, onClose, orderId, onOrderUpdate }) {
                                         type="date"
                                         value={editedCreationDate}
                                         onChange={handleCreationDateChange}
-                                        className="border rounded px-2 py-1 w-full"
+                                        className="border rounded-sm px-2 py-1 w-full"
                                     />
                                 ) : (
                                     <p>{formatDate(order.data_zamowienia)}</p>
@@ -418,7 +397,7 @@ function OrderDetailModal({ isOpen, onClose, orderId, onOrderUpdate }) {
                                     <select
                                         value={editedStatus}
                                         onChange={handleStatusChange}
-                                        className="border rounded px-2 py-1 w-full"
+                                        className="border rounded-sm px-2 py-1 w-full"
                                     >
                                         {statusOptions.map(option => (
                                             <option key={option.value} value={option.value}>
@@ -462,7 +441,7 @@ function OrderDetailModal({ isOpen, onClose, orderId, onOrderUpdate }) {
                                                         min="1"
                                                         value={editedItems[`lek_${item.id}`]?.ilosc || ''}
                                                         onChange={(e) => handleItemChange('lek', item.id, 'ilosc', e.target.value)}
-                                                        className="border rounded px-2 py-1 w-full"
+                                                        className="border rounded-sm px-2 py-1 w-full"
                                                     />
                                                 ) : (
                                                     item.ilosc
@@ -474,7 +453,7 @@ function OrderDetailModal({ isOpen, onClose, orderId, onOrderUpdate }) {
                                                         type="text"
                                                         value={editedItems[`lek_${item.id}`]?.opakowanie || ''}
                                                         onChange={(e) => handleItemChange('lek', item.id, 'opakowanie', e.target.value)}
-                                                        className="border rounded px-2 py-1 w-full"
+                                                        className="border rounded-sm px-2 py-1 w-full"
                                                         placeholder="Opakwowanie"
                                                     />
                                                 ) : (
@@ -488,7 +467,7 @@ function OrderDetailModal({ isOpen, onClose, orderId, onOrderUpdate }) {
                                                         type="date"
                                                         value={editedItems[`lek_${item.id}`]?.data_waznosci || ''}
                                                         onChange={(e) => handleItemChange('lek', item.id, 'data_waznosci', e.target.value)}
-                                                        className="border rounded px-2 py-1 w-full"
+                                                        className="border rounded-sm px-2 py-1 w-full"
                                                     />
                                                 ) : (
                                                     formatDate(item.data_waznosci) || '-'
@@ -497,7 +476,7 @@ function OrderDetailModal({ isOpen, onClose, orderId, onOrderUpdate }) {
                                             <td className="border px-4 py-2">
                                                 <button
                                                     onClick={() => deleteItem('lek', item.id)}
-                                                    className="bg-red-100 text-red-700 text-xs py-1 px-2 rounded flex items-center"
+                                                    className="bg-red-100 text-red-700 text-xs py-1 px-2 rounded-sm flex items-center"
                                                     disabled={loading || editMode}
                                                 >
                                                     Usuń
@@ -534,7 +513,7 @@ function OrderDetailModal({ isOpen, onClose, orderId, onOrderUpdate }) {
                                                         min="1"
                                                         value={editedItems[`sprzet_${item.id}`]?.ilosc || ''}
                                                         onChange={(e) => handleItemChange('sprzet', item.id, 'ilosc', e.target.value)}
-                                                        className="border rounded px-2 py-1 w-full"
+                                                        className="border rounded-sm px-2 py-1 w-full"
                                                     />
                                                 ) : (
                                                     item.ilosc
@@ -547,7 +526,7 @@ function OrderDetailModal({ isOpen, onClose, orderId, onOrderUpdate }) {
                                                         type="date"
                                                         value={editedItems[`sprzet_${item.id}`]?.data_waznosci || ''}
                                                         onChange={(e) => handleItemChange('sprzet', item.id, 'data_waznosci', e.target.value)}
-                                                        className="border rounded px-2 py-1 w-full"
+                                                        className="border rounded-sm px-2 py-1 w-full"
                                                     />
                                                 ) : (
                                                     formatDate(item.data_waznosci) || '-'
@@ -556,7 +535,7 @@ function OrderDetailModal({ isOpen, onClose, orderId, onOrderUpdate }) {
                                             <td className="border px-4 py-2">
                                                 <button
                                                     onClick={() => deleteItem('sprzet', item.id)}
-                                                    className="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-sm"
+                                                    className="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded-sm text-sm"
                                                     disabled={loading || editMode}
                                                 >
                                                     Usuń

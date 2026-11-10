@@ -1,13 +1,15 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
 
-
-@layer utilities {
-    .nth-child-2n {
-        &:nth-child(2n) {
-            @apply bg-gray-200;
-        }
+/* Tailwind v3 defaults the UI was designed with (v4 changed them). */
+@layer base {
+    *, ::after, ::before, ::backdrop, ::file-selector-button {
+        border-color: var(--color-gray-200, currentColor);
+    }
+    input::placeholder, textarea::placeholder {
+        color: var(--color-gray-400);
+    }
+    button:not(:disabled), [role="button"]:not(:disabled) {
+        cursor: pointer;
     }
 }
 
@@ -20,4 +22,28 @@ thead {
 
 input, select {
     background-color: #e7e5e5;
+}
+
+/* In the base layer so per-element utilities (rounded-*, p-*) still win. */
+@layer base {
+    /* One look for every <select>: native arrow replaced by a small chevron, comfortable padding, clear focus. */
+    select {
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%236b7280'%3E%3Cpath fill-rule='evenodd' d='M5.3 7.3a1 1 0 0 1 1.4 0L10 10.6l3.3-3.3a1 1 0 1 1 1.4 1.4l-4 4a1 1 0 0 1-1.4 0l-4-4a1 1 0 0 1 0-1.4z' clip-rule='evenodd'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 0.5rem center;
+        background-size: 1rem;
+        padding-right: 2rem !important;
+        min-height: 2.25rem;
+        border-radius: 0.375rem;
+        text-overflow: ellipsis;
+    }
+    select:focus-visible {
+        outline: 2px solid var(--color-blue-500);
+        outline-offset: 1px;
+    }
+    select:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
 }

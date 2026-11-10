@@ -120,19 +120,19 @@ const Documentation = () => {
 
                     <div className="space-y-3">
                         <div className="flex items-center p-3 bg-blue-50 rounded-lg">
-                            <div className="w-4 h-4 bg-blue-500 rounded mr-3"></div>
+                            <div className="w-4 h-4 bg-blue-500 rounded-sm mr-3"></div>
                             <span className="text-gray-700"><span className="font-semibold">Niebieskie</span> wypełnienie - przedmioty przechowywane w lodówce</span>
                         </div>
                         <div className="flex items-center p-3 bg-orange-50 rounded-lg">
-                            <div className="w-4 h-4 bg-orange-400 rounded mr-3"></div>
+                            <div className="w-4 h-4 bg-orange-400 rounded-sm mr-3"></div>
                             <span className="text-gray-700"><span className="font-semibold">Pomarańczowe</span> wypełnienie - narkotyki</span>
                         </div>
                         <div className="flex items-center p-3 bg-green-50 rounded-lg">
-                            <div className="w-4 h-4 bg-green-500 rounded mr-3"></div>
+                            <div className="w-4 h-4 bg-green-500 rounded-sm mr-3"></div>
                             <span className="text-gray-700"><span className="font-semibold">Zielone</span> wypełnienie - wyposażenie torby ratownika</span>
                         </div>
                         <div className="flex items-center p-3 bg-red-50 rounded-lg">
-                            <div className="w-4 h-4 bg-red-500 rounded mr-3"></div>
+                            <div className="w-4 h-4 bg-red-500 rounded-sm mr-3"></div>
                             <span className="text-gray-700"><span className="font-semibold text-red-500">Czerwony</span> tekst - przedmioty ze spisu podstawowego, których brak na statku</span>
                         </div>
                     </div>
@@ -1270,7 +1270,7 @@ const Documentation = () => {
                         </p>
 
                         <a
-                            className="mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors duration-200 shadow-md"
+                            className="mt-2 px-4 py-2 bg-blue-500 text-white rounded-sm hover:bg-blue-600 transition-colors duration-200 shadow-md"
                             href={"main/leki"}
                         >
                             Kliknij by przejść do arkusza
@@ -1290,7 +1290,7 @@ const Documentation = () => {
 
                         <a
                             href={"/zestawienie-lekow"}
-                            className="mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors duration-200 shadow-md">
+                            className="mt-2 px-4 py-2 bg-blue-500 text-white rounded-sm hover:bg-blue-600 transition-colors duration-200 shadow-md">
                             Kliknij by przejść do arkusza
                         </a>
                     </div>
@@ -1309,7 +1309,7 @@ const Documentation = () => {
 
                         <a
                             href={"/main/sprzet"}
-                            className="mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors duration-200 shadow-md">
+                            className="mt-2 px-4 py-2 bg-blue-500 text-white rounded-sm hover:bg-blue-600 transition-colors duration-200 shadow-md">
                             Kliknij by przejść do arkusza
                         </a>
                     </div>
@@ -1327,7 +1327,7 @@ const Documentation = () => {
 
                         <a
                             href={"/zestawienie-sprzetu"}
-                            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors duration-200 shadow-md">
+                            className="px-4 py-2 bg-blue-500 text-white rounded-sm hover:bg-blue-600 transition-colors duration-200 shadow-md">
                             Kliknij by przejść do arkusza
                         </a>
                     </div>
@@ -1344,7 +1344,7 @@ const Documentation = () => {
 
                         <a
                             href={"/utylizacja"}
-                            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors duration-200 shadow-md">
+                            className="px-4 py-2 bg-blue-500 text-white rounded-sm hover:bg-blue-600 transition-colors duration-200 shadow-md">
                             Kliknij by przejść do arkusza
                         </a>
                     </div>
@@ -1360,7 +1360,7 @@ const Documentation = () => {
 
                         <a
                             href={"/zamowienia"}
-                            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors duration-200 shadow-md">
+                            className="px-4 py-2 bg-blue-500 text-white rounded-sm hover:bg-blue-600 transition-colors duration-200 shadow-md">
                             Kliknij by przejść do arkusza
                         </a>
                     </div>
@@ -1376,7 +1376,7 @@ const Documentation = () => {
 
                         <a
                             href={"/admin"}
-                            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors duration-200 shadow-md">
+                            className="px-4 py-2 bg-blue-500 text-white rounded-sm hover:bg-blue-600 transition-colors duration-200 shadow-md">
                             Kliknij by przejść do arkusza
                         </a>
                     </div>
@@ -1388,10 +1388,10 @@ const Documentation = () => {
     return (
         <div className="flex flex-col md:flex-row min-h-screen bg-gray-50">
             {/* Sidebar navigation */}
-            <div className="w-full md:w-1/4 bg-gradient-to-b from-gray-100 to-gray-200 min-h-screen p-4 shadow-lg">
+            <div className="w-full md:w-1/4 bg-linear-to-b from-gray-100 to-gray-200 min-h-screen p-4 shadow-lg">
                 <div className="mb-6">
                     <h2 className="text-2xl font-bold mb-2 text-gray-800">📚 Dokumentacja</h2>
-                    <div className="h-1 bg-blue-500 rounded"></div>
+                    <div className="h-1 bg-blue-500 rounded-sm"></div>
                 </div>
                 <nav>
                     <ul className="space-y-2">
@@ -1401,7 +1401,7 @@ const Documentation = () => {
                                     className={`w-full text-left p-3 rounded-lg text-sm md:text-base transition-all duration-200 flex items-center ${
                                         activeSection === section.id
                                             ? 'bg-blue-500 text-white shadow-md transform scale-105'
-                                            : 'hover:bg-gray-200 hover:shadow-sm text-gray-700'
+                                            : 'hover:bg-gray-200 hover:shadow-xs text-gray-700'
                                     }`}
                                     onClick={() => setActiveSection(section.id)}
                                 >

@@ -5,7 +5,8 @@ import SiteChange from "../../components/SiteChange.jsx";
 import ConstantsEquipment from "../../constants/constantsEquipment.js";
 import {showEditButtonNoMain, showAddButton, showEditButton} from "../../constants/permisions.js";
 import toastService from '../../utils/toast.js';
-import {generateEqPDF} from "../../utils/EqPdfGenerator.js";
+// jsPDF + embedded font (~2MB) load only when a PDF is generated
+const generateEqPDF = (...args) => import("../../utils/EqPdfGenerator.js").then((m) => m.generateEqPDF(...args));
 /**
  * EquipmentList Component
  * Displays a list of medical equipment, allowing for viewing, searching, adding, editing, and deleting.
@@ -610,7 +611,7 @@ function EquipmentList() {
                             placeholder="Szukaj leków..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="border border-gray-300 rounded-md pl-10 pr-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="border border-gray-300 rounded-md pl-10 pr-4 py-2 w-full focus:outline-hidden focus:ring-2 focus:ring-blue-500"
                         />
                     </div>
                 </div>
@@ -740,7 +741,7 @@ function EquipmentList() {
                                                                 {!globalEditMode && (
                                                                     <button
                                                                         onClick={() => handleDelete(equipment.sprzet_id)}
-                                                                        className="bg-red-100 text-red-700 text-xs py-1 px-2 rounded hover:bg-red-200"
+                                                                        className="bg-red-100 text-red-700 text-xs py-1 px-2 rounded-sm hover:bg-red-200"
                                                                     >
                                                                         Usuń
                                                                     </button>

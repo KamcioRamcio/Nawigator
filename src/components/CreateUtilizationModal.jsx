@@ -61,7 +61,7 @@ function CreateUtilizationModal({ isOpen, onClose, onUtilizationCreated }) {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-xs">
             <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
                 {/* Header */}
                 <div className="bg-indigo-600 text-white p-4 rounded-t-lg">

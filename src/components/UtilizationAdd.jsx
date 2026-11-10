@@ -21,7 +21,7 @@ function UtilizationAdd({isOpen, onClose, children}) {
 
     return (
         <div className="fixed inset-0 z-50" role="dialog" aria-modal="true">
-            <div className="fixed inset-0 bg-gray-900 bg-opacity-75 transation-opacity background-blur-sm"
+            <div className="fixed inset-0 bg-gray-900/75 transition-opacity backdrop-blur-xs"
                  onClick={onClose}
             />
             <div className="fixed inset-0 overflow-y-auto">
@@ -35,7 +35,7 @@ function UtilizationAdd({isOpen, onClose, children}) {
                             </h2>
                             <button
                                 onClick={onClose}
-                                className="rounded-full p-2 hover:bg-gray-100 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="rounded-full p-2 hover:bg-gray-100 transition-colors duration-200 focus:outline-hidden focus:ring-2 focus:ring-blue-500"
                             >
                                 <span className="sr-only">Zamknij</span>
                                 <svg

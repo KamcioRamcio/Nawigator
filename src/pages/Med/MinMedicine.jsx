@@ -5,7 +5,8 @@ import SiteChange from "../../components/SiteChange.jsx";
 import ConstantsMedicine from "../../constants/constantsMedicine.js";
 import {showEditButtonNoMain, showAddButton} from "../../constants/permisions.js";
 import toastService from '../../utils/toast.js';
-import {generateMinMedicinePDF} from "../../utils/minMedicinePdfGenerator.js";
+// jsPDF + embedded font (~2MB) load only when a PDF is generated
+const generateMinMedicinePDF = (...args) => import("../../utils/minMedicinePdfGenerator.js").then((m) => m.generateMinMedicinePDF(...args));
 
 
 function MinMedicine() {
@@ -747,7 +748,7 @@ function MinMedicine() {
                                     placeholder="Szukaj leków..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="border border-gray-300 rounded-md pl-10 pr-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    className="border border-gray-300 rounded-md pl-10 pr-4 py-2 w-full focus:outline-hidden focus:ring-2 focus:ring-blue-500"
                                 />
                                 <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none"
@@ -942,7 +943,7 @@ function MinMedicine() {
                                                                                 </div>
                                                                             ) : (
                                                                                 <div
-                                                                                    className="max-h-32 overflow-y-auto break-words">{medicine.lek_min_nazwa}</div>
+                                                                                    className="max-h-32 overflow-y-auto wrap-break-word">{medicine.lek_min_nazwa}</div>
                                                                             )}
                                                                         </td>
                                                                         <td className="px-2 py-2 md:py-4 whitespace-nowrap text-sm">
@@ -982,7 +983,7 @@ function MinMedicine() {
                                                                             {!globalEditMode && (
                                                                                 <button
                                                                                     onClick={() => handleDelete(medicine.lek_min_id)}
-                                                                                    className="bg-red-100 text-red-700 text-xs py-1 px-2 rounded hover:bg-red-200 flex items-center justify-center"
+                                                                                    className="bg-red-100 text-red-700 text-xs py-1 px-2 rounded-sm hover:bg-red-200 flex items-center justify-center"
                                                                                 >
                                                                                     <span className="mr-1">🗑️</span>Usuń
                                                                                 </button>

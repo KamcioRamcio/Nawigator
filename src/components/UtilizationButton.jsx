@@ -16,7 +16,7 @@ const UtilizationButton = ({item, itemType, onUtilizationComplete}) => {
         <>
             <button
                 onClick={handleUtilize}
-                className="bg-violet-200 text-violet-600 px-[18px] py-1 text-xs rounded "
+                className="bg-violet-200 text-violet-600 px-[18px] py-1 text-xs rounded-sm "
                 title="Proszę kliknąć, aby zutylizować"
             >
                 Utylizuj
