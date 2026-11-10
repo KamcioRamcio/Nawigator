@@ -8,6 +8,7 @@ test('formatDateToEuropean converts ISO dates only', () => {
     assert.equal(formatDateToEuropean(''), '');
     assert.equal(formatDateToEuropean(null), null);
     assert.equal(formatDateToEuropean(undefined), undefined);
+    assert.equal(formatDateToEuropean('5.3.2026'), '05-03-2026');
     assert.equal(formatDateToEuropean('garbage'), 'garbage');
 });
 

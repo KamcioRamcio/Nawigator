@@ -22,6 +22,9 @@ test('create order: defaults (status Nowe, today DD-MM-YYYY) and validation', as
     assert.equal(row.status, 'Nowe');
     assert.equal(row.data_zamowienia, todayEuropean());
     await api.post('/api/zamowienia').send({nazwa: '  '}).expect(400);
+    // the frontend sends toLocaleDateString('pl-PL')
+    const {body: dotted} = await api.post('/api/zamowienia').send({nazwa: 'Kropki', data_zamowienia: '7.11.2026'}).expect(201);
+    assert.equal((await db.get('SELECT data_zamowienia AS d FROM Zamowienia WHERE id = ?', [dotted.id])).d, '07-11-2026');
 });
 
 test('list is sorted by date (newest first) with item counts', async () => {

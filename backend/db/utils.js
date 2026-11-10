@@ -1,11 +1,14 @@
 // backend/db/utils.js
 // Helpers shared by query modules. Dates are stored as DD-MM-YYYY text.
 
-/** Convert YYYY-MM-DD (HTML date input) to DD-MM-YYYY; other values are returned unchanged. */
+/** YYYY-MM-DD (HTML date input) or D.M.YYYY (toLocaleDateString('pl-PL')) -> DD-MM-YYYY; other values unchanged. */
 export function formatDateToEuropean(date) {
     if (typeof date !== 'string') return date;
     const iso = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
-    return iso ? `${iso[3]}-${iso[2]}-${iso[1]}` : date;
+    if (iso) return `${iso[3]}-${iso[2]}-${iso[1]}`;
+    const dotted = /^(\d{1,2})\.(\d{1,2})\.(\d{4})$/.exec(date);
+    if (dotted) return `${dotted[1].padStart(2, '0')}-${dotted[2].padStart(2, '0')}-${dotted[3]}`;
+    return date;
 }
 
 /** Today's date as DD-MM-YYYY (server local time). */
