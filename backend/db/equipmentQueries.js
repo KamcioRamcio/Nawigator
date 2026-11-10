@@ -6,43 +6,39 @@ import {formatDateToEuropean} from './utils.js';
 export async function addEquipment(equipmentData) {
     const db = await getDb();
 
-    try {
-        equipmentData.eq_data = formatDateToEuropean(equipmentData.eq_data);
-        const result = await db.run(
-            `INSERT INTO Sprzet (
-                nazwa,
-                ilosc_wymagana,
-                ilosc_aktualna,
-                data_waznosci,
-                status,
-                termin,
-                ilosc_termin,
-                kto_zmienil,
-                id_kategorii,
-                id_pod_kategorii,
-                na_statku,
-                torba_ratownika
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [
-                equipmentData.eq_nazwa,
-                equipmentData.eq_ilosc_wymagana,
-                equipmentData.eq_ilosc_aktualna,
-                equipmentData.eq_data,
-                equipmentData.eq_status,
-                equipmentData.eq_termin,
-                equipmentData.eq_ilosc_termin,
-                equipmentData.kto_zmienil || null,
-                equipmentData.eq_kategoria || null,
-                equipmentData.eq_podkategoria || null,
-                equipmentData.eq_na_statku === "true" ? 1 : 0,
-                equipmentData.eq_torba_ratownika === "true" ? 1 : 0
-            ]
-        );
+    equipmentData.eq_data = formatDateToEuropean(equipmentData.eq_data);
+    const result = await db.run(
+        `INSERT INTO Sprzet (
+            nazwa,
+            ilosc_wymagana,
+            ilosc_aktualna,
+            data_waznosci,
+            status,
+            termin,
+            ilosc_termin,
+            kto_zmienil,
+            id_kategorii,
+            id_pod_kategorii,
+            na_statku,
+            torba_ratownika
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+            equipmentData.eq_nazwa,
+            equipmentData.eq_ilosc_wymagana,
+            equipmentData.eq_ilosc_aktualna,
+            equipmentData.eq_data,
+            equipmentData.eq_status,
+            equipmentData.eq_termin,
+            equipmentData.eq_ilosc_termin,
+            equipmentData.kto_zmienil || null,
+            equipmentData.eq_kategoria || null,
+            equipmentData.eq_podkategoria || null,
+            equipmentData.eq_na_statku === "true" ? 1 : 0,
+            equipmentData.eq_torba_ratownika === "true" ? 1 : 0
+        ]
+    );
 
-        return result.lastID;
-    } catch (error) {
-        throw error;
-    }
+    return result.lastID;
 }
 
 export async function fetchEquipmentByCategory() {
@@ -142,68 +138,61 @@ export async function fetchEquipmentsByDate(date) {
 export async function updateEquipment(id, equipmentData) {
     const db = await getDb();
 
-    try {
-        // First get the current data
-        equipmentData.sprzet_data_waznosci = formatDateToEuropean(equipmentData.sprzet_data_waznosci);
+    // First get the current data
+    equipmentData.sprzet_data_waznosci = formatDateToEuropean(equipmentData.sprzet_data_waznosci);
 
-        const currentEquipment = await db.get('SELECT * FROM Sprzet WHERE id = ?', [id]);
+    const currentEquipment = await db.get('SELECT * FROM Sprzet WHERE id = ?', [id]);
+    if (!currentEquipment) return 0;
 
-        // Handle boolean values - preserve existing ones unless explicitly changed
-        const na_statku = equipmentData.sprzet_na_statku !== undefined
-            ? (equipmentData.sprzet_na_statku === true || equipmentData.sprzet_na_statku === "true" ? 1 : 0)
-            : currentEquipment.na_statku;
+    // Handle boolean values - preserve existing ones unless explicitly changed
+    const na_statku = equipmentData.sprzet_na_statku !== undefined
+        ? (equipmentData.sprzet_na_statku === true || equipmentData.sprzet_na_statku === "true" ? 1 : 0)
+        : currentEquipment.na_statku;
 
-        const torba_ratownika = equipmentData.sprzet_torba_ratownika !== undefined
-            ? (equipmentData.sprzet_torba_ratownika === true || equipmentData.sprzet_torba_ratownika === "true" ? 1 : 0)
-            : currentEquipment.torba_ratownika;
+    const torba_ratownika = equipmentData.sprzet_torba_ratownika !== undefined
+        ? (equipmentData.sprzet_torba_ratownika === true || equipmentData.sprzet_torba_ratownika === "true" ? 1 : 0)
+        : currentEquipment.torba_ratownika;
 
-        await db.run(
-            `UPDATE Sprzet SET
-                               nazwa = ?,
-                               ilosc_wymagana = ?,
-                               ilosc_aktualna = ?,
-                               data_waznosci = ?,
-                               status = ?,
-                               termin = ?,
-                               ilosc_termin = ?,
-                               kto_zmienil = ?,
-                               id_kategorii = ?,
-                               id_pod_kategorii = ?,
-                               na_statku = ?,
-                               torba_ratownika = ?
-             WHERE id = ?`,
-            [
-                equipmentData.sprzet_nazwa ,
-                equipmentData.sprzet_ilosc_wymagana ,
-                equipmentData.sprzet_ilosc_aktualna ,
-                equipmentData.sprzet_data_waznosci ,
-                equipmentData.sprzet_status ,
-                equipmentData.sprzet_termin,
-                equipmentData.sprzet_ilosc_termin,
-                equipmentData.sprzet_kto_zmienil,
-                equipmentData.id_kategorii !== undefined ? equipmentData.id_kategorii : currentEquipment.id_kategorii,
-                equipmentData.id_pod_kategorii !== undefined ? equipmentData.id_pod_kategorii : currentEquipment.id_pod_kategorii,
-                na_statku,
-                torba_ratownika,
-                id
-            ]
-        );
+    await db.run(
+        `UPDATE Sprzet SET
+                           nazwa = ?,
+                           ilosc_wymagana = ?,
+                           ilosc_aktualna = ?,
+                           data_waznosci = ?,
+                           status = ?,
+                           termin = ?,
+                           ilosc_termin = ?,
+                           kto_zmienil = ?,
+                           id_kategorii = ?,
+                           id_pod_kategorii = ?,
+                           na_statku = ?,
+                           torba_ratownika = ?
+         WHERE id = ?`,
+        [
+            equipmentData.sprzet_nazwa ,
+            equipmentData.sprzet_ilosc_wymagana ,
+            equipmentData.sprzet_ilosc_aktualna ,
+            equipmentData.sprzet_data_waznosci ,
+            equipmentData.sprzet_status ,
+            equipmentData.sprzet_termin,
+            equipmentData.sprzet_ilosc_termin,
+            equipmentData.sprzet_kto_zmienil,
+            equipmentData.id_kategorii !== undefined ? equipmentData.id_kategorii : currentEquipment.id_kategorii,
+            equipmentData.id_pod_kategorii !== undefined ? equipmentData.id_pod_kategorii : currentEquipment.id_pod_kategorii,
+            na_statku,
+            torba_ratownika,
+            id
+        ]
+    );
 
-        return id;
-    } catch (error) {
-        throw error;
-    }
+    return 1;
 }
 
 export async function deleteEquipment(id) {
     const db = await getDb();
 
-    try {
-        await db.run('DELETE FROM Sprzet WHERE id = ?', [id]);
-        return {message: 'Equipment deleted successfully'};
-    } catch (error) {
-        throw error;
-    }
+    const result = await db.run('DELETE FROM Sprzet WHERE id = ?', [id]);
+    return result.changes;
 }
 
 // Organized Equipment functions
@@ -217,37 +206,38 @@ export async function addOrganizedEquipment(data) {
     return result.lastID;
 }
 
+/** Fields not sent keep their value (0 and '' are valid values). Returns number of updated rows. */
 export async function updateOrganizedEquipment(id, data) {
     const db = await getDb();
 
-    const currentEquipment = await db.get(
-        'SELECT * FROM Sprzet_zgrany_spis WHERE id = ?',
-        [id]
-    );
+    const current = await db.get('SELECT * FROM Sprzet_zgrany_spis WHERE id = ?', [id]);
+    if (!current) return 0;
 
-    const updateData = {
-        nazwa_sprzetu: data.nazwa_sprzetu || currentEquipment.nazwa_sprzetu,
-        data_waznosci: data.data_waznosci || currentEquipment.data_waznosci,
-        ilosc: data.ilosc || currentEquipment.ilosc,
-        na_statku_spis_podstawowy: data.na_statku !== undefined ? data.na_statku : currentEquipment.na_statku,
-        kto_zmienil: data.kto_zmienil || currentEquipment.kto_zmienil,
-
-        id_kategorii: data.id_kategorii !== undefined ? data.id_kategorii : currentEquipment.id_kategorii,
-        id_pod_kategorii: data.id_pod_kategorii !== undefined ? data.id_pod_kategorii : currentEquipment.id_pod_kategorii
-    };
+    const pick = (key, column = key) => (data[key] !== undefined ? data[key] : current[column]);
 
     await db.run(
-        'UPDATE Sprzet_zgrany_spis SET nazwa_sprzetu = ?, data_waznosci = ?, ilosc = ?, na_statku_spis_podstawowy = ?, kto_zmienil = ?, id_kategorii = ?, id_pod_kategorii = ? WHERE id = ?',
-        [updateData.nazwa_sprzetu, updateData.data_waznosci, updateData.ilosc, updateData.na_statku_spis_podstawowy, updateData.kto_zmienil, updateData.id_kategorii, updateData.id_pod_kategorii, id]
+        `UPDATE Sprzet_zgrany_spis
+         SET nazwa_sprzetu = ?, data_waznosci = ?, ilosc = ?, na_statku_spis_podstawowy = ?, kto_zmienil = ?,
+             id_kategorii = ?, id_pod_kategorii = ?
+         WHERE id = ?`,
+        [
+            data.nazwa_sprzetu || current.nazwa_sprzetu,
+            pick('data_waznosci'),
+            pick('ilosc'),
+            pick('na_statku', 'na_statku_spis_podstawowy'),
+            pick('kto_zmienil'),
+            pick('id_kategorii'),
+            pick('id_pod_kategorii'),
+            id
+        ]
     );
-
-    return id;
+    return 1;
 }
 
 export async function deleteOrganizedEquipment(id) {
     const db = await getDb();
-    await db.run('DELETE FROM Sprzet_zgrany_spis WHERE id = ?', [id]);
-    return {message: 'Organized equipment deleted successfully'};
+    const result = await db.run('DELETE FROM Sprzet_zgrany_spis WHERE id = ?', [id]);
+    return result.changes;
 }
 
 export async function fetchOrganizedEquipmentByCategory() {

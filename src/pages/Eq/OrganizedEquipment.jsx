@@ -298,7 +298,7 @@ function OrganizedEquipment() {
      */
     const handleAddEquipment = async () => {
         try {
-            const response = await fetch(apiUrl + "/sprzet-zgrany-all", {
+            const response = await fetch(apiUrl + "sprzet-zgrany-all", {
                 method: "POST", headers: {
                     "Content-Type": "application/json",
                 }, body: JSON.stringify(newEquipment)

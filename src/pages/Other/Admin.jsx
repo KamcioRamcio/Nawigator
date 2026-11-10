@@ -222,7 +222,8 @@ function Admin() {
             const downloadUrl = window.URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = downloadUrl;
-            link.download = `database_export_${currentDate.toISOString().slice(0, 10)}__${currentDate.getHours()}:${currentDate.getMinutes()}.db`;
+            const pad = (n) => String(n).padStart(2, '0');
+            link.download = `database_export_${currentDate.getFullYear()}-${pad(currentDate.getMonth() + 1)}-${pad(currentDate.getDate())}_${pad(currentDate.getHours())}-${pad(currentDate.getMinutes())}.db`;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -265,12 +266,17 @@ function Admin() {
                 body: formData
             });
 
-            if (!response.ok) throw new Error('Network response was not ok');
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || errorData.message || `Błąd serwera (${response.status})`);
+            }
             toastService.success("Baza danych zaimportowana pomyślnie!");
             fetchUsers(); // Refresh users after import
         } catch (error) {
             console.error('Error importing database:', error);
             toastService.error(`Błąd podczas importu bazy danych: ${error.message}`);
+        } finally {
+            e.target.value = null; // allow picking the same file again
         }
     };
 
@@ -477,7 +483,7 @@ function Admin() {
                                             />
                                         ) : (
                                             <div className="text-sm text-gray-500">
-                                                {user.password ? "••••••••" : "Brak hasła"}
+                                                {user.has_password ? "••••••••" : "Brak hasła"}
                                             </div>
                                         )}
                                     </td>

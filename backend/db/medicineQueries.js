@@ -6,98 +6,90 @@ import {formatDateToEuropean} from './utils.js';
 export async function addMedicine(medicineData) {
     const db = await getDb();
 
-    try {
-        medicineData.lek_data = formatDateToEuropean(medicineData.lek_data);
-        // Insert into consolidated Leki table
-        const result = await db.run(
-            `INSERT INTO Leki (
-                nazwa_leku,
-                ilosc_wstepna,
-                opakowanie,
-                data_waznosci,
-                status_leku,
-                ilosc_minimalna,
-                rozchod_ilosc,
-                status,
-                important_status,
-                kto_zmienil,
-                id_kategorii,
-                id_pod_kategorii,
-                id_pod_pod_kategorii,
-                przechowywanie,
-                na_statku_spis_podstawowy
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [
-                medicineData.lek_nazwa,
-                medicineData.lek_ilosc,
-                medicineData.lek_opakowanie,
-                medicineData.lek_data,
-                medicineData.lek_status,
-                medicineData.lek_ilosc_minimalna,
-                medicineData.rozchod_ilosc || 0,
-                medicineData.stan_magazynowy_status || 'W porządku',
-                medicineData.stan_magazynowy_important_status || false,
-                medicineData.rozchod_kto_zmienil || null,
-                medicineData.lek_kategoria || null,
-                medicineData.lek_podkategoria || null,
-                medicineData.lek_podpodkategoria || null,
-                medicineData.lek_przechowywanie || null,
-                medicineData.lek_na_statku_spis_podstawowy || false
-            ]
-        );
+    medicineData.lek_data = formatDateToEuropean(medicineData.lek_data);
+    // Insert into consolidated Leki table
+    const result = await db.run(
+        `INSERT INTO Leki (
+            nazwa_leku,
+            ilosc_wstepna,
+            opakowanie,
+            data_waznosci,
+            status_leku,
+            ilosc_minimalna,
+            rozchod_ilosc,
+            status,
+            important_status,
+            kto_zmienil,
+            id_kategorii,
+            id_pod_kategorii,
+            id_pod_pod_kategorii,
+            przechowywanie,
+            na_statku_spis_podstawowy
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+            medicineData.lek_nazwa,
+            medicineData.lek_ilosc,
+            medicineData.lek_opakowanie,
+            medicineData.lek_data,
+            medicineData.lek_status,
+            medicineData.lek_ilosc_minimalna,
+            medicineData.rozchod_ilosc || 0,
+            medicineData.stan_magazynowy_status || 'W porządku',
+            medicineData.stan_magazynowy_important_status || false,
+            medicineData.rozchod_kto_zmienil || null,
+            medicineData.lek_kategoria || null,
+            medicineData.lek_podkategoria || null,
+            medicineData.lek_podpodkategoria || null,
+            medicineData.lek_przechowywanie || null,
+            medicineData.lek_na_statku_spis_podstawowy || false
+        ]
+    );
 
-        return result.lastID;
-    } catch (error) {
-        throw error;
-    }
+    return result.lastID;
 }
 
 export async function updateMedicine(id, medicineData) {
     const db = await getDb();
 
-    try {
-        medicineData.lek_data = formatDateToEuropean(medicineData.lek_data);
-        await db.run(
-            `UPDATE Leki SET
-                             nazwa_leku = ?,
-                             ilosc_wstepna = ?,
-                             opakowanie = ?,
-                             data_waznosci = ?,
-                             status_leku = ?,
-                             ilosc_minimalna = ?,
-                             rozchod_ilosc = ?,
-                             status = ?,
-                             important_status = ?,
-                             kto_zmienil = ?,
-                             id_kategorii = ?,
-                             id_pod_kategorii = ?,
-                             id_pod_pod_kategorii = ?,
-                             przechowywanie = ?,
-                             na_statku_spis_podstawowy = ?
-             WHERE id = ?`,
-            [
-                medicineData.lek_nazwa,
-                medicineData.lek_ilosc,
-                medicineData.lek_opakowanie,
-                medicineData.lek_data,
-                medicineData.lek_status,
-                medicineData.lek_ilosc_minimalna,
-                medicineData.rozchod_ilosc || 0,
-                medicineData.stan_magazynowy_status || 'W porządku',
-                medicineData.stan_magazynowy_important_status || false,
-                medicineData.rozchod_kto_zmienil || null,
-                medicineData.id_kategorii || null,
-                medicineData.id_pod_kategorii || null,
-                medicineData.id_pod_pod_kategorii || null,
-                medicineData.lek_przechowywanie || null,
-                medicineData.lek_na_statku_spis_podstawowy || false,
-                id
-            ]
-        );
-        return id;
-    } catch (error) {
-        throw error;
-    }
+    medicineData.lek_data = formatDateToEuropean(medicineData.lek_data);
+    const result = await db.run(
+        `UPDATE Leki SET
+                         nazwa_leku = ?,
+                         ilosc_wstepna = ?,
+                         opakowanie = ?,
+                         data_waznosci = ?,
+                         status_leku = ?,
+                         ilosc_minimalna = ?,
+                         rozchod_ilosc = ?,
+                         status = ?,
+                         important_status = ?,
+                         kto_zmienil = ?,
+                         id_kategorii = ?,
+                         id_pod_kategorii = ?,
+                         id_pod_pod_kategorii = ?,
+                         przechowywanie = ?,
+                         na_statku_spis_podstawowy = ?
+         WHERE id = ?`,
+        [
+            medicineData.lek_nazwa,
+            medicineData.lek_ilosc,
+            medicineData.lek_opakowanie,
+            medicineData.lek_data,
+            medicineData.lek_status,
+            medicineData.lek_ilosc_minimalna,
+            medicineData.rozchod_ilosc || 0,
+            medicineData.stan_magazynowy_status || 'W porządku',
+            medicineData.stan_magazynowy_important_status || false,
+            medicineData.rozchod_kto_zmienil || null,
+            medicineData.id_kategorii || null,
+            medicineData.id_pod_kategorii || null,
+            medicineData.id_pod_pod_kategorii || null,
+            medicineData.lek_przechowywanie || null,
+            medicineData.lek_na_statku_spis_podstawowy || false,
+            id
+        ]
+    );
+    return result.changes;
 }
 
 export async function fetchMedicinesByCategory() {
@@ -260,12 +252,8 @@ export async function fetchMedicinesByDate(date) {
 export async function deleteMedicine(id) {
     const db = await getDb();
 
-    try {
-        await db.run('DELETE FROM Leki WHERE id = ?', [id]);
-        return {message: 'Medicine deleted successfully'};
-    } catch (error) {
-        throw error;
-    }
+    const result = await db.run('DELETE FROM Leki WHERE id = ?', [id]);
+    return result.changes;
 }
 
 // Min medicines functions
@@ -280,57 +268,40 @@ export async function addMinMedicine(data) {
     return result.lastID;
 }
 
+/** Fields not sent keep their value; '' for a category id clears it. Returns number of updated rows. */
 export async function updateMinMedicine(id, data) {
     const db = await getDb();
 
-    const currentMedicine = await db.get('SELECT * FROM Leki_spis_min WHERE id = ?', [id]);
+    const current = await db.get('SELECT * FROM Leki_spis_min WHERE id = ?', [id]);
+    if (!current) return 0;
 
-    const processedData = {
-        nazwa_leku: data.nazwa_leku || currentMedicine.nazwa_leku,
-        pakowanie: data.pakowanie || currentMedicine.pakowanie,
-        w_opakowaniu: data.w_opakowaniu || currentMedicine.w_opakowaniu,
-        przechowywanie: data.przechowywanie !== undefined ? data.przechowywanie : currentMedicine.przechowywanie,
-        na_statku_spis_podstawowy: data.na_statku_spis_podstawowy !== undefined ?
-            data.na_statku_spis_podstawowy : currentMedicine.na_statku_spis_podstawowy,
-
-        id_kategorii: 'id_kategorii' in data ?
-            (data.id_kategorii === "" ? null : data.id_kategorii) :
-            currentMedicine.id_kategorii,
-
-        id_pod_kategorii: 'id_pod_kategorii' in data ?
-            (data.id_pod_kategorii === "" ? null : data.id_pod_kategorii) :
-            currentMedicine.id_pod_kategorii,
-
-        id_pod_pod_kategorii: 'id_pod_pod_kategorii' in data ?
-            (data.id_pod_pod_kategorii === "" ? null : data.id_pod_pod_kategorii) :
-            currentMedicine.id_pod_pod_kategorii
-    };
-
-    console.log('Update data:', processedData);
+    const pick = (key) => (data[key] !== undefined ? data[key] : current[key]);
+    const pickId = (key) => (data[key] !== undefined ? (data[key] === '' ? null : data[key]) : current[key]);
 
     await db.run(
-        'UPDATE Leki_spis_min SET nazwa_leku = ?, pakowanie = ?, w_opakowaniu = ?, przechowywanie = ?, ' +
-        'na_statku_spis_podstawowy = ?, id_kategorii = ?, id_pod_kategorii = ?, id_pod_pod_kategorii = ? WHERE id = ?',
+        `UPDATE Leki_spis_min
+         SET nazwa_leku = ?, pakowanie = ?, w_opakowaniu = ?, przechowywanie = ?, na_statku_spis_podstawowy = ?,
+             id_kategorii = ?, id_pod_kategorii = ?, id_pod_pod_kategorii = ?
+         WHERE id = ?`,
         [
-            processedData.nazwa_leku,
-            processedData.pakowanie,
-            processedData.w_opakowaniu,
-            processedData.przechowywanie,
-            processedData.na_statku_spis_podstawowy,
-            processedData.id_kategorii,
-            processedData.id_pod_kategorii,
-            processedData.id_pod_pod_kategorii,
+            data.nazwa_leku || current.nazwa_leku,
+            pick('pakowanie'),
+            pick('w_opakowaniu'),
+            pick('przechowywanie'),
+            pick('na_statku_spis_podstawowy'),
+            pickId('id_kategorii'),
+            pickId('id_pod_kategorii'),
+            pickId('id_pod_pod_kategorii'),
             id
         ]
     );
-
-    return id;
+    return 1;
 }
 
 export async function deleteMinMedicine(id) {
     const db = await getDb();
-    await db.run('DELETE FROM Leki_spis_min WHERE id = ?', [id]);
-    return {message: 'Min medicine deleted successfully'};
+    const result = await db.run('DELETE FROM Leki_spis_min WHERE id = ?', [id]);
+    return result.changes;
 }
 
 export async function fetchMinMedicinesByCategory() {

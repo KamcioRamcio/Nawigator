@@ -1,6 +1,6 @@
-// backend/routes/utylizacja.js
+// backend/routes/utylizacja.js  (mounted at /api/utylizacja)
 import express from 'express';
-import { body, validationResult } from 'express-validator';
+import {body} from 'express-validator';
 import {
     createUtilization,
     getAllUtilizations,
@@ -15,195 +15,71 @@ import {
     removeEquipmentFromUtilization,
     deleteUtilizationComplete
 } from '../db/queries.js';
+import {validate, idParam, affected} from './validate.js';
 
 const router = express.Router();
 
-router.get('/', async (req, res, next) => {
-    try {
-        const utilizations = await getAllUtilizations();
-        res.json(utilizations);
-    } catch (error) {
-        next(error);
-    }
+const NOT_FOUND = 'Utylizacja nie została znaleziona';
+const quantity = body('ilosc').isFloat({min: 0}).withMessage('Ilość musi być liczbą nieujemną');
+const itemRules = [
+    body('id_utylizacji').notEmpty().withMessage('ID utylizacji jest wymagane'),
+    quantity,
+    body('powod_utylizacji').notEmpty().withMessage('Powód utylizacji jest wymagany'),
+];
+const name = body('nazwa').trim().notEmpty().withMessage('Nazwa utylizacji jest wymagana');
+
+router.get('/', async (req, res) => {
+    res.json(await getAllUtilizations());
 });
 
-// Get utilization by ID with items
-router.get('/:id', async (req, res, next) => {
-    try {
-        const { id } = req.params;
-        const utilization = await getUtilizationById(id);
-
-        if (!utilization) {
-            return res.status(404).json({ error: 'Utylizacja nie została znaleziona' });
-        }
-
-        res.json(utilization);
-    } catch (error) {
-        next(error);
-    }
+router.post('/', validate(name), async (req, res) => {
+    const id = await createUtilization(req.body);
+    res.status(201).json({id, message: 'Utylizacja utworzona pomyślnie'});
 });
 
-// Create a new utilization
-router.post('/', [
-    body('nazwa').notEmpty().withMessage('Nazwa utylizacji jest wymagana')
-], async (req, res, next) => {
-    try {
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
-        }
-
-        const utilizationId = await createUtilization(req.body);
-        res.status(201).json({ id: utilizationId, message: 'Utylizacja utworzona pomyślnie' });
-    } catch (error) {
-        next(error);
-    }
+// Item routes come before "/:id" routes; idParam (integer) also keeps "lek"/"sprzet" out of "/:id".
+router.post('/lek', validate(...itemRules), async (req, res) => {
+    const id = await addMedicineToUtilization(req.body);
+    res.status(201).json({id, message: 'Lek dodany do utylizacji pomyślnie'});
 });
 
-// Update utilization status
-router.put('/:id/status', [
-    body('status').notEmpty().withMessage('Status utylizacji jest wymagany')
-], async (req, res, next) => {
-    try {
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
-        }
-
-        const { id } = req.params;
-        const { status } = req.body;
-
-        await updateUtilizationStatus(id, status);
-        res.json({ message: 'Status utylizacji zaktualizowany pomyślnie' });
-    } catch (error) {
-        next(error);
-    }
+router.post('/sprzet', validate(...itemRules), async (req, res) => {
+    const id = await addEquipmentToUtilization(req.body);
+    res.status(201).json({id, message: 'Sprzęt dodany do utylizacji pomyślnie'});
 });
 
-// Update utilization details
-router.put('/:id/details', [
-    body('nazwa').notEmpty().withMessage('Nazwa utylizacji jest wymagana')
-], async (req, res, next) => {
-    try {
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
-        }
-
-        const { id } = req.params;
-        await updateUtilizationDetails(id, req.body);
-        res.json({ message: 'Szczegóły utylizacji zaktualizowane pomyślnie' });
-    } catch (error) {
-        next(error);
-    }
+router.put('/lek/:id', validate(idParam, quantity), async (req, res) => {
+    affected(res, await updateMedicineInUtilization(req.params.id, req.body), 'Lek w utylizacji zaktualizowany pomyślnie');
 });
 
-// Add medicine to utilization
-router.post('/lek', [
-    body('id_utylizacji').notEmpty().withMessage('ID utylizacji jest wymagana'),
-    body('ilosc').notEmpty().isNumeric().withMessage('Ilość musi być liczbą'),
-    body('powod_utylizacji').notEmpty().withMessage('Powód utylizacji jest wymagany')
-], async (req, res, next) => {
-    try {
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
-        }
-
-        const itemId = await addMedicineToUtilization(req.body);
-        res.status(201).json({ id: itemId, message: 'Lek dodany do utylizacji pomyślnie' });
-    } catch (error) {
-        next(error);
-    }
+router.put('/sprzet/:id', validate(idParam, quantity), async (req, res) => {
+    affected(res, await updateEquipmentInUtilization(req.params.id, req.body), 'Sprzęt w utylizacji zaktualizowany pomyślnie');
 });
 
-// Add equipment to utilization
-router.post('/sprzet', [
-    body('id_utylizacji').notEmpty().withMessage('ID utylizacji jest wymagana'),
-    body('ilosc').notEmpty().isNumeric().withMessage('Ilość musi być liczbą'),
-    body('powod_utylizacji').notEmpty().withMessage('Powód utylizacji jest wymagany')
-], async (req, res, next) => {
-    try {
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
-        }
-
-        const itemId = await addEquipmentToUtilization(req.body);
-        res.status(201).json({ id: itemId, message: 'Sprzęt dodany do utylizacji pomyślnie' });
-    } catch (error) {
-        next(error);
-    }
+router.delete('/lek/:id', validate(idParam), async (req, res) => {
+    affected(res, await removeMedicineFromUtilization(req.params.id), 'Lek usunięty z utylizacji pomyślnie');
 });
 
-// Update medicine in utilization
-router.put('/lek/:id', [
-    body('ilosc').isNumeric().withMessage('Ilość musi być liczbą')
-], async (req, res, next) => {
-    try {
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
-        }
-
-        const { id } = req.params;
-        await updateMedicineInUtilization(id, req.body);
-        res.json({ message: 'Lek w utylizacji zaktualizowany pomyślnie' });
-    } catch (error) {
-        next(error);
-    }
+router.delete('/sprzet/:id', validate(idParam), async (req, res) => {
+    affected(res, await removeEquipmentFromUtilization(req.params.id), 'Sprzęt usunięty z utylizacji pomyślnie');
 });
 
-// Update equipment in utilization
-router.put('/sprzet/:id', [
-    body('ilosc').isNumeric().withMessage('Ilość musi być liczbą')
-], async (req, res, next) => {
-    try {
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
-        }
-
-        const { id } = req.params;
-        await updateEquipmentInUtilization(id, req.body);
-        res.json({ message: 'Sprzęt w utylizacji zaktualizowany pomyślnie' });
-    } catch (error) {
-        next(error);
-    }
+router.get('/:id', validate(idParam), async (req, res) => {
+    const utilization = await getUtilizationById(req.params.id);
+    if (!utilization) return res.status(404).json({error: NOT_FOUND});
+    res.json(utilization);
 });
 
-// Remove medicine from utilization
-router.delete('/lek/:id', async (req, res, next) => {
-    try {
-        const { id } = req.params;
-        await removeMedicineFromUtilization(id);
-        res.json({ message: 'Lek usunięty z utylizacji pomyślnie' });
-    } catch (error) {
-        next(error);
-    }
+router.put('/:id/status', validate(idParam, body('status').notEmpty().withMessage('Status utylizacji jest wymagany')), async (req, res) => {
+    affected(res, await updateUtilizationStatus(req.params.id, req.body.status), 'Status utylizacji zaktualizowany pomyślnie', NOT_FOUND);
 });
 
-// Remove equipment from utilization
-router.delete('/sprzet/:id', async (req, res, next) => {
-    try {
-        const { id } = req.params;
-        await removeEquipmentFromUtilization(id);
-        res.json({ message: 'Sprzęt usunięty z utylizacji pomyślnie' });
-    } catch (error) {
-        next(error);
-    }
+router.put('/:id/details', validate(idParam, name), async (req, res) => {
+    affected(res, await updateUtilizationDetails(req.params.id, req.body), 'Szczegóły utylizacji zaktualizowane pomyślnie', NOT_FOUND);
 });
 
-// Delete a utilization completely
-router.delete('/:id', async (req, res, next) => {
-    try {
-        const { id } = req.params;
-        await deleteUtilizationComplete(id);
-        res.json({ message: 'Utylizacja usunięta pomyślnie' });
-    } catch (error) {
-        next(error);
-    }
+router.delete('/:id', validate(idParam), async (req, res) => {
+    affected(res, await deleteUtilizationComplete(req.params.id), 'Utylizacja usunięta pomyślnie', NOT_FOUND);
 });
-
 
 export default router;

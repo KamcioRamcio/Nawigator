@@ -1,107 +1,121 @@
 // backend/utils/helpers.js
+// Backups, export and import of the SQLite database file.
 import fs from 'fs/promises';
 import path from 'path';
-import os from 'os';
-import { getDb, closeDb } from '../db/index.js';
-import { updateExpiryStatusTrigger } from '../db/schema.js';
+import sqlite3 from 'sqlite3';
+import {open} from 'sqlite';
+import {getDb, closeDb, getDbPath} from '../db/index.js';
+import {migrate, refreshStatuses} from '../db/schema.js';
 
-const DB_PATH = 'db.sqlite3';
-const BACKUP_PATH = './protected/db_backup.sqlite3';
-const EXPORT_PATH = './temp';
+const SQLITE_HEADER = 'SQLite format 3\0';
+const DAILY_BACKUPS_KEPT = 7;
+const PRE_IMPORT_BACKUPS_KEPT = 5;
 
-export async function createBackup() {
+export function getBackupDir() {
+    return path.resolve(process.env.BACKUP_DIR || './backups');
+}
+
+// Local time (the container gets TZ from the host), e.g. 20260110_000500.
+const pad = (n) => String(n).padStart(2, '0');
+const stamp = (d = new Date()) =>
+    `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
+
+/** Consistent copy of the live database (VACUUM INTO never captures a half-written page). */
+export async function snapshotDatabase(targetPath) {
+    const db = await getDb();
+    await fs.mkdir(path.dirname(targetPath), {recursive: true});
+    const tmp = `${targetPath}.tmp`;
+    await fs.rm(tmp, {force: true});
+    await db.run('VACUUM INTO ?', [tmp]);
+    await fs.rename(tmp, targetPath);
+    return targetPath;
+}
+
+async function keepNewest(dir, prefix, count) {
+    const files = (await fs.readdir(dir)).filter(f => f.startsWith(prefix) && f.endsWith('.sqlite3')).sort();
+    for (const file of files.slice(0, Math.max(0, files.length - count))) {
+        await fs.unlink(path.join(dir, file));
+    }
+}
+
+/** Rolling copy refreshed after every change (debounced by backupMiddleware). */
+export function createBackup() {
+    return snapshotDatabase(path.join(getBackupDir(), 'db_backup.sqlite3'));
+}
+
+/** One file per day, last 7 kept. */
+export async function createDailyBackup(now = new Date()) {
+    const day = stamp(now).slice(0, 8);
+    await snapshotDatabase(path.join(getBackupDir(), `db_backup_${day}.sqlite3`));
+    await keepNewest(getBackupDir(), 'db_backup_2', DAILY_BACKUPS_KEPT);
+}
+
+/** Nightly job: statuses depend on today's date, then back up the result. */
+export async function runNightlyJobs() {
     try {
-        await fs.mkdir('./protected', { recursive: true });
-        await fs.copyFile(DB_PATH, BACKUP_PATH);
-        console.log('Backup created successfully');
+        await refreshStatuses();
+        await createDailyBackup();
     } catch (error) {
-        console.error('Failed to create backup:', error.message);
-        throw error;
+        console.error('Nightly job failed:', error);
     }
 }
 
 export async function exportDatabase() {
-    try {
-        await fs.mkdir(EXPORT_PATH, { recursive: true });
-        const exportFilePath = path.join(EXPORT_PATH, `export_${Date.now()}.db`);
+    return snapshotDatabase(path.join(getBackupDir(), 'tmp', `export_${stamp()}.sqlite3`));
+}
 
-        await fs.copyFile(DB_PATH, exportFilePath);
-        return exportFilePath;
+/** Throws an Error with statusCode 400 if the file is not a usable Nawigator database. */
+export async function validateDatabaseFile(filePath) {
+    const invalid = (message) => Object.assign(new Error(message), {statusCode: 400});
+
+    const handle = await fs.open(filePath, 'r');
+    const header = Buffer.alloc(16);
+    await handle.read(header, 0, 16, 0);
+    await handle.close();
+    if (header.toString('latin1') !== SQLITE_HEADER) throw invalid('Plik nie jest bazą danych SQLite');
+
+    let db;
+    try {
+        db = await open({filename: filePath, driver: sqlite3.Database, mode: sqlite3.OPEN_READONLY});
+        const {integrity_check} = await db.get('PRAGMA integrity_check');
+        if (integrity_check !== 'ok') throw invalid('Plik bazy danych jest uszkodzony');
+        const tables = new Set((await db.all(`SELECT name FROM sqlite_master WHERE type = 'table'`)).map(t => t.name));
+        for (const required of ['Leki', 'Sprzet', 'users']) {
+            if (!tables.has(required)) throw invalid(`To nie jest baza Nawigatora (brak tabeli ${required})`);
+        }
     } catch (error) {
-        console.error('Failed to export database:', error.message);
-        throw error;
+        if (error.statusCode) throw error;
+        throw invalid(`Nie można odczytać bazy danych: ${error.message}`);
+    } finally {
+        await db?.close();
     }
 }
 
-export async function importDatabase(importedDbPath) {
+/**
+ * Replace the live database with an uploaded file and migrate it to the current schema.
+ * The previous database is kept in BACKUP_DIR (pre_import_*.sqlite3) and restored if anything fails.
+ */
+export async function importDatabase(uploadedPath) {
+    const dbPath = getDbPath();
     try {
-        const currentDbPath = './db.sqlite3';
-        const backupDbPath = './db.sqlite3.backup';
+        await validateDatabaseFile(uploadedPath);
 
-        // Close the database connection
+        const previous = path.join(getBackupDir(), `pre_import_${stamp()}.sqlite3`);
+        await snapshotDatabase(previous);
+        await keepNewest(getBackupDir(), 'pre_import_', PRE_IMPORT_BACKUPS_KEPT);
+
         await closeDb();
-
-        // Create a backup of the current database
-        await fs.copyFile(currentDbPath, backupDbPath);
-
+        await fs.rm(`${dbPath}-journal`, {force: true});
+        await fs.copyFile(uploadedPath, dbPath);
         try {
-            // Try to copy the new database
-            await fs.copyFile(importedDbPath, currentDbPath);
-
-            // Delete the temporary file
-            await fs.unlink(importedDbPath);
-
-            // Test the new database connection
-            const db = await getDb();
-
-            return { success: true };
+            await migrate();
         } catch (error) {
-            // If there's an error, restore the backup
-            if (await fs.access(backupDbPath).then(() => true).catch(() => false)) {
-                await fs.copyFile(backupDbPath, currentDbPath);
-            }
-            throw error;
-        } finally {
-            // Delete the backup
-            if (await fs.access(backupDbPath).then(() => true).catch(() => false)) {
-                await fs.unlink(backupDbPath);
-            }
+            await closeDb();
+            await fs.copyFile(previous, dbPath);
+            await getDb();
+            throw Object.assign(new Error(`Migracja importowanej bazy nie powiodła się: ${error.message}`), {statusCode: 422});
         }
-    } catch (error) {
-        console.error('Failed to import database:', error.message);
-        return { success: false, message: error.message };
+    } finally {
+        await fs.rm(uploadedPath, {force: true});
     }
 }
-
-export async function createDailyBackup() {
-    try {
-        const desktopPath = path.join(os.homedir(), 'Desktop');
-        const date = new Date();
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        const backupFilename = `db_backup_${year}${month}${day}.sqlite3`;
-        const backupPath = path.join(desktopPath, backupFilename);
-
-        await fs.copyFile(DB_PATH, backupPath);
-        console.log(`Daily backup created: ${backupFilename}`);
-
-        // Delete old backups (keep last 7 days)
-        const files = await fs.readdir(desktopPath);
-        const backupFiles = files.filter(file => file.startsWith('db_backup_') && file.endsWith('.sqlite3'));
-
-        if (backupFiles.length > 7) {
-            const oldestFiles = backupFiles
-                .sort()
-                .slice(0, backupFiles.length - 7);
-
-            for (const file of oldestFiles) {
-                await fs.unlink(path.join(desktopPath, file));
-                console.log(`Deleted old backup: ${file}`);
-            }
-        }
-    } catch (error) {
-        console.error('Failed to create daily backup:', error.message);
-    }
-}
-

@@ -1,5 +1,6 @@
+// backend/routes/zamowienia.js
 import express from 'express';
-import { body, validationResult } from 'express-validator';
+import {body} from 'express-validator';
 import {
     createOrder,
     getAllOrders,
@@ -13,177 +14,73 @@ import {
     updateMedicineInOrder,
     updateEquipmentInOrder
 } from '../db/queries.js';
+import {validate, idParam, affected} from './validate.js';
 
 const router = express.Router();
 
-// Get all orders
-router.get('/zamowienia', async (req, res, next) => {
-    try {
-        const orders = await getAllOrders();
-        res.json(orders);
-    } catch (error) {
-        next(error);
-    }
+export const ORDER_STATUSES = ['Nowe', 'W trakcie', 'Zamówione', 'Przyjęte', 'Zakończone', 'Anulowane'];
+const NOT_FOUND = 'Zamówienie nie zostało znalezione';
+const quantity = body('ilosc').isFloat({min: 0}).withMessage('Ilość musi być liczbą nieujemną');
+
+router.get('/zamowienia', async (req, res) => {
+    res.json(await getAllOrders());
 });
 
-// Get order by ID with items
-router.get('/zamowienia/:id', async (req, res, next) => {
-    try {
-        const { id } = req.params;
-        const order = await getOrderById(id);
-
-        if (!order) {
-            return res.status(404).json({ error: 'Zamówienie nie zostało znalezione' });
-        }
-
-        res.json(order);
-    } catch (error) {
-        next(error);
-    }
+router.get('/zamowienia/:id', validate(idParam), async (req, res) => {
+    const order = await getOrderById(req.params.id);
+    if (!order) return res.status(404).json({error: NOT_FOUND});
+    res.json(order);
 });
 
-// Create a new order
-router.post('/zamowienia', [
-    body('nazwa').notEmpty().withMessage('Nazwa zamówienia jest wymagana')
-], async (req, res, next) => {
-    try {
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
-        }
-
-        const orderId = await createOrder(req.body);
-        res.status(201).json({ id: orderId, message: 'Zamówienie utworzone pomyślnie' });
-    } catch (error) {
-        next(error);
-    }
+router.post('/zamowienia', validate(body('nazwa').trim().notEmpty().withMessage('Nazwa zamówienia jest wymagana')), async (req, res) => {
+    const id = await createOrder(req.body);
+    res.status(201).json({id, message: 'Zamówienie utworzone pomyślnie'});
 });
 
-// Update order status
-router.put('/zamowienia/:id/status', [
-    body('status').notEmpty().withMessage('Status zamówienia jest wymagany')
-], async (req, res, next) => {
-    try {
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
-        }
-
-        const { id } = req.params;
-        const { status } = req.body;
-
-        await updateOrderStatus(id, status);
-        res.json({ message: 'Status zamówienia zaktualizowany pomyślnie' });
-    } catch (error) {
-        next(error);
-    }
+router.put('/zamowienia/:id/status', validate(
+    idParam,
+    body('status').isIn(ORDER_STATUSES).withMessage('Nieprawidłowy status zamówienia'),
+), async (req, res) => {
+    const ok = await updateOrderStatus(req.params.id, req.body.status);
+    affected(res, ok, 'Status zamówienia zaktualizowany pomyślnie', NOT_FOUND);
 });
 
-// Add medicine to order
-router.post('/zamowienia/lek', [
+router.post('/zamowienia/lek', validate(
     body('id_zamowienia').notEmpty().withMessage('ID zamówienia jest wymagane'),
     body('id_leku').notEmpty().withMessage('ID leku jest wymagane'),
-    body('ilosc').notEmpty().isNumeric().withMessage('Ilość musi być liczbą')
-], async (req, res, next) => {
-    try {
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
-        }
-
-        const itemId = await addMedicineToOrder(req.body);
-        res.status(201).json({ id: itemId, message: 'Lek dodany do zamówienia pomyślnie' });
-    } catch (error) {
-        next(error);
-    }
+    quantity,
+), async (req, res) => {
+    const id = await addMedicineToOrder(req.body);
+    res.status(201).json({id, message: 'Lek dodany do zamówienia pomyślnie'});
 });
 
-// Add equipment to order
-router.post('/zamowienia/sprzet', [
+router.post('/zamowienia/sprzet', validate(
     body('id_zamowienia').notEmpty().withMessage('ID zamówienia jest wymagane'),
     body('id_sprzetu').notEmpty().withMessage('ID sprzętu jest wymagane'),
-    body('ilosc').notEmpty().isNumeric().withMessage('Ilość musi być liczbą')
-], async (req, res, next) => {
-    try {
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
-        }
-
-        const itemId = await addEquipmentToOrder(req.body);
-        res.status(201).json({ id: itemId, message: 'Sprzęt dodany do zamówienia pomyślnie' });
-    } catch (error) {
-        next(error);
-    }
+    quantity,
+), async (req, res) => {
+    const id = await addEquipmentToOrder(req.body);
+    res.status(201).json({id, message: 'Sprzęt dodany do zamówienia pomyślnie'});
 });
 
-// Update medicine in order - Use proper query function
-router.put('/zamowienia/lek/:id', [
-    body('ilosc').isNumeric().withMessage('Ilość musi być liczbą')
-], async (req, res, next) => {
-    try {
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
-        }
-
-        const { id } = req.params;
-        await updateMedicineInOrder(id, req.body);
-        res.json({ message: 'Lek w zamówieniu zaktualizowany pomyślnie' });
-    } catch (error) {
-        next(error);
-    }
+router.put('/zamowienia/lek/:id', validate(idParam, quantity), async (req, res) => {
+    affected(res, await updateMedicineInOrder(req.params.id, req.body), 'Lek w zamówieniu zaktualizowany pomyślnie');
 });
 
-// Update equipment in order - Use proper query function
-router.put('/zamowienia/sprzet/:id', [
-    body('ilosc').isNumeric().withMessage('Ilość musi być liczbą')
-], async (req, res, next) => {
-    try {
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
-        }
-
-        const { id } = req.params;
-        await updateEquipmentInOrder(id, req.body);
-        res.json({ message: 'Sprzęt w zamówieniu zaktualizowany pomyślnie' });
-    } catch (error) {
-        next(error);
-    }
+router.put('/zamowienia/sprzet/:id', validate(idParam, quantity), async (req, res) => {
+    affected(res, await updateEquipmentInOrder(req.params.id, req.body), 'Sprzęt w zamówieniu zaktualizowany pomyślnie');
 });
 
-// Remove medicine from order
-router.delete('/zamowienia/lek/:id', async (req, res, next) => {
-    try {
-        const { id } = req.params;
-        await removeMedicineFromOrder(id);
-        res.json({ message: 'Lek usunięty z zamówienia pomyślnie' });
-    } catch (error) {
-        next(error);
-    }
+router.delete('/zamowienia/lek/:id', validate(idParam), async (req, res) => {
+    affected(res, await removeMedicineFromOrder(req.params.id), 'Lek usunięty z zamówienia pomyślnie');
 });
 
-// Remove equipment from order
-router.delete('/zamowienia/sprzet/:id', async (req, res, next) => {
-    try {
-        const { id } = req.params;
-        await removeEquipmentFromOrder(id);
-        res.json({ message: 'Sprzęt usunięty z zamówienia pomyślnie' });
-    } catch (error) {
-        next(error);
-    }
+router.delete('/zamowienia/sprzet/:id', validate(idParam), async (req, res) => {
+    affected(res, await removeEquipmentFromOrder(req.params.id), 'Sprzęt usunięty z zamówienia pomyślnie');
 });
 
-// Delete an order
-router.delete('/zamowienia/:id', async (req, res, next) => {
-    try {
-        const { id } = req.params;
-        await deleteOrder(id);
-        res.json({ message: 'Zamówienie usunięte pomyślnie' });
-    } catch (error) {
-        next(error);
-    }
+router.delete('/zamowienia/:id', validate(idParam), async (req, res) => {
+    affected(res, await deleteOrder(req.params.id), 'Zamówienie usunięte pomyślnie', NOT_FOUND);
 });
 
 export default router;

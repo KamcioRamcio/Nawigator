@@ -45,21 +45,32 @@ function Login() {
 
     /**
      * Handles the login process when the form is submitted.
-     * Validates the selected user and password (if applicable).
-     * Stores user information in local storage and redirects to the main application page upon successful login.
+     * The server checks the password; the response (user without password) is stored in local storage.
      * Displays toast notifications for success or invalid credentials.
      * @param {Event} e - The form submission event.
      */
-    const handleLogin = (e) => {
+    const handleLogin = async (e) => {
         if (e) e.preventDefault();
+        if (!selectedUser) return;
 
-        if (selectedUser && (!selectedUser.password || selectedUser.password === password)) {
-            localStorage.setItem("user", JSON.stringify(selectedUser));
-            localStorage.setItem("username", selectedUser.username);
-            toastService.success(`Welcome, ${selectedUser.username}!`);
+        try {
+            const response = await fetch(apiUrl + "login", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({username: selectedUser.username, password}),
+            });
+            if (!response.ok) {
+                toastService.error("Invalid credentials");
+                return;
+            }
+            const user = await response.json();
+            localStorage.setItem("user", JSON.stringify(user));
+            localStorage.setItem("username", user.username);
+            toastService.success(`Welcome, ${user.username}!`);
             window.location.href = "/Main/Leki";
-        } else {
-            toastService.error("Invalid credentials");
+        } catch (err) {
+            console.error("Login error:", err);
+            toastService.error("Nie można połączyć się z serwerem");
         }
     };
 
@@ -99,8 +110,8 @@ function Login() {
             });
 
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Network response was not ok');
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || errorData.message || `Błąd serwera (${response.status})`);
             }
 
             toastService.success("Database imported successfully");
@@ -172,7 +183,7 @@ function Login() {
                         )}
                     </div>
 
-                    {selectedUser && selectedUser.password && (
+                    {selectedUser && selectedUser.has_password ? (
                         <div className="transition-all duration-200 ease-in-out">
                             <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
                                 Hasło
@@ -186,7 +197,7 @@ function Login() {
                                 onChange={(e) => setPassword(e.target.value)}
                             />
                         </div>
-                    )}
+                    ) : null}
 
                     <div className="pt-4">
                         <button

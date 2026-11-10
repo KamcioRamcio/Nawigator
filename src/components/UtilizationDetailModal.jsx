@@ -265,7 +265,7 @@ function UtilizationDetailModal({ isOpen, onClose, utilizationId, onUtilizationU
         setConfirmAction(() => async () => {
             try {
                 setLoading(true);
-                const response = await fetch(`${apiUrl}utylizacja/utylizacje/${itemType}/${itemId}`, {
+                const response = await fetch(`${apiUrl}utylizacja/${itemType}/${itemId}`, {
                     method: 'DELETE',
                 });
 
@@ -291,7 +291,7 @@ function UtilizationDetailModal({ isOpen, onClose, utilizationId, onUtilizationU
         setConfirmAction(() => async () => {
             try {
                 setLoading(true);
-                const response = await fetch(`${apiUrl}utylizacja/utylizacje/${utilizationId}`, {
+                const response = await fetch(`${apiUrl}utylizacja/${utilizationId}`, {
                     method: 'DELETE',
                 });
 

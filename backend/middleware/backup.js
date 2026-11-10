@@ -1,31 +1,20 @@
-import { createBackup } from '../utils/helpers.js';
+import {createBackup} from '../utils/helpers.js';
 
-// Debounce mechanism to prevent multiple backups
-let backupTimer = null;
-const BACKUP_DELAY = 2000; // 2 seconds debounce
+const BACKUP_DELAY_MS = 2000;
+let timer = null;
 
-export const backupMiddleware = async (req, res, next) => {
-    try {
-        await next();
-
-        if (['POST', 'PUT', 'DELETE'].includes(req.method)) {
-            // Clear any existing timer
-            if (backupTimer) {
-                clearTimeout(backupTimer);
-            }
-
-            // Set a new timer
-            backupTimer = setTimeout(async () => {
-                try {
-                    await createBackup();
-                } catch (error) {
-                    console.error('Backup creation error:', error);
-                }
-                backupTimer = null;
-            }, BACKUP_DELAY);
-        }
-    } catch (error) {
-        console.error('Backup middleware error:', error);
-        next(error);
+/** After a successful change, refresh the rolling backup (debounced so bursts of edits make one copy). */
+export function backupMiddleware(req, res, next) {
+    if (['POST', 'PUT', 'DELETE'].includes(req.method)) {
+        res.on('finish', () => {
+            if (res.statusCode >= 400) return;
+            clearTimeout(timer);
+            timer = setTimeout(() => {
+                timer = null;
+                createBackup().catch(error => console.error('Backup failed:', error));
+            }, BACKUP_DELAY_MS);
+            timer.unref();
+        });
     }
-};
+    next();
+}
