@@ -306,6 +306,10 @@ async function createSyncTriggers() {
     DROP TRIGGER IF EXISTS update_min_leki_from_main;
     CREATE TRIGGER IF NOT EXISTS update_min_leki_from_main
     AFTER UPDATE ON Leki
+    WHEN NEW.nazwa_leku IS NOT OLD.nazwa_leku OR NEW.opakowanie IS NOT OLD.opakowanie
+      OR NEW.przechowywanie IS NOT OLD.przechowywanie OR NEW.na_statku_spis_podstawowy IS NOT OLD.na_statku_spis_podstawowy
+      OR NEW.id_kategorii IS NOT OLD.id_kategorii OR NEW.id_pod_kategorii IS NOT OLD.id_pod_kategorii
+      OR NEW.id_pod_pod_kategorii IS NOT OLD.id_pod_pod_kategorii
     BEGIN
     UPDATE Leki_spis_min
     SET
@@ -333,6 +337,10 @@ async function createSyncTriggers() {
     DROP TRIGGER IF EXISTS update_main_leki_from_min;
     CREATE TRIGGER IF NOT EXISTS update_main_leki_from_min
     AFTER UPDATE ON Leki_spis_min
+    WHEN NEW.nazwa_leku IS NOT OLD.nazwa_leku OR NEW.pakowanie IS NOT OLD.pakowanie
+      OR NEW.przechowywanie IS NOT OLD.przechowywanie OR NEW.na_statku_spis_podstawowy IS NOT OLD.na_statku_spis_podstawowy
+      OR NEW.id_kategorii IS NOT OLD.id_kategorii OR NEW.id_pod_kategorii IS NOT OLD.id_pod_kategorii
+      OR NEW.id_pod_pod_kategorii IS NOT OLD.id_pod_pod_kategorii
     BEGIN
     -- Update the basic information in Leki
     UPDATE Leki
@@ -698,6 +706,18 @@ export async function updateStatusTrigger() {
     const db = await getDb();
 
     await db.exec(`
+        -- Leki wins over Leki_spis_min (same as the per-row sync triggers did on every full-table update).
+        UPDATE Leki_spis_min
+        SET pakowanie = l.opakowanie, przechowywanie = l.przechowywanie,
+            na_statku_spis_podstawowy = l.na_statku_spis_podstawowy, id_kategorii = l.id_kategorii,
+            id_pod_kategorii = l.id_pod_kategorii, id_pod_pod_kategorii = l.id_pod_pod_kategorii
+        FROM Leki l
+        WHERE l.nazwa_leku = Leki_spis_min.nazwa_leku
+          AND (Leki_spis_min.pakowanie IS NOT l.opakowanie OR Leki_spis_min.przechowywanie IS NOT l.przechowywanie
+            OR Leki_spis_min.na_statku_spis_podstawowy IS NOT l.na_statku_spis_podstawowy
+            OR Leki_spis_min.id_kategorii IS NOT l.id_kategorii OR Leki_spis_min.id_pod_kategorii IS NOT l.id_pod_kategorii
+            OR Leki_spis_min.id_pod_pod_kategorii IS NOT l.id_pod_pod_kategorii);
+
         -- First update items in active orders
         UPDATE Leki
         SET status = 'Zamówione'

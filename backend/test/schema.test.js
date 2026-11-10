@@ -102,6 +102,36 @@ test('Leki and Leki_spis_min stay in sync (insert, update, delete both ways)', a
     assert.equal(await db.get(`SELECT 1 FROM Leki_spis_min WHERE nazwa_leku = 'Sync2'`), undefined);
 });
 
+test('stock-only change of a medicine does not touch Leki_spis_min; synced fields still propagate', async () => {
+    await db.exec('DELETE FROM Leki; DELETE FROM Leki_spis_min;');
+    await db.run(`INSERT INTO Leki (nazwa_leku, opakowanie, ilosc_wstepna, rozchod_ilosc) VALUES ('Quiet', 'amp.', 5, 0)`);
+    await db.exec('CREATE TEMP TABLE min_writes (n INTEGER); INSERT INTO min_writes VALUES (0);');
+    await db.exec(`CREATE TEMP TRIGGER count_min_writes AFTER UPDATE ON Leki_spis_min BEGIN UPDATE min_writes SET n = n + 1; END;`);
+    try {
+        await db.run(`UPDATE Leki SET rozchod_ilosc = 2 WHERE nazwa_leku = 'Quiet'`);
+        assert.equal((await db.get('SELECT n FROM min_writes')).n, 0);
+
+        await db.run(`UPDATE Leki SET opakowanie = 'tabl.' WHERE nazwa_leku = 'Quiet'`);
+        assert.equal((await db.get(`SELECT pakowanie FROM Leki_spis_min WHERE nazwa_leku = 'Quiet'`)).pakowanie, 'tabl.');
+        await db.run(`UPDATE Leki_spis_min SET przechowywanie = 'lodówka' WHERE nazwa_leku = 'Quiet'`);
+        assert.equal((await db.get(`SELECT przechowywanie FROM Leki WHERE nazwa_leku = 'Quiet'`)).przechowywanie, 'lodówka');
+    } finally {
+        await db.exec('DROP TRIGGER temp.count_min_writes; DROP TABLE temp.min_writes;');
+    }
+});
+
+test('status refresh repairs a drifted Leki_spis_min row from Leki', async () => {
+    await db.exec('DELETE FROM Leki; DELETE FROM Leki_spis_min;');
+    await db.run(`INSERT INTO Leki (nazwa_leku, opakowanie, przechowywanie) VALUES ('Drift', 'amp.', 'szafa')`);
+    // Simulate an old database where the lists diverged (sync triggers off while writing).
+    await db.exec(`PRAGMA recursive_triggers = OFF; DROP TRIGGER update_main_leki_from_min;`);
+    await db.run(`UPDATE Leki_spis_min SET pakowanie = 'zły', przechowywanie = NULL WHERE nazwa_leku = 'Drift'`);
+    await migrate(); // recreates the trigger and refreshes statuses
+    const row = await db.get(`SELECT pakowanie, przechowywanie FROM Leki_spis_min WHERE nazwa_leku = 'Drift'`);
+    assert.deepEqual({...row}, {pakowanie: 'amp.', przechowywanie: 'szafa'});
+    assert.equal((await db.get(`SELECT opakowanie FROM Leki WHERE nazwa_leku = 'Drift'`)).opakowanie, 'amp.');
+});
+
 test('item in two open orders shows the order it was added to first', async () => {
     await db.exec('DELETE FROM Zamowienia_Leki; DELETE FROM Zamowienia; DELETE FROM Leki;');
     const {lastID: lek} = await db.run(`INSERT INTO Leki (nazwa_leku, ilosc_wstepna, rozchod_ilosc, ilosc_minimalna) VALUES ('Two', 1, 0, 5)`);
