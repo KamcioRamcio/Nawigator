@@ -1226,7 +1226,15 @@ const Documentation = () => {
                     <ul className="space-y-2">
                         <li className="flex items-start">
                             <span className="text-amber-500 mr-2 mt-1">•</span>
-                            <span className="text-gray-700">Import bazy danych zastępuje wszystkie istniejące dane - przed importem upewnij się, że wykonano kopię zapasową</span>
+                            <span className="text-gray-700">Import bazy danych zastępuje wszystkie istniejące dane. Poprzednia baza jest automatycznie zapisywana w folderze kopii (plik pre_import_…), ostatnie 5 kopii</span>
+                        </li>
+                        <li className="flex items-start">
+                            <span className="text-amber-500 mr-2 mt-1">•</span>
+                            <span className="text-gray-700">Można importować eksporty ze starszych wersji programu - brakujące tabele, kolumny i format dat zostaną uzupełnione automatycznie. Plik, który nie jest bazą Nawigatora lub jest uszkodzony, zostanie odrzucony bez zmiany danych</span>
+                        </li>
+                        <li className="flex items-start">
+                            <span className="text-amber-500 mr-2 mt-1">•</span>
+                            <span className="text-gray-700">Kopie automatyczne: po każdej zmianie (db_backup.sqlite3) oraz codziennie po północy (db_backup_RRRRMMDD.sqlite3, ostatnie 7 dni) w folderze nawigator-backups na Pulpicie</span>
                         </li>
                         <li className="flex items-start">
                             <span className="text-amber-500 mr-2 mt-1">•</span>
