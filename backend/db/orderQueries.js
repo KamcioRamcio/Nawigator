@@ -34,6 +34,7 @@ export async function getOrderById(id) {
         FROM Zamowienia_Leki zi
                  JOIN Leki l ON zi.id_leku = l.id
         WHERE zi.id_zamowienia = ?
+        ORDER BY zi.id
     `, [id]);
 
     const sprzet = await db.all(`
@@ -41,6 +42,7 @@ export async function getOrderById(id) {
         FROM Zamowienia_Sprzet zi
                  JOIN Sprzet s ON zi.id_sprzetu = s.id
         WHERE zi.id_zamowienia = ?
+        ORDER BY zi.id
     `, [id]);
 
     return {...order, leki, sprzet};

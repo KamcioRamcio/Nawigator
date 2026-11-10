@@ -35,6 +35,7 @@ export async function getUtilizationById(id) {
         FROM Utylizacje_Leki ul
                  LEFT JOIN Leki l ON ul.id_leku = l.id
         WHERE ul.id_utylizacji = ?
+        ORDER BY ul.id
     `, [id]);
 
     const sprzet = await db.all(`
@@ -42,6 +43,7 @@ export async function getUtilizationById(id) {
         FROM Utylizacje_Sprzet us
                  LEFT JOIN Sprzet s ON us.id_sprzetu = s.id
         WHERE us.id_utylizacji = ?
+        ORDER BY us.id
     `, [id]);
 
     return {...utilization, leki, sprzet};

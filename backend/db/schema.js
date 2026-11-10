@@ -496,7 +496,7 @@ export async function addStatusMedicineTrigger() {
                     JOIN Zamowienia_Leki zl ON zl.id_zamowienia = z.id
                     WHERE zl.id_leku = NEW.id
                     AND z.status IN ('Nowe', 'W trakcie')
-                    LIMIT 1
+                    ORDER BY zl.id LIMIT 1
                 )
                 -- Then apply the existing rules
                 WHEN (ilosc_wstepna - rozchod_ilosc) <= 0 THEN 'Do zamówienia'
@@ -534,7 +534,7 @@ export async function addStatusMedicineTrigger() {
                     JOIN Zamowienia_Leki zl ON zl.id_zamowienia = z.id
                     WHERE zl.id_leku = NEW.id
                     AND z.status IN ('Nowe', 'W trakcie')
-                    LIMIT 1
+                    ORDER BY zl.id LIMIT 1
                 )
                 -- Then apply the existing rules
                 WHEN (ilosc_wstepna - rozchod_ilosc) < ilosc_minimalna AND status_leku != 'Ważny' THEN 'Do zamówienia'
@@ -565,7 +565,7 @@ export async function addStatusMedicineTrigger() {
                     JOIN Zamowienia_Sprzet zs ON zs.id_zamowienia = z.id
                     WHERE zs.id_sprzetu = NEW.id
                     AND z.status IN ('Nowe', 'W trakcie')
-                    LIMIT 1)
+                    ORDER BY zs.id LIMIT 1)
                     
                 WHEN EXISTS (
                     SELECT 1 FROM Zamowienia_Sprzet zs
@@ -608,7 +608,7 @@ export async function addStatusMedicineTrigger() {
                     JOIN Zamowienia_Sprzet zs ON zs.id_zamowienia = z.id
                     WHERE zs.id_sprzetu = NEW.id
                     AND z.status IN ('Nowe', 'W trakcie')
-                    LIMIT 1)
+                    ORDER BY zs.id LIMIT 1)
                 -- Then apply the existing rules
                 WHEN ilosc_aktualna <= 0 THEN 'Do zamówienia'
                 WHEN ilosc_wymagana > ilosc_aktualna AND termin != 'Ważny' THEN 'Do zamówienia'

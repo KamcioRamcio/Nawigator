@@ -1,7 +1,7 @@
 import {test, before, after} from 'node:test';
 import assert from 'node:assert/strict';
 import {setup, teardown, euDate} from './helpers.js';
-import {migrate, updateDateFormatToEuropean, refreshStatuses} from '../db/schema.js';
+import {migrate, updateDateFormatToEuropean, refreshStatuses, updateStatusTrigger} from '../db/schema.js';
 
 let db;
 before(async () => ({db} = await setup()));
@@ -100,4 +100,14 @@ test('Leki and Leki_spis_min stay in sync (insert, update, delete both ways)', a
 
     await db.run(`DELETE FROM Leki WHERE nazwa_leku = 'Sync2'`);
     assert.equal(await db.get(`SELECT 1 FROM Leki_spis_min WHERE nazwa_leku = 'Sync2'`), undefined);
+});
+
+test('item in two open orders shows the order it was added to first', async () => {
+    await db.exec('DELETE FROM Zamowienia_Leki; DELETE FROM Zamowienia; DELETE FROM Leki;');
+    const {lastID: lek} = await db.run(`INSERT INTO Leki (nazwa_leku, ilosc_wstepna, rozchod_ilosc, ilosc_minimalna) VALUES ('Two', 1, 0, 5)`);
+    const {lastID: first} = await db.run(`INSERT INTO Zamowienia (nazwa) VALUES ('Pierwsze')`);
+    const {lastID: second} = await db.run(`INSERT INTO Zamowienia (nazwa) VALUES ('Drugie')`);
+    await db.run('INSERT INTO Zamowienia_Leki (id_zamowienia, id_leku, ilosc) VALUES (?, ?, 1), (?, ?, 1)', [second, lek, first, lek]);
+    await updateStatusTrigger();
+    assert.equal((await db.get('SELECT status FROM Leki WHERE id = ?', [lek])).status, 'W zamówieniu: Drugie');
 });
