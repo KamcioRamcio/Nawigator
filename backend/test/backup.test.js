@@ -10,6 +10,19 @@ let api;
 before(async () => ({api} = await setup()));
 after(teardown);
 
+/** Row count of every table in a SQLite file (read-only). */
+async function sqliteRowCounts(file) {
+    const sqlite3 = (await import('sqlite3')).default;
+    const {open} = await import('sqlite');
+    const src = await open({filename: file, driver: sqlite3.Database, mode: sqlite3.OPEN_READONLY});
+    const counts = {};
+    for (const {name} of await src.all(`SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'`)) {
+        counts[name] = (await src.get(`SELECT COUNT(*) AS c FROM "${name}"`)).c;
+    }
+    await src.close();
+    return counts;
+}
+
 const fixtureDb = async (name = 'old.db') => sqliteFromSql(fs.readFileSync(FIXTURE_SQL, 'utf8'), path.join(tmpDir, name));
 const db = () => getDb(); // import swaps the connection, always ask for the current one
 
@@ -47,6 +60,14 @@ test('import of an OLD database migrates schema, dates and statuses', async () =
     await api.post('/api/login').send({username: 'kamil', password: 'admin'}).expect(200);
     await api.post('/api/login').send({username: 'view'}).expect(200);
     assert.equal((await d.get(`SELECT COUNT(*) AS c FROM users WHERE username = 'admin'`)).c, 0, 'no admin seeded into imported db');
+
+    // Migration adds the lookup indexes and loses no rows
+    const indexes = (await d.all(`SELECT name FROM sqlite_master WHERE type = 'index' AND name LIKE 'idx_%'`)).map(i => i.name);
+    assert.ok(indexes.includes('idx_leki_nazwa') && indexes.includes('idx_zam_leki_lek'), indexes.join());
+    const old = await sqliteRowCounts(file);
+    for (const [table, count] of Object.entries(old)) {
+        assert.equal((await d.get(`SELECT COUNT(*) AS c FROM "${table}"`)).c, count, `rows of ${table}`);
+    }
 });
 
 test('imported old database is fully usable: edit, orders, utilization', async () => {

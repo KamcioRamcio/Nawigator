@@ -806,6 +806,24 @@ async function addMissingColumns() {
     }
 }
 
+// Plain (non-unique) indexes: safe on any old data, and older app versions simply ignore them.
+async function createIndexes() {
+    const db = await getDb();
+    await db.exec(`
+        CREATE INDEX IF NOT EXISTS idx_leki_nazwa ON Leki (nazwa_leku);
+        CREATE INDEX IF NOT EXISTS idx_leki_min_nazwa ON Leki_spis_min (nazwa_leku);
+        CREATE INDEX IF NOT EXISTS idx_zam_leki_lek ON Zamowienia_Leki (id_leku);
+        CREATE INDEX IF NOT EXISTS idx_zam_leki_zam ON Zamowienia_Leki (id_zamowienia);
+        CREATE INDEX IF NOT EXISTS idx_zam_sprzet_sprzet ON Zamowienia_Sprzet (id_sprzetu);
+        CREATE INDEX IF NOT EXISTS idx_zam_sprzet_zam ON Zamowienia_Sprzet (id_zamowienia);
+        CREATE INDEX IF NOT EXISTS idx_utyl_leki_utyl ON Utylizacje_Leki (id_utylizacji);
+        CREATE INDEX IF NOT EXISTS idx_utyl_sprzet_utyl ON Utylizacje_Sprzet (id_utylizacji);
+        CREATE INDEX IF NOT EXISTS idx_pod_kat_kat ON Pod_kategorie (id_kategorii);
+        CREATE INDEX IF NOT EXISTS idx_pod_pod_kat_pod ON Pod_pod_kategorie (id_pod_kategorii);
+        CREATE INDEX IF NOT EXISTS idx_pod_kat_sprzet_kat ON Pod_kategorie_sprzet (id_kategorii);
+    `);
+}
+
 async function withReferenceSchema(fn) {
     const db = await getDb();
     await db.exec(`ATTACH DATABASE ':memory:' AS ref`);
@@ -825,6 +843,7 @@ async function withReferenceSchema(fn) {
 export async function migrate() {
     await createTables();
     await withReferenceSchema(addMissingColumns);
+    await createIndexes();
     await createSyncTriggers();
     await addStatusMedicineTrigger();
     await addExpiryStatusTrigger();
