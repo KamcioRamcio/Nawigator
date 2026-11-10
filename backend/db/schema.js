@@ -1,22 +1,11 @@
 // backend/db/schema.js
+// Schema, triggers and idempotent migration. Dates are stored as DD-MM-YYYY text.
 import {getDb} from './index.js';
 
-// export async function addPrzechowywanie() {
-//     const db = await getDb();
-//
-//     await db.exec(`
-//     ALTER TABLE Utylizacja
-//     ADD COLUMN powod_utylizacji TEXT;
-//   `);
-//
-//     console.log('Added przehowywanie column to Leki table');
-// }
+// SQL expression turning a DD-MM-YYYY column into a comparable ISO datetime.
+const euDate = (col) => `datetime(substr(${col}, 7, 4) || '-' || substr(${col}, 4, 2) || '-' || substr(${col}, 1, 2))`;
 
-export async function createTables() {
-    const db = await getDb();
-
-    // Create tables
-    await db.exec(`
+const TABLES_SQL = `
         CREATE TABLE IF NOT EXISTS Leki
         (
             id                        INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -176,9 +165,55 @@ export async function createTables() {
                                                          FOREIGN KEY (id_zamowienia) REFERENCES Zamowienia(id),
                                                          FOREIGN KEY (id_sprzetu) REFERENCES Sprzet(id)
         );
-    
-`);
 
+        CREATE TABLE IF NOT EXISTS Utylizacje
+        (
+            id              INTEGER PRIMARY KEY AUTOINCREMENT,
+            nazwa           TEXT NOT NULL,
+            status          TEXT DEFAULT 'Nowa',
+            data_utworzenia DATE,
+            uwagi           TEXT,
+            kto_utworzyl    TEXT
+        );
+
+        -- No FK on id_leku/id_sprzetu: the item name is copied so history survives deleting the item.
+        CREATE TABLE IF NOT EXISTS Utylizacje_Leki
+        (
+            id               INTEGER PRIMARY KEY AUTOINCREMENT,
+            id_utylizacji    INTEGER NOT NULL,
+            id_leku          INTEGER,
+            nazwa_leku       TEXT,
+            ilosc            REAL,
+            ilosc_nominalna  TEXT,
+            opakowanie       TEXT,
+            data_waznosci    DATE,
+            powod_utylizacji TEXT,
+            uwagi            TEXT,
+            FOREIGN KEY (id_utylizacji) REFERENCES Utylizacje (id) ON DELETE CASCADE
+        );
+
+        CREATE TABLE IF NOT EXISTS Utylizacje_Sprzet
+        (
+            id               INTEGER PRIMARY KEY AUTOINCREMENT,
+            id_utylizacji    INTEGER NOT NULL,
+            id_sprzetu       INTEGER,
+            nazwa_sprzetu    TEXT,
+            ilosc            REAL,
+            data_waznosci    DATE,
+            powod_utylizacji TEXT,
+            uwagi            TEXT,
+            FOREIGN KEY (id_utylizacji) REFERENCES Utylizacje (id) ON DELETE CASCADE
+        );
+`;
+
+export async function createTables() {
+    const db = await getDb();
+    await db.exec(TABLES_SQL);
+}
+
+// Keep Leki and Leki_spis_min (matched by nazwa_leku) in sync both ways.
+async function createSyncTriggers() {
+    const db = await getDb();
     await db.exec(`
     -- Leki_spis_min -> Leki (when adding to min list)
     DROP TRIGGER IF EXISTS add_to_main_leki_from_min;
@@ -329,8 +364,6 @@ export async function createTables() {
     WHERE nazwa_leku = OLD.nazwa_leku;
     END;
     `);
-
-    console.log('Database tables and triggers created successfully');
 }
 
 export async function addExpiryStatusTrigger() {
@@ -345,9 +378,9 @@ export async function addExpiryStatusTrigger() {
         BEGIN
             UPDATE Leki
             SET status_leku = CASE
-                WHEN datetime(substr(NEW.data_waznosci, 7, 4) || '-' || substr(NEW.data_waznosci, 4, 2) || '-' || substr(NEW.data_waznosci, 1, 2)) < datetime('now') THEN 'Przeterminowane'
-                WHEN datetime(substr(NEW.data_waznosci, 7, 4) || '-' || substr(NEW.data_waznosci, 4, 2) || '-' || substr(NEW.data_waznosci, 1, 2)) <= datetime('now', '+1 month') THEN 'Ważność 1 miesiąc'
-                WHEN datetime(substr(NEW.data_waznosci, 7, 4) || '-' || substr(NEW.data_waznosci, 4, 2) || '-' || substr(NEW.data_waznosci, 1, 2)) <= datetime('now', '+3 month') THEN 'Ważność 3 miesiące'
+                WHEN ${euDate('NEW.data_waznosci')} < datetime('now') THEN 'Przeterminowane'
+                WHEN ${euDate('NEW.data_waznosci')} <= datetime('now', '+1 month') THEN 'Ważność 1 miesiąc'
+                WHEN ${euDate('NEW.data_waznosci')} <= datetime('now', '+3 month') THEN 'Ważność 3 miesiące'
                 WHEN ilosc_wstepna = 0 THEN 'Brak na stanie'
                 ELSE 'Ważny'
             END
@@ -363,9 +396,9 @@ export async function addExpiryStatusTrigger() {
         BEGIN
             UPDATE Leki
             SET status_leku = CASE
-                WHEN datetime(substr(NEW.data_waznosci, 7, 4) || '-' || substr(NEW.data_waznosci, 4, 2) || '-' || substr(NEW.data_waznosci, 1, 2)) < datetime('now') THEN 'Przeterminowane'
-                WHEN datetime(substr(NEW.data_waznosci, 7, 4) || '-' || substr(NEW.data_waznosci, 4, 2) || '-' || substr(NEW.data_waznosci, 1, 2)) <= datetime('now', '+1 month') THEN 'Ważność 1 miesiąc'
-                WHEN datetime(substr(NEW.data_waznosci, 7, 4) || '-' || substr(NEW.data_waznosci, 4, 2) || '-' || substr(NEW.data_waznosci, 1, 2)) <= datetime('now', '+3 month') THEN 'Ważność 3 miesiące'
+                WHEN ${euDate('NEW.data_waznosci')} < datetime('now') THEN 'Przeterminowane'
+                WHEN ${euDate('NEW.data_waznosci')} <= datetime('now', '+1 month') THEN 'Ważność 1 miesiąc'
+                WHEN ${euDate('NEW.data_waznosci')} <= datetime('now', '+3 month') THEN 'Ważność 3 miesiące'
                 WHEN ilosc_wstepna = 0 THEN 'Brak na stanie'
                 ELSE 'Ważny'
             END
@@ -381,9 +414,9 @@ export async function addExpiryStatusTrigger() {
         BEGIN
             UPDATE Sprzet
             SET termin = CASE
-                WHEN datetime(substr(NEW.data_waznosci, 7, 4) || '-' || substr(NEW.data_waznosci, 4, 2) || '-' || substr(NEW.data_waznosci, 1, 2)) < datetime('now') THEN 'Przeterminowane'
-                WHEN datetime(substr(NEW.data_waznosci, 7, 4) || '-' || substr(NEW.data_waznosci, 4, 2) || '-' || substr(NEW.data_waznosci, 1, 2)) <= datetime('now', '+1 month') THEN 'Ważność 1 miesiąc'
-                WHEN datetime(substr(NEW.data_waznosci, 7, 4) || '-' || substr(NEW.data_waznosci, 4, 2) || '-' || substr(NEW.data_waznosci, 1, 2)) <= datetime('now', '+3 month') THEN 'Ważność 3 miesiące'
+                WHEN ${euDate('NEW.data_waznosci')} < datetime('now') THEN 'Przeterminowane'
+                WHEN ${euDate('NEW.data_waznosci')} <= datetime('now', '+1 month') THEN 'Ważność 1 miesiąc'
+                WHEN ${euDate('NEW.data_waznosci')} <= datetime('now', '+3 month') THEN 'Ważność 3 miesiące'
                 WHEN ilosc_aktualna = 0 THEN 'Brak na stanie'
                 ELSE 'Ważny'
             END
@@ -399,59 +432,39 @@ export async function addExpiryStatusTrigger() {
         BEGIN
             UPDATE Sprzet
             SET termin = CASE
-                WHEN datetime(substr(NEW.data_waznosci, 7, 4) || '-' || substr(NEW.data_waznosci, 4, 2) || '-' || substr(NEW.data_waznosci, 1, 2)) < datetime('now') THEN 'Przeterminowane'
-                WHEN datetime(substr(NEW.data_waznosci, 7, 4) || '-' || substr(NEW.data_waznosci, 4, 2) || '-' || substr(NEW.data_waznosci, 1, 2)) <= datetime('now', '+1 month') THEN 'Ważność 1 miesiąc'
-                WHEN datetime(substr(NEW.data_waznosci, 7, 4) || '-' || substr(NEW.data_waznosci, 4, 2) || '-' || substr(NEW.data_waznosci, 1, 2)) <= datetime('now', '+3 month') THEN 'Ważność 3 miesiące'
+                WHEN ${euDate('NEW.data_waznosci')} < datetime('now') THEN 'Przeterminowane'
+                WHEN ${euDate('NEW.data_waznosci')} <= datetime('now', '+1 month') THEN 'Ważność 1 miesiąc'
+                WHEN ${euDate('NEW.data_waznosci')} <= datetime('now', '+3 month') THEN 'Ważność 3 miesiące'
                 WHEN ilosc_aktualna = 0 THEN 'Brak na stanie'
                 ELSE 'Ważny'
             END
             WHERE id = NEW.id;
         END;
     `);
-
-    console.log('Expiry status triggers created successfully');
 }
 
 export async function updateExpiryStatusTrigger() {
     const db = await getDb();
 
-    await db.run(`
-        DROP TRIGGER IF EXISTS update_status_on_change_medicine;
-        DROP TRIGGER IF EXISTS update_status_on_insert_medicine;
+    await db.exec(`
         UPDATE Leki
         SET status_leku = CASE
---                               WHEN data_waznosci IS NULL OR data_waznosci = '' THEN 'Przeterminowane'
-                              WHEN datetime(substr(data_waznosci, 7, 4) || '-' || substr(data_waznosci, 4, 2) || '-' ||
-                                            substr(data_waznosci, 1, 2)) < datetime('now') THEN 'Przeterminowane'
-                              WHEN datetime(substr(data_waznosci, 7, 4) || '-' || substr(data_waznosci, 4, 2) || '-' ||
-                                            substr(data_waznosci, 1, 2)) <= datetime('now', '+1 month')
-                                  THEN 'Ważność 1 miesiąc'
-                              WHEN datetime(substr(data_waznosci, 7, 4) || '-' || substr(data_waznosci, 4, 2) || '-' ||
-                                            substr(data_waznosci, 1, 2)) <= datetime('now', '+3 month')
-                                  THEN 'Ważność 3 miesiące'
-                              WHEN ilosc_wstepna = 0 THEN 'Brak na stanie'                  
+            WHEN ${euDate('data_waznosci')} < datetime('now') THEN 'Przeterminowane'
+            WHEN ${euDate('data_waznosci')} <= datetime('now', '+1 month') THEN 'Ważność 1 miesiąc'
+            WHEN ${euDate('data_waznosci')} <= datetime('now', '+3 month') THEN 'Ważność 3 miesiące'
+            WHEN ilosc_wstepna = 0 THEN 'Brak na stanie'
             ELSE 'Ważny'
-            END
-    `);
+        END;
 
-    await db.run(`
         UPDATE Sprzet
         SET termin = CASE
---                          WHEN data_waznosci IS NULL OR data_waznosci = '' THEN 'Ważny'
-                         WHEN datetime(substr(data_waznosci, 7, 4) || '-' || substr(data_waznosci, 4, 2) || '-' ||
-                                       substr(data_waznosci, 1, 2)) < datetime('now') THEN 'Przeterminowane'
-                         WHEN datetime(substr(data_waznosci, 7, 4) || '-' || substr(data_waznosci, 4, 2) || '-' ||
-                                       substr(data_waznosci, 1, 2)) <= datetime('now', '+1 month')
-                             THEN 'Ważność 1 miesiąc'
-                         WHEN datetime(substr(data_waznosci, 7, 4) || '-' || substr(data_waznosci, 4, 2) || '-' ||
-                                       substr(data_waznosci, 1, 2)) <= datetime('now', '+3 month')
-                             THEN 'Ważność 3 miesiące'
-                        WHEN ilosc_aktualna = 0 THEN 'Brak na stanie'
-                         ELSE 'Ważny'
-            END
+            WHEN ${euDate('data_waznosci')} < datetime('now') THEN 'Przeterminowane'
+            WHEN ${euDate('data_waznosci')} <= datetime('now', '+1 month') THEN 'Ważność 1 miesiąc'
+            WHEN ${euDate('data_waznosci')} <= datetime('now', '+3 month') THEN 'Ważność 3 miesiące'
+            WHEN ilosc_aktualna = 0 THEN 'Brak na stanie'
+            ELSE 'Ważny'
+        END;
     `);
-
-    console.log('Expiry status triggers updated successfully');
 }
 
 export async function addStatusMedicineTrigger() {
@@ -486,7 +499,7 @@ export async function addStatusMedicineTrigger() {
                     LIMIT 1
                 )
                 -- Then apply the existing rules
-                WHEN (ilosc_wstepna - rozchod_ilosc) = 0 THEN 'Do zamówienia'
+                WHEN (ilosc_wstepna - rozchod_ilosc) <= 0 THEN 'Do zamówienia'
                 WHEN (ilosc_wstepna - rozchod_ilosc) < ilosc_minimalna AND status_leku != 'Ważny' THEN 'Do zamówienia'
                 WHEN (ilosc_wstepna - rozchod_ilosc) < ilosc_minimalna AND status_leku = 'Ważny' THEN 'Uwaga Ilość'
                 WHEN (status_leku = 'Przeterminowane' OR status_leku = 'Ważność 1 miesiąc' OR status_leku = 'Ważność 3 miesiące' OR status_leku = 'Brak na stanie') THEN 'Do zamówienia'
@@ -648,7 +661,7 @@ export async function addStatusMedicineTrigger() {
             UPDATE Leki
             SET status = (
                 CASE
-                    WHEN (ilosc_wstepna - rozchod_ilosc) = 0 THEN 'Do zamówienia'
+                    WHEN (ilosc_wstepna - rozchod_ilosc) <= 0 THEN 'Do zamówienia'
                     WHEN (ilosc_wstepna - rozchod_ilosc) < ilosc_minimalna AND status_leku != 'Ważny' THEN 'Do zamówienia'
                     WHEN (ilosc_wstepna - rozchod_ilosc) < ilosc_minimalna AND status_leku = 'Ważny' THEN 'Uwaga Ilość'
                     WHEN (status_leku = 'Przeterminowane' OR status_leku = 'Ważność 1 miesiąc' OR status_leku = 'Ważność 3 miesiące' OR status_leku = 'Brak na stanie') THEN 'Do zamówienia'
@@ -679,8 +692,6 @@ export async function addStatusMedicineTrigger() {
             AND NEW.status IN ('Zakończone', 'Anulowane', 'Przyjęte');
         END;
     `);
-
-    console.log('Medicine and equipment status triggers created successfully');
 }
 
 export async function updateStatusTrigger() {
@@ -743,33 +754,94 @@ export async function updateStatusTrigger() {
             WHERE z.status NOT IN ('Zakończone', 'Anulowane')
         );
     `);
-
-    console.log('Medicine and equipment status triggers updated successfully');
 }
 
 
 
+// Old databases store YYYY-MM-DD (or DD.MM.YYYY); convert to DD-MM-YYYY, leave anything unparseable untouched.
+const DATE_COLUMNS = [
+    ['Leki', 'data_waznosci'],
+    ['Sprzet', 'data_waznosci'],
+    ['Zamowienia', 'data_zamowienia'],
+    ['Utylizacje', 'data_utworzenia'],
+];
+
 export async function updateDateFormatToEuropean() {
     const db = await getDb();
 
-    // Update all dates to DD-MM-YYYY format
-    await db.exec(`
-        UPDATE Leki
-        SET data_waznosci = strftime('%d-%m-%Y', date(data_waznosci))
-        WHERE data_waznosci IS NOT NULL
-          AND data_waznosci != ''
-          AND data_waznosci NOT LIKE '__-__-____';
-    `);
+    for (const [table, col] of DATE_COLUMNS) {
+        await db.exec(`
+            UPDATE ${table}
+            SET ${col} = strftime('%d-%m-%Y', substr(${col}, 1, 10))
+            WHERE ${col} GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]*'
+              AND date(substr(${col}, 1, 10)) IS NOT NULL;
+        `);
 
-    // Also update the date format in Sprzet table to maintain consistency
-    await db.exec(`
-        UPDATE Sprzet
-        SET data_waznosci = strftime('%d-%m-%Y', date(data_waznosci))
-        WHERE data_waznosci IS NOT NULL
-          AND data_waznosci != ''
-          AND data_waznosci NOT LIKE '__-__-____';
-    `);
+        // D.M.YYYY / DD.MM.YYYY (toLocaleDateString('pl-PL')) -> DD-MM-YYYY
+        const rows = await db.all(`SELECT rowid AS rid, ${col} AS d FROM ${table} WHERE ${col} LIKE '%.%.%'`);
+        for (const {rid, d} of rows) {
+            const m = /^(\d{1,2})\.(\d{1,2})\.(\d{4})$/.exec(d.trim());
+            if (m) {
+                await db.run(`UPDATE ${table} SET ${col} = ? WHERE rowid = ?`,
+                    [`${m[1].padStart(2, '0')}-${m[2].padStart(2, '0')}-${m[3]}`, rid]);
+            }
+        }
+    }
+}
 
+// Add columns that newer code expects but an older (imported) database lacks.
+// The canonical definitions are taken from createTables() run against an empty in-memory schema.
+async function addMissingColumns() {
+    const db = await getDb();
+    const tables = await db.all(`SELECT name FROM ref.sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'`);
 
-    console.log('All dates updated to DD-MM-YYYY format and triggers modified accordingly');
+    for (const {name} of tables) {
+        const existing = new Set((await db.all(`PRAGMA main.table_info("${name}")`)).map(c => c.name));
+        for (const col of await db.all(`PRAGMA ref.table_info("${name}")`)) {
+            if (existing.has(col.name)) continue;
+            // ALTER TABLE ADD COLUMN forbids NOT NULL without default and non-constant defaults.
+            const dflt = col.dflt_value && !col.dflt_value.includes('(') ? ` DEFAULT ${col.dflt_value}` : '';
+            await db.exec(`ALTER TABLE "${name}" ADD COLUMN "${col.name}" ${col.type}${dflt}`);
+        }
+    }
+}
+
+async function withReferenceSchema(fn) {
+    const db = await getDb();
+    await db.exec(`ATTACH DATABASE ':memory:' AS ref`);
+    try {
+        const sql = TABLES_SQL.replace(/CREATE (TABLE|VIEW) IF NOT EXISTS (\w+)/g, 'CREATE $1 IF NOT EXISTS ref.$2');
+        await db.exec(sql.replace(/CREATE VIEW[\s\S]*?FROM Leki;/, ''));
+        await fn();
+    } finally {
+        await db.exec('DETACH DATABASE ref');
+    }
+}
+
+/**
+ * Bring any database (fresh, current or an old export) to the current schema.
+ * Idempotent: runs on every start and after every import.
+ */
+export async function migrate() {
+    await createTables();
+    await withReferenceSchema(addMissingColumns);
+    await createSyncTriggers();
+    await addStatusMedicineTrigger();
+    await addExpiryStatusTrigger();
+    await updateDateFormatToEuropean();
+    await refreshStatuses();
+    await ensureAdminUser();
+}
+
+// A brand-new database would otherwise have nobody who can log in (or open the admin panel).
+async function ensureAdminUser() {
+    const db = await getDb();
+    const {count} = await db.get('SELECT COUNT(*) AS count FROM users');
+    if (count === 0) await db.run(`INSERT INTO users (username, password, position) VALUES ('admin', NULL, 'admin')`);
+}
+
+/** Recompute expiry statuses first, then stock/order statuses that depend on them. */
+export async function refreshStatuses() {
+    await updateExpiryStatusTrigger();
+    await updateStatusTrigger();
 }

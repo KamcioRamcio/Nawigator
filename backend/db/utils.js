@@ -1,20 +1,31 @@
 // backend/db/utils.js
-// Utility functions used across different query modules
+// Helpers shared by query modules. Dates are stored as DD-MM-YYYY text.
 
+/** Convert YYYY-MM-DD (HTML date input) to DD-MM-YYYY; other values are returned unchanged. */
 export function formatDateToEuropean(date) {
-    if (!date) return date;
+    if (typeof date !== 'string') return date;
+    const iso = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
+    return iso ? `${iso[3]}-${iso[2]}-${iso[1]}` : date;
+}
 
-    // Check if already in DD-MM-YYYY format
-    if (/^\d{2}-\d{2}-\d{4}$/.test(date)) {
-        return date; // Already in correct format
+/** Today's date as DD-MM-YYYY (server local time). */
+export function todayEuropean(now = new Date()) {
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${pad(now.getDate())}-${pad(now.getMonth() + 1)}-${now.getFullYear()}`;
+}
+
+/** SQL expression for sorting a DD-MM-YYYY column chronologically. */
+export const sortableDate = (col) => `substr(${col}, 7, 4) || substr(${col}, 4, 2) || substr(${col}, 1, 2)`;
+
+/** Run fn inside a transaction on the shared connection. */
+export async function inTransaction(db, fn) {
+    await db.exec('BEGIN');
+    try {
+        const result = await fn();
+        await db.exec('COMMIT');
+        return result;
+    } catch (error) {
+        await db.exec('ROLLBACK');
+        throw error;
     }
-
-    // Check if in YYYY-MM-DD format
-    if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-        const [year, month, day] = date.split('-');
-        return `${day}-${month}-${year}`;
-    }
-
-    // Return original if format is unknown
-    return date;
 }
