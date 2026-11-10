@@ -241,7 +241,7 @@ const UtilizationModal = ({isOpen, onClose, item, itemType, onUtilizationComplet
                 }, 1500);
             } else {
                 const errorData = await response.json();
-                throw new Error(errorData.message || "Błąd podczas dodawania przedmiotu do utylizacji");
+                throw new Error(errorData.error || errorData.errors?.[0]?.msg || "Błąd podczas dodawania przedmiotu do utylizacji");
             }
         } catch (err) {
             setIsSubmitting(false);

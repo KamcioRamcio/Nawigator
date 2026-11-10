@@ -81,12 +81,12 @@ function AddToOrderModal({ isOpen, onClose, medicine, equipment }) {
             })
 
             if (response.ok) {
-                const data = await response.json()
-                setNewOrderId(data)
+                const {id} = await response.json()
+                setNewOrderId(id)
                 setNewOrderCreated(true)
                 toastService.success("Utworzono nowe zamówienie")
                 await fetchOrders()
-                setSelectedOrder(String(data))
+                setSelectedOrder(String(id))
                 setIsCreatingNewOrder(false)
             } else {
                 throw new Error("Failed to create order")
@@ -142,9 +142,9 @@ function AddToOrderModal({ isOpen, onClose, medicine, equipment }) {
                 toastService.success(`${itemType === "medicine" ? "Lek" : "Sprzęt"} dodany do zamówienia`)
                 onClose()
             } else {
-                const errorData = await response.json()
+                const errorData = await response.json().catch(() => ({}))
                 toastService.error(
-                    errorData.message || `Nie udało się dodać ${itemType === "medicine" ? "leku" : "sprzętu"} do zamówienia`,
+                    errorData.error || errorData.errors?.[0]?.msg || `Nie udało się dodać ${itemType === "medicine" ? "leku" : "sprzętu"} do zamówienia`,
                 )
             }
         } catch (error) {

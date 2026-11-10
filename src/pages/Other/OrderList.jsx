@@ -163,6 +163,7 @@ function OrderList() {
                         <p className="text-gray-500">Ładowanie zamówień...</p>
                     </div>
                 ) : orders.length > 0 ? (
+                    <div className="max-md:overflow-x-auto">
                     <table className="w-full">
                         <thead className="text-left sticky top-[168px] z-10">
                         <tr className="bg-gray-200 text-gray-700 uppercase text-sm tracking-wide">
@@ -196,6 +197,7 @@ function OrderList() {
                         ))}
                         </tbody>
                     </table>
+                    </div>
                 ) : (
                     <div className="p-8 text-center">
                         <p className="text-gray-500 text-lg">Brak zamówień</p>

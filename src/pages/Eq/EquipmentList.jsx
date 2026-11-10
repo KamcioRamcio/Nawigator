@@ -348,6 +348,7 @@ function EquipmentList() {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             toastService.success(`Sprzęt "${newEquipment.eq_nazwa}" został dodany pomyślnie`);
+            handleAddEquipmentClose();
             setNewEquipment({
                 eq_nazwa: "",
                 eq_ilosc_wymagana: "",
@@ -369,7 +370,6 @@ function EquipmentList() {
 
     const addItemModalContent = (
         <AddItemModal isOpen={addEquipment} onClose={handleAddEquipmentClose} title="Dodaj Wyposażenie">
-            <h2 className="text-xl font-bold mb-4">Dodaj Wyposażenie</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -507,10 +507,7 @@ function EquipmentList() {
                 </button>
                 <button
                     className="px-4 py-2 bg-blue-500 text-white rounded-md"
-                    onClick={() => {
-                        handleAddEquipment();
-                        handleAddEquipmentClose();
-                    }}
+                    onClick={handleAddEquipment}
                 >
                     Dodaj
                 </button>

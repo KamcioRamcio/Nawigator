@@ -590,7 +590,6 @@ function MainMedicineList() {
     // AddItemModal content stored in a variable
     const addItemModalContent = (
         <AddItemModal isOpen={medicineAdd} onClose={handleAddMedicineClose} title="Dodaj Nowy Lek">
-            <h2 className="text-xl font-bold mb-4">Dodaj Nowy Lek</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">

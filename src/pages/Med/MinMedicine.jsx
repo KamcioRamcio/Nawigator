@@ -508,7 +508,6 @@ function MinMedicine() {
 
     const addItemModalContent = (
         <AddItemModal isOpen={medicineAdd} onClose={handleAddMedicineClose} title="Dodaj Lek do Listy Minimalnej">
-            <h2 className="text-xl font-bold mb-4">Dodaj Lek do Listy Minimalnej</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
