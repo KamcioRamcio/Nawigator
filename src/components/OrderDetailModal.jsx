@@ -449,7 +449,7 @@ function OrderDetailModal({ isOpen, onClose, orderId, onOrderUpdate }) {
                                             {[...(order.leki || []).map(i => [i.id, i.nazwa_leku, i.przyjeta_ilosc]),
                                               ...(order.sprzet || []).map(i => [`s${i.id}`, i.nazwa_sprzetu, i.przyjeta_ilosc])]
                                                 .filter(([, , qty]) => qty != null)
-                                                .map(([key, name, qty]) => <li key={key}>{name}: −{qty}</li>)}
+                                                .map(([key, name, qty]) => <li key={key}>{name?.trim()}: −{qty}</li>)}
                                         </ul>
                                         <p className="mt-2 text-amber-900">Historia dostaw traci wpis tego przyjęcia, a data ważności wraca do poprzedniej, jeśli przyjęcie ją ustawiło.</p>
                                         <div className="mt-3 flex gap-2">

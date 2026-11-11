@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import apiUrl from "../../constants/api.js";
 import SiteChange from "../../components/SiteChange.jsx";
 import toastService from "../../utils/toast.js";
+import {apiError} from "../../utils/apiError.js";
 
 /**
  * Admin Component
@@ -113,7 +114,7 @@ function Admin() {
             });
 
             if (!response.ok) {
-                throw new Error(`Server responded with ${response.status}`);
+                throw new Error(await apiError(response));
             }
 
             setEditMode((prev) => ({ ...prev, [userId]: false }));
@@ -145,7 +146,7 @@ function Admin() {
             });
 
             if (!response.ok) {
-                throw new Error(`Server responded with ${response.status}`);
+                throw new Error(await apiError(response));
             }
 
             toastService.info("Użytkownik usunięty pomyślnie!");
@@ -193,7 +194,7 @@ function Admin() {
             });
 
             if (!response.ok) {
-                throw new Error(`Server responded with ${response.status}`);
+                throw new Error(await apiError(response));
             }
 
             setNewUser({ username: "", password: "", position: "" });
