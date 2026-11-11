@@ -33,7 +33,7 @@ function MainMedicineList() {
     const [editedValues, setEditedValues] = useState({});
     const username = localStorage.getItem("username");
     const user = JSON.parse(localStorage.getItem("user"));
-    const userPosition = user.position || "viewer";
+    const userPosition = user?.position || "viewer";
     const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
 
     const [selectedMedicine, setSelectedMedicine] = useState(null);

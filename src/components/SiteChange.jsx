@@ -3,7 +3,7 @@ import React, {useEffect, useRef} from 'react';
 function SiteChange({isOpen, onClose}) {
     const modalRef = useRef(null);
     const user = JSON.parse(localStorage.getItem("user"));
-    const userPosition = user.position || "viewer"
+    const userPosition = user?.position || "viewer"
 
     useEffect(() => {
         if (!isOpen) return;

@@ -28,7 +28,7 @@ function MainEquipmentList() {
     const [currentDate, setCurrentDate] = useState("");
     const username = localStorage.getItem("username");
     const user = JSON.parse(localStorage.getItem("user"));
-    const userPosition = user.position || "viewer";
+    const userPosition = user?.position || "viewer";
     const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
 
     const [selectedEquipment, setSelectedEquipment] = useState(null);
@@ -504,7 +504,7 @@ function MainEquipmentList() {
         const statusMatch = statusFilter === "all" ||
             equipment.sprzet_termin === statusFilter ||
             equipment.sprzet_ilosc_termin === statusFilter ||
-            (statusFilter === "W zamówieniu" && equipment.sprzet_ilosc_termin.includes("W zamówieniu"));
+            (statusFilter === "W zamówieniu" && equipment.sprzet_ilosc_termin?.includes("W zamówieniu"));
         ;
 
         return queryMatch && statusMatch;
@@ -990,7 +990,7 @@ function MainEquipmentList() {
                                                             <td className={`
                                                                 ${equipment.sprzet_ilosc_termin === "W porządku" ? "font-bold text-green-600" : ""}
                                                                 ${equipment.sprzet_ilosc_termin === "Zamówione" ? "font-bold text-blue-600" : ""}
-                                                                ${equipment.sprzet_ilosc_termin.includes("W zamówieniu") ? "font-bold text-violet-600" : ""}
+                                                                ${equipment.sprzet_ilosc_termin?.includes("W zamówieniu") ? "font-bold text-violet-600" : ""}
                                                                 ${(equipment.sprzet_ilosc_termin === "Uwaga Ilość" || equipment.sprzet_ilosc_termin === "Do zamówienia") ? "font-bold text-orange-600" : ""}
                                                                 px-2 py-2 md:py-4 whitespace-nowrap text-sm
                                                             `}>

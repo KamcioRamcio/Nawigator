@@ -13,7 +13,7 @@ const generateMinMedicinePDF = (...args) => import("../../utils/minMedicinePdfGe
 function MinMedicine() {
     const username = localStorage.getItem("username");
     const user = JSON.parse(localStorage.getItem("user"));
-    const userPosition = user.position || "viewer";
+    const userPosition = user?.position || "viewer";
     const [currentDate, setCurrentDate] = useState("");
     const [medicines, setMedicines] = useState({});
     // Change from individual edit mode to global edit mode
