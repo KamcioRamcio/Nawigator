@@ -36,10 +36,10 @@ test('create user: validation and duplicate username', async () => {
 
 test('update user: empty password keeps the old one (admin form sends "")', async () => {
     const {id} = await db.get(`SELECT id FROM users WHERE username = 'kamil'`);
-    await api.put(`/api/admin/users/${id}`).send({username: 'kamil', password: '', position: 'manager'}).expect(200);
+    await api.put(`/api/admin/users/${id}`).send({username: 'kamil', password: '', position: 'admin'}).expect(200);
     let row = await db.get('SELECT * FROM users WHERE id = ?', [id]);
     assert.equal(row.password, 'admin');
-    assert.equal(row.position, 'manager');
+    assert.equal(row.position, 'admin');
 
     await api.put(`/api/admin/users/${id}`).send({password: 'nowe'}).expect(200);
     row = await db.get('SELECT * FROM users WHERE id = ?', [id]);
@@ -52,4 +52,23 @@ test('delete user', async () => {
     const {id} = await db.get(`SELECT id FROM users WHERE username = 'view'`);
     await api.delete(`/api/admin/users/${id}`).expect(200);
     await api.delete(`/api/admin/users/${id}`).expect(404);
+});
+
+test('role must be admin, user or viewer', async () => {
+    await api.post('/api/admin/users').send({username: 'zla-rola', position: 'Admin'}).expect(400);
+    const {id} = await db.get(`SELECT id FROM users WHERE username = 'pusty'`);
+    await api.put(`/api/admin/users/${id}`).send({position: 'manager'}).expect(400);
+    await api.put(`/api/admin/users/${id}`).send({position: ''}).expect(200);
+});
+
+test('the last admin cannot be deleted or demoted', async () => {
+    const {id} = await db.get(`SELECT id FROM users WHERE username = 'kamil'`);
+    const res = await api.delete(`/api/admin/users/${id}`).expect(409);
+    assert.match(res.body.error, /administrator/);
+    await api.put(`/api/admin/users/${id}`).send({position: 'user'}).expect(409);
+    assert.equal((await db.get('SELECT position FROM users WHERE id = ?', [id])).position, 'admin');
+
+    // with a second admin both operations are allowed again
+    await api.post('/api/admin/users').send({username: 'drugi', position: 'admin'}).expect(201);
+    await api.put(`/api/admin/users/${id}`).send({position: 'user'}).expect(200);
 });

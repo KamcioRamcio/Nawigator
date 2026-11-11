@@ -48,3 +48,12 @@ export async function deleteUser(id) {
     const result = await db.run('DELETE FROM users WHERE id = ?', [id]);
     return result.changes;
 }
+
+/** True when this user is the only admin left (removing or demoting them would lock everyone out of the admin panel). */
+export async function isLastAdmin(id) {
+    const db = await getDb();
+    const user = await db.get('SELECT position FROM users WHERE id = ?', [id]);
+    if (user?.position !== 'admin') return false;
+    const {count} = await db.get(`SELECT COUNT(*) AS count FROM users WHERE position = 'admin'`);
+    return count === 1;
+}
