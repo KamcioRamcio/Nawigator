@@ -6,6 +6,7 @@ import ConstantsEquipment from "../../constants/constantsEquipment.js";
 import {showEditButtonNoMain, showAddButton, showEditButton, showDeleteButton} from "../../constants/permisions.js";
 import toastService from '../../utils/toast.js';
 import {apiError} from "../../utils/apiError.js";
+import {toInputDate} from "../../utils/dates.js";
 // jsPDF + embedded font (~2MB) load only when a PDF is generated
 const generateEqPDF = (...args) => import("../../utils/EqPdfGenerator.js").then((m) => m.generateEqPDF(...args));
 /**
@@ -133,6 +134,7 @@ function EquipmentList() {
             [equipmentId]: {
                 ...prev[equipmentId],
                 [field]: value,
+                ...(field === 'id_kategorii' ? {id_pod_kategorii: null} : {}),
                 sprzet_kto_zmienil: username
             }
         }));
@@ -673,7 +675,6 @@ function EquipmentList() {
                                                                             value={editedEquipment[equipment.sprzet_id]?.id_kategorii || ""}
                                                                             onChange={(e) => {
                                                                                 handleEdit(equipment.sprzet_id, "id_kategorii", e.target.value)
-                                                                                setSelectedCategory(e.target.value)
                                                                             }}
                                                                             className="border rounded-md px-2 py-1 w-full text-sm"
                                                                         >
@@ -689,12 +690,11 @@ function EquipmentList() {
                                                                             value={editedEquipment[equipment.sprzet_id]?.id_pod_kategorii || ""}
                                                                             onChange={(e) => {
                                                                                 handleEdit(equipment.sprzet_id, "id_pod_kategorii", e.target.value)
-                                                                                setSelectedCategory(e.target.value)
                                                                             }}
                                                                             className="border rounded-md px-2 py-1 w-full text-sm"
                                                                         >
                                                                             <option value="">Wybierz Pod Kategorie</option>
-                                                                            {selectedCategory && ConstantsEquipment.SubCategoryOptions[selectedCategory]?.map(option => (
+                                                                            {ConstantsEquipment.SubCategoryOptions[editedEquipment[equipment.sprzet_id]?.id_kategorii]?.map(option => (
                                                                                 <option key={option.value} value={option.value}>
                                                                                     {option.label}
                                                                                 </option>
@@ -709,7 +709,7 @@ function EquipmentList() {
                                                                 {globalEditMode ? (
                                                                     <input
                                                                         type="date"
-                                                                        value={editedEquipment[equipment.sprzet_id]?.sprzet_data_waznosci || ""}
+                                                                        value={toInputDate(editedEquipment[equipment.sprzet_id]?.sprzet_data_waznosci)}
                                                                         onChange={(e) => handleEdit(equipment.sprzet_id, "sprzet_data_waznosci", e.target.value)}
                                                                         className="border rounded-md px-2 py-1 w-full text-sm"
                                                                     />

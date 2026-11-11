@@ -125,6 +125,7 @@ function MainEquipmentList() {
                 [equipmentId]: {
                     ...prev[equipmentId],
                     [field]: processedValue,
+                    ...(field === 'id_kategorii' ? {id_pod_kategorii: null} : {}),
                     sprzet_kto_zmienil: username
                 }
             }
@@ -880,7 +881,6 @@ function MainEquipmentList() {
                                                                             value={editedEquipment[equipment.sprzet_id]?.id_kategorii || ""}
                                                                             onChange={(e) => {
                                                                                 handleEdit(equipment.sprzet_id, "id_kategorii", e.target.value)
-                                                                                setSelectedCategory(e.target.value)
                                                                             }}
                                                                             className="border rounded-md px-2 py-1 w-full text-sm"
                                                                         >
@@ -896,12 +896,11 @@ function MainEquipmentList() {
                                                                             value={editedEquipment[equipment.sprzet_id]?.id_pod_kategorii || ""}
                                                                             onChange={(e) => {
                                                                                 handleEdit(equipment.sprzet_id, "id_pod_kategorii", e.target.value)
-                                                                                setSelectedCategory(e.target.value)
                                                                             }}
                                                                             className="border rounded-md px-2 py-1 w-full text-sm"
                                                                         >
                                                                             <option value="">Wybierz podkategorię</option>
-                                                                            {selectedCategory && ConstantsEquipment.SubCategoryOptions[selectedCategory]?.map(option => (
+                                                                            {ConstantsEquipment.SubCategoryOptions[editedEquipment[equipment.sprzet_id]?.id_kategorii]?.map(option => (
                                                                                 <option key={option.value} value={option.value}>
                                                                                     {option.label}
                                                                                 </option>

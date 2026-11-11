@@ -4,7 +4,7 @@ import toastService from '../utils/toast';
 // jsPDF + embedded font (~2MB) load only when a PDF is generated
 const generateUtilizationPDF = (...args) => import("../utils/utilizationPdfGenerator").then((m) => m.generateUtilizationPDF(...args));
 import ConfirmDialog from './ConfirmDialog';
-import {formatDate} from "../utils/dates.js";
+import {formatDate, toInputDate} from "../utils/dates.js";
 
 function UtilizationDetailModal({ isOpen, onClose, utilizationId, onUtilizationUpdate }) {
     const [utilization, setUtilization] = useState(null);
@@ -406,7 +406,7 @@ function UtilizationDetailModal({ isOpen, onClose, utilizationId, onUtilizationU
                                 {editMode ? (
                                     <input
                                         type="date"
-                                        value={editedCreationDate}
+                                        value={toInputDate(editedCreationDate)}
                                         onChange={handleCreationDateChange}
                                         className="border rounded-sm px-2 py-1 w-full"
                                     />
@@ -504,7 +504,7 @@ function UtilizationDetailModal({ isOpen, onClose, utilizationId, onUtilizationU
                                                 {editMode ? (
                                                     <input
                                                         type="date"
-                                                        value={editedItems[`lek_${item.id}`]?.data_waznosci || ''}
+                                                        value={toInputDate(editedItems[`lek_${item.id}`]?.data_waznosci)}
                                                         onChange={(e) => handleItemChange('lek', item.id, 'data_waznosci', e.target.value)}
                                                         className="border rounded-sm px-2 py-1 w-full"
                                                     />
@@ -575,7 +575,7 @@ function UtilizationDetailModal({ isOpen, onClose, utilizationId, onUtilizationU
                                                 {editMode ? (
                                                     <input
                                                         type="date"
-                                                        value={editedItems[`sprzet_${item.id}`]?.data_waznosci || ''}
+                                                        value={toInputDate(editedItems[`sprzet_${item.id}`]?.data_waznosci)}
                                                         onChange={(e) => handleItemChange('sprzet', item.id, 'data_waznosci', e.target.value)}
                                                         className="border rounded-sm px-2 py-1 w-full"
                                                     />

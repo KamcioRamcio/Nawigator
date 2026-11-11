@@ -4,7 +4,7 @@ import toastService from '../utils/toast';
 // jsPDF + embedded font (~2MB) load only when a PDF is generated
 const generateOrderPDF = (...args) => import("../utils/orderPdfGenerator").then((m) => m.generateOrderPDF(...args));
 import ConfirmDialog from './ConfirmDialog';
-import {formatDate} from "../utils/dates.js";
+import {formatDate, toInputDate} from "../utils/dates.js";
 
 function OrderDetailModal({ isOpen, onClose, orderId, onOrderUpdate }) {
     const [order, setOrder] = useState(null);
@@ -383,7 +383,7 @@ function OrderDetailModal({ isOpen, onClose, orderId, onOrderUpdate }) {
                                 {editMode ? (
                                     <input
                                         type="date"
-                                        value={editedCreationDate}
+                                        value={toInputDate(editedCreationDate)}
                                         onChange={handleCreationDateChange}
                                         className="border rounded-sm px-2 py-1 w-full"
                                     />
@@ -465,7 +465,7 @@ function OrderDetailModal({ isOpen, onClose, orderId, onOrderUpdate }) {
                                                 {editMode ? (
                                                     <input
                                                         type="date"
-                                                        value={editedItems[`lek_${item.id}`]?.data_waznosci || ''}
+                                                        value={toInputDate(editedItems[`lek_${item.id}`]?.data_waznosci)}
                                                         onChange={(e) => handleItemChange('lek', item.id, 'data_waznosci', e.target.value)}
                                                         className="border rounded-sm px-2 py-1 w-full"
                                                     />
@@ -524,7 +524,7 @@ function OrderDetailModal({ isOpen, onClose, orderId, onOrderUpdate }) {
                                                 {editMode ? (
                                                     <input
                                                         type="date"
-                                                        value={editedItems[`sprzet_${item.id}`]?.data_waznosci || ''}
+                                                        value={toInputDate(editedItems[`sprzet_${item.id}`]?.data_waznosci)}
                                                         onChange={(e) => handleItemChange('sprzet', item.id, 'data_waznosci', e.target.value)}
                                                         className="border rounded-sm px-2 py-1 w-full"
                                                     />

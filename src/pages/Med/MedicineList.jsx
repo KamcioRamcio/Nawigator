@@ -6,6 +6,7 @@ import SiteChange from "../../components/SiteChange.jsx";
 import { showEditButtonNoMain, showAddButton, showDeleteButton } from "../../constants/permisions.js";
 import toastService from '../../utils/toast.js';
 import {apiError} from "../../utils/apiError.js";
+import {toInputDate} from "../../utils/dates.js";
 
 /**
  * MedicineList Component
@@ -164,6 +165,9 @@ function MedicineList() {
             [medicineId]: {
                 ...prev[medicineId],
                 [field]: value,
+                // a new parent category invalidates the lower levels
+                ...(field === 'id_kategorii' ? {id_pod_kategorii: null, id_pod_pod_kategorii: null} : {}),
+                ...(field === 'id_pod_kategorii' ? {id_pod_pod_kategorii: null} : {}),
                 rozchod_kto_zmienil: username,
             },
         }));
@@ -674,7 +678,6 @@ function MedicineList() {
                                                                                         value={editedValues[medicine.lek_id]?.id_kategorii || ""}
                                                                                         onChange={(e) => {
                                                                                             handleEdit(medicine.lek_id, "id_kategorii", parseInt(e.target.value));
-                                                                                            setSelectedCategory(e.target.value);
                                                                                         }}
                                                                                         className="border rounded-md px-2 py-1 w-full text-sm"
                                                                                     >
@@ -690,13 +693,12 @@ function MedicineList() {
                                                                                         value={editedValues[medicine.lek_id]?.id_pod_kategorii || ""}
                                                                                         onChange={(e) => {
                                                                                             handleEdit(medicine.lek_id, "id_pod_kategorii", parseInt(e.target.value));
-                                                                                            setSelectedSubCategory(e.target.value);
                                                                                         }}
                                                                                         className="border rounded-md px-2 py-1 w-full text-sm"
                                                                                         disabled={!editedValues[medicine.lek_id]?.id_kategorii}
                                                                                     >
                                                                                         <option value="">Wybierz podkategorię</option>
-                                                                                        {selectedCategory && ConstantsMedicine.SubCategoryOptions[selectedCategory]?.map(option => (
+                                                                                        {ConstantsMedicine.SubCategoryOptions[editedValues[medicine.lek_id]?.id_kategorii]?.map(option => (
                                                                                             <option key={option.value} value={option.value}>
                                                                                                 {option.label}
                                                                                             </option>
@@ -710,8 +712,7 @@ function MedicineList() {
                                                                                         disabled={!editedValues[medicine.lek_id]?.id_pod_kategorii}
                                                                                     >
                                                                                         <option value="">Wybierz podpodkategorię</option>
-                                                                                        {Array.isArray(ConstantsMedicine.SubSubCategoryOptions[selectedCategory]?.[selectedSubCategory]) &&
-                                                                                            ConstantsMedicine.SubSubCategoryOptions[selectedCategory][selectedSubCategory].map(option => (
+                                                                                        {ConstantsMedicine.SubSubCategoryOptions[editedValues[medicine.lek_id]?.id_kategorii]?.[editedValues[medicine.lek_id]?.id_pod_kategorii]?.map(option => (
                                                                                                 <option key={option.value} value={option.value}>
                                                                                                     {option.label}
                                                                                                 </option>
@@ -742,7 +743,7 @@ function MedicineList() {
                                                                             {globalEditMode ? (
                                                                                 <input
                                                                                     type="date"
-                                                                                    value={editedValues[medicine.lek_id]?.lek_data || ""}
+                                                                                    value={toInputDate(editedValues[medicine.lek_id]?.lek_data)}
                                                                                     onChange={(e) => handleEdit(medicine.lek_id, "lek_data", e.target.value)}
                                                                                     className="border rounded-md px-2 py-1 w-full text-sm"
                                                                                 />
