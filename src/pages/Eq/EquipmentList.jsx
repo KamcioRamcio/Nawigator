@@ -3,8 +3,9 @@ import apiUrl from "../../constants/api.js";
 import AddItemModal from "../../components/AddItemModal.jsx";
 import SiteChange from "../../components/SiteChange.jsx";
 import ConstantsEquipment from "../../constants/constantsEquipment.js";
-import {showEditButtonNoMain, showAddButton, showEditButton} from "../../constants/permisions.js";
+import {showEditButtonNoMain, showAddButton, showEditButton, showDeleteButton} from "../../constants/permisions.js";
 import toastService from '../../utils/toast.js';
+import {apiError} from "../../utils/apiError.js";
 // jsPDF + embedded font (~2MB) load only when a PDF is generated
 const generateEqPDF = (...args) => import("../../utils/EqPdfGenerator.js").then((m) => m.generateEqPDF(...args));
 /**
@@ -270,6 +271,7 @@ function EquipmentList() {
      * @param {string} equipmentId - The ID of the equipment to be deleted.
      */
     const handleDelete = async (equipmentId) => {
+        if (!showDeleteButton(userPosition)) return;
         if (!confirm("Czy na pewno chcesz usunąć tę pozycję? Ta operacja jest nieodwracalna.")) {
             return;
         }
@@ -278,7 +280,7 @@ function EquipmentList() {
                 method: "DELETE",
             });
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status()}`);
+                throw new Error(await apiError(response));
             }
             console.log("Equipment deleted:", equipmentId);
             toastService.info('Sprzęt został usunięty');
@@ -735,7 +737,7 @@ function EquipmentList() {
                                                             </td>
                                                             <td className="px-2 py-2 md:py-4 whitespace-nowrap text-right text-sm font-medium">
                                                                 {/* Delete button only visible when not in global edit mode */}
-                                                                {!globalEditMode && (
+                                                                {!globalEditMode && showDeleteButton(userPosition) && (
                                                                     <button
                                                                         onClick={() => handleDelete(equipment.sprzet_id)}
                                                                         className="bg-red-100 text-red-700 text-xs py-1 px-2 rounded-sm hover:bg-red-200"

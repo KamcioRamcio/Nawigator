@@ -9,6 +9,7 @@ import UtilizationButton from "../../components/UtilizationButton.jsx";
 import { showEditButton, showDeleteButton, showUtilizationButton, showAddButton, showPredictedStatusButton, showOrderButton } from "../../constants/permisions.js";
 import EquipmentStatusPreview from "../../components/EquipmentStatusPreview.jsx";
 import toastService from '../../utils/toast.js';
+import {apiError} from "../../utils/apiError.js";
 // jsPDF + embedded font (~2MB) load only when a PDF is generated
 const generateMainEqPDF = (...args) => import("../../utils/mainEqPdfGenerator.js").then((m) => m.generateMainEqPDF(...args));
 
@@ -415,7 +416,7 @@ function MainEquipmentList() {
 
             });
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status()}`);
+                throw new Error(await apiError(response));
             }
             toastService.info('Sprzęt został usunięty');
         } catch (error) {
@@ -989,7 +990,7 @@ function MainEquipmentList() {
                                                             <td className={`
                                                                 ${equipment.sprzet_ilosc_termin === "W porządku" ? "font-bold text-green-600" : ""}
                                                                 ${equipment.sprzet_ilosc_termin === "Zamówione" ? "font-bold text-blue-600" : ""}
-                                                                ${equipment.sprzet_ilosc_termin?.includes("W zamówieniu") ? "font-bold text-violet-600" : ""}
+                                                                ${equipment.sprzet_ilosc_termin.includes("W zamówieniu") ? "font-bold text-violet-600" : ""}
                                                                 ${(equipment.sprzet_ilosc_termin === "Uwaga Ilość" || equipment.sprzet_ilosc_termin === "Do zamówienia") ? "font-bold text-orange-600" : ""}
                                                                 px-2 py-2 md:py-4 whitespace-nowrap text-sm
                                                             `}>

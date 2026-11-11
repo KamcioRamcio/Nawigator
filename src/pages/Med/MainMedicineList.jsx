@@ -16,6 +16,7 @@ import {
 } from "../../constants/permisions.js";
 import MedicineStatusPreview from "../../components/MedicineStatusPreview.jsx";
 import toastService from '../../utils/toast.js';
+import {apiError} from "../../utils/apiError.js";
 // jsPDF + embedded font (~2MB) load only when a PDF is generated
 const generateMainMedicinePDF = (...args) => import("../../utils/mainMedicinePdfGenerator.js").then((m) => m.generateMainMedicinePDF(...args));
 
@@ -547,7 +548,7 @@ function MainMedicineList() {
                 method: "DELETE",
             });
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                throw new Error(await apiError(response));
             }
             toastService.info('Lek został usunięty');
         } catch (error) {

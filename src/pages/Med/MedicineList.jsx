@@ -3,8 +3,9 @@ import apiUrl from "../../constants/api.js";
 import ConstantsMedicine from "../../constants/constantsMedicine.js";
 import AddItemModal from "../../components/AddItemModal.jsx";
 import SiteChange from "../../components/SiteChange.jsx";
-import { showEditButtonNoMain, showAddButton } from "../../constants/permisions.js";
+import { showEditButtonNoMain, showAddButton, showDeleteButton } from "../../constants/permisions.js";
 import toastService from '../../utils/toast.js';
+import {apiError} from "../../utils/apiError.js";
 
 /**
  * MedicineList Component
@@ -316,6 +317,7 @@ function MedicineList() {
      * @param {string} medicineId - The ID of the medicine to be deleted.
      */
     const handleDeleteMedicine = async (medicineId) => {
+        if (!showDeleteButton(userPosition)) return;
         if (!confirm("Czy na pewno chcesz usunąć tę pozycję? Ta operacja jest nieodwracalna.")) {
             return;
         }
@@ -324,7 +326,7 @@ function MedicineList() {
                 method: "DELETE",
             });
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                throw new Error(await apiError(response));
             }
             toastService.info('Lek został usunięty');
         } catch (error) {
@@ -756,7 +758,7 @@ function MedicineList() {
                                                                         </td>
                                                                         <td className="px-2 py-2 md:py-4 whitespace-nowrap text-right text-sm font-medium">
                                                                             {/* Delete button only visible when not in global edit mode */}
-                                                                            {!globalEditMode && (
+                                                                            {!globalEditMode && showDeleteButton(userPosition) && (
                                                                                 <button
                                                                                     onClick={() => handleDeleteMedicine(medicine.lek_id)}
                                                                                     className="bg-red-100 text-red-700 text-xs py-1 px-2 rounded-sm hover:bg-red-200"
