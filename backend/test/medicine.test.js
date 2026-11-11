@@ -86,6 +86,13 @@ test('min list: add, update (incl. clearing fields), delete, 404s', async () => 
     const {body: tree} = await api.get('/api/leki-min-kategorie').expect(200);
     assert.ok(Object.values(tree.Uncategorized).flatMap(Object.values).flat().some(l => l.lek_min_id === body.id));
 
+    // edit forms read the category ids from the list
+    await api.put(`/api/leki-min/${body.id}`).send({nazwa_leku: 'MinLek', id_kategorii: cat}).expect(200);
+    const {body: tree2} = await api.get('/api/leki-min-kategorie').expect(200);
+    const item = Object.values(tree2).flatMap(Object.values).flatMap(Object.values).flat().find(l => l.lek_min_id === body.id);
+    assert.equal(item.id_kategorii, cat);
+    assert.ok('id_pod_kategorii' in item && 'id_pod_pod_kategorii' in item);
+
     await api.put('/api/leki-min/999999').send({nazwa_leku: 'x'}).expect(404);
     await api.delete(`/api/leki-min/${body.id}`).expect(200);
     await api.delete(`/api/leki-min/${body.id}`).expect(404);
