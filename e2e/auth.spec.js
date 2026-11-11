@@ -29,3 +29,20 @@ test('admin panel is only for admins', async ({page}) => {
     await page.goto('/admin');
     await expect(page).toHaveURL(/\/$/);
 });
+
+test('pages redirect to the login screen when nobody is logged in', async ({page}) => {
+    for (const path of ['/Main/Leki', '/zestawienie-lekow', '/zamowienia']) {
+        await page.goto(path);
+        await expect(page).toHaveURL(/\/$/);
+        await expect(page.getByRole('button', {name: 'Zaloguj się'})).toBeVisible();
+    }
+});
+
+test('viewer sees no delete buttons on the summary lists', async ({page}) => {
+    await login(page, 'view', null);
+    for (const path of ['/zestawienie-lekow', '/minimum-lekow', '/zestawienie-sprzetu']) {
+        await page.goto(path);
+        await expect(page.locator('tbody tr').first()).toBeVisible();
+        await expect(page.getByRole('button', {name: /Usuń/})).toHaveCount(0);
+    }
+});
