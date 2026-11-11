@@ -78,6 +78,79 @@ test('status "Przyjęte" adds stock once, records history, sets expiry only when
     assert.equal(s.status, `2x${euDate(500)}`);
 });
 
+test('leaving "Przyjęte" is blocked (409) unless the receipt is undone; undo restores stock, date and history', async () => {
+    const {order, lek, sprzet} = await orderWithItems({
+        medicine: {lek_ilosc: 0, lek_data: ''},
+        equipment: {eq_ilosc_aktualna: 1, eq_data: isoDate(30)},
+    });
+    await db.run(`UPDATE Leki SET important_status = 'notatka' WHERE id = ?`, [lek]);
+    const before = {
+        lek: await db.get('SELECT ilosc_wstepna, data_waznosci, important_status FROM Leki WHERE id = ?', [lek]),
+        sprzet: await db.get('SELECT ilosc_aktualna, data_waznosci, status FROM Sprzet WHERE id = ?', [sprzet]),
+    };
+    await api.put(`/api/zamowienia/${order}/status`).send({status: 'Przyjęte'}).expect(200);
+    assert.equal((await db.get('SELECT ilosc_wstepna AS q FROM Leki WHERE id = ?', [lek])).q, 5);
+
+    const blocked = await api.put(`/api/zamowienia/${order}/status`).send({status: 'Nowe'}).expect(409);
+    assert.equal(blocked.body.code, 'ORDER_RECEIVED');
+    assert.equal((await db.get('SELECT status FROM Zamowienia WHERE id = ?', [order])).status, 'Przyjęte');
+
+    await api.put(`/api/zamowienia/${order}/status`).send({status: 'Nowe', cofnijPrzyjecie: true}).expect(200);
+    assert.deepEqual({...await db.get('SELECT ilosc_wstepna, data_waznosci, important_status FROM Leki WHERE id = ?', [lek])}, {...before.lek});
+    assert.deepEqual({...await db.get('SELECT ilosc_aktualna, data_waznosci, status FROM Sprzet WHERE id = ?', [sprzet])}, {...before.sprzet});
+    assert.equal((await db.get('SELECT data_przyjecia FROM Zamowienia WHERE id = ?', [order])).data_przyjecia, null);
+    assert.equal((await db.get('SELECT status FROM Leki WHERE id = ?', [lek])).status, 'W zamówieniu: Dostawa');
+
+    // received again after the undo: stock added once more (the undo took it off)
+    await api.put(`/api/zamowienia/${order}/status`).send({status: 'Przyjęte'}).expect(200);
+    await api.put(`/api/zamowienia/${order}/status`).send({status: 'Przyjęte'}).expect(200);
+    assert.equal((await db.get('SELECT ilosc_wstepna AS q FROM Leki WHERE id = ?', [lek])).q, 5);
+});
+
+test('"Przyjęte" -> "Zakończone" keeps the stock; leaving "Zakończone" of a received order also needs the undo', async () => {
+    const {order, lek} = await orderWithItems({medicine: {lek_ilosc: 10}});
+    await api.put(`/api/zamowienia/${order}/status`).send({status: 'Przyjęte'}).expect(200);
+    await api.put(`/api/zamowienia/${order}/status`).send({status: 'Zakończone'}).expect(200);
+    assert.equal((await db.get('SELECT ilosc_wstepna AS q FROM Leki WHERE id = ?', [lek])).q, 15);
+    await api.put(`/api/zamowienia/${order}/status`).send({status: 'Anulowane'}).expect(409);
+    await api.put(`/api/zamowienia/${order}/status`).send({status: 'Anulowane', cofnijPrzyjecie: true}).expect(200);
+    assert.equal((await db.get('SELECT ilosc_wstepna AS q FROM Leki WHERE id = ?', [lek])).q, 10);
+});
+
+test('undo keeps a date changed after the delivery and skips items added later', async () => {
+    const {order, lek} = await orderWithItems({medicine: {lek_ilosc: 0, lek_data: ''}});
+    await api.put(`/api/zamowienia/${order}/status`).send({status: 'Przyjęte'}).expect(200);
+    await db.run(`UPDATE Leki SET data_waznosci = '01-01-2040' WHERE id = ?`, [lek]);
+    const extra = await addMedicine(api, {lek_ilosc: 3});
+    await api.post('/api/zamowienia/lek').send({id_zamowienia: order, id_leku: extra, ilosc: 7}).expect(201);
+
+    await api.put(`/api/zamowienia/${order}/status`).send({status: 'Zamówione', cofnijPrzyjecie: true}).expect(200);
+    const row = await db.get('SELECT ilosc_wstepna, data_waznosci FROM Leki WHERE id = ?', [lek]);
+    assert.equal(row.ilosc_wstepna, 0);
+    assert.equal(row.data_waznosci, '01-01-2040', 'manual change after delivery is kept');
+    assert.equal((await db.get('SELECT ilosc_wstepna AS q FROM Leki WHERE id = ?', [extra])).q, 3, 'item never received is untouched');
+});
+
+test('PUT /zamowienia/:id/details changes name and date; fields not sent are kept', async () => {
+    const {order} = await orderWithItems();
+    await api.put(`/api/zamowienia/${order}/details`).send({nazwa: 'Nowa nazwa', data_zamowienia: '2026-03-05'}).expect(200);
+    let row = await db.get('SELECT nazwa, data_zamowienia FROM Zamowienia WHERE id = ?', [order]);
+    assert.deepEqual({...row}, {nazwa: 'Nowa nazwa', data_zamowienia: '05-03-2026'});
+    await api.put(`/api/zamowienia/${order}/details`).send({uwagi: 'x'}).expect(200);
+    row = await db.get('SELECT nazwa, data_zamowienia FROM Zamowienia WHERE id = ?', [order]);
+    assert.equal(row.nazwa, 'Nowa nazwa');
+    await api.put(`/api/zamowienia/${order}/details`).send({nazwa: '  '}).expect(400);
+    await api.put('/api/zamowienia/999999/details').send({nazwa: 'a'}).expect(404);
+});
+
+test('order item expiry dates are stored as DD-MM-YYYY', async () => {
+    const {order} = await orderWithItems({item: {data_waznosci: '2030-01-31'}});
+    const {body} = await api.get(`/api/zamowienia/${order}`);
+    assert.equal(body.leki[0].data_waznosci, '31-01-2030');
+    await api.put(`/api/zamowienia/sprzet/${body.sprzet[0].id}`).send({ilosc: 1, data_waznosci: '2031-02-28'}).expect(200);
+    assert.equal((await db.get('SELECT data_waznosci AS d FROM Zamowienia_Sprzet WHERE id = ?', [body.sprzet[0].id])).d, '28-02-2031');
+});
+
 test('status validation and 404', async () => {
     const {order} = await orderWithItems();
     await api.put(`/api/zamowienia/${order}/status`).send({status: 'Coś'}).expect(400);

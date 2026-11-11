@@ -45,6 +45,16 @@ test('history survives deleting the medicine (name kept)', async () => {
     assert.equal(body.leki[0].nazwa_leku, 'Znikający');
 });
 
+test('name is copied from the item when the client does not send it', async () => {
+    const id = await create();
+    const lek = await addMedicine(api, {lek_nazwa: 'Bez nazwy w żądaniu'});
+    await api.post('/api/utylizacja/lek').send({id_utylizacji: id, id_leku: lek, ilosc: 1, powod_utylizacji: 'x', data_waznosci: '2027-05-31'}).expect(201);
+    await api.delete(`/api/leki/delete/${lek}`).expect(200);
+    const {body} = await api.get(`/api/utylizacja/${id}`).expect(200);
+    assert.equal(body.leki[0].nazwa_leku, 'Bez nazwy w żądaniu');
+    assert.equal(body.leki[0].data_waznosci, '31-05-2027');
+});
+
 test('update status/details (fields not sent are kept) and 404s', async () => {
     const id = await create({nazwa: 'U', uwagi: 'notatka'});
     await api.put(`/api/utylizacja/${id}/status`).send({status: 'Zakończona'}).expect(200);

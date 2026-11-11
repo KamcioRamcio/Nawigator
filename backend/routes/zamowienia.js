@@ -6,6 +6,7 @@ import {
     getAllOrders,
     getOrderById,
     updateOrderStatus,
+    updateOrderDetails,
     addMedicineToOrder,
     addEquipmentToOrder,
     removeMedicineFromOrder,
@@ -41,8 +42,18 @@ router.put('/zamowienia/:id/status', validate(
     idParam,
     body('status').isIn(ORDER_STATUSES).withMessage('Nieprawidłowy status zamówienia'),
 ), async (req, res) => {
-    const ok = await updateOrderStatus(req.params.id, req.body.status);
-    affected(res, ok, 'Status zamówienia zaktualizowany pomyślnie', NOT_FOUND);
+    const result = await updateOrderStatus(req.params.id, req.body.status, {undoReceipt: req.body.cofnijPrzyjecie === true});
+    if (result === 'received') {
+        return res.status(409).json({error: 'Zamówienie zostało już przyjęte. Zmiana statusu cofnie stany dodane przy przyjęciu.', code: 'ORDER_RECEIVED'});
+    }
+    affected(res, result === 'ok', 'Status zamówienia zaktualizowany pomyślnie', NOT_FOUND);
+});
+
+router.put('/zamowienia/:id/details', validate(
+    idParam,
+    body('nazwa').optional().trim().notEmpty().withMessage('Nazwa zamówienia nie może być pusta'),
+), async (req, res) => {
+    affected(res, await updateOrderDetails(req.params.id, req.body), 'Zamówienie zaktualizowane pomyślnie', NOT_FOUND);
 });
 
 router.post('/zamowienia/lek', validate(
