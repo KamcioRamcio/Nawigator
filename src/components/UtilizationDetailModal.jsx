@@ -5,6 +5,7 @@ import toastService from '../utils/toast';
 const generateUtilizationPDF = (...args) => import("../utils/utilizationPdfGenerator").then((m) => m.generateUtilizationPDF(...args));
 import ConfirmDialog from './ConfirmDialog';
 import {formatDate, toInputDate} from "../utils/dates.js";
+import {utilizationStatusColor} from "../constants/statuses.js";
 
 function UtilizationDetailModal({ isOpen, onClose, utilizationId, onUtilizationUpdate }) {
     const [utilization, setUtilization] = useState(null);
@@ -429,9 +430,7 @@ function UtilizationDetailModal({ isOpen, onClose, utilizationId, onUtilizationU
                                         ))}
                                     </select>
                                 ) : (
-                                    <p className={`${utilization.status === 'Zakończone' ? 'text-green-600' :
-                                        utilization.status === 'Anulowane' ? 'text-red-600' :
-                                            utilization.status === 'Zrealizowane' ? 'text-purple-600' : 'text-blue-600'} font-bold`}>
+                                    <p className={`${utilizationStatusColor(utilization.status)} font-bold`}>
                                         {utilization.status}
                                     </p>
                                 )}

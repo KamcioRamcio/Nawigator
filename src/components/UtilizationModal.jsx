@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import apiUrl from "../constants/api.js";
 import toastService from "../utils/toast.js";
+import {UTILIZATION_CLOSED} from "../constants/statuses.js";
 
 const UtilizationModal = ({isOpen, onClose, item, itemType, onUtilizationComplete}) => {
     const [formData, setFormData] = useState({
@@ -69,8 +70,7 @@ const UtilizationModal = ({isOpen, onClose, item, itemType, onUtilizationComplet
             if (response.ok) {
                 const data = await response.json();
                 setUtilizations(data.filter((utilization) =>
-                    utilization.status?.toLowerCase() !== "zakończone" &&
-                    utilization.status?.toLowerCase() !== "anulowane"
+                    !UTILIZATION_CLOSED.includes(utilization.status)
                 ));
             } else {
                 toastService.error("Nie udało się pobrać listy utylizacji");
@@ -202,7 +202,7 @@ const UtilizationModal = ({isOpen, onClose, item, itemType, onUtilizationComplet
                 payload = {
                     id_utylizacji: utilizationId,
                     id_leku: item.lek_id,
-                    nazwa: item.lek_nazwa,
+                    nazwa_leku: item.lek_nazwa,
                     ilosc: formData.ilosc_nominalna,
                     opakowanie: formData.opakowanie,
                     data_waznosci: formData.data_waznosci,
@@ -213,7 +213,7 @@ const UtilizationModal = ({isOpen, onClose, item, itemType, onUtilizationComplet
                 payload = {
                     id_utylizacji: utilizationId,
                     id_sprzetu: item.sprzet_id,
-                    nazwa: item.sprzet_nazwa,
+                    nazwa_sprzetu: item.sprzet_nazwa,
                     ilosc: formData.ilosc_nominalna,
                     data_waznosci: formData.data_waznosci,
                     powod_utylizacji: formData.powod_utylizacji || 'brak'
@@ -256,8 +256,10 @@ const UtilizationModal = ({isOpen, onClose, item, itemType, onUtilizationComplet
                 return "bg-red-100 text-red-800 border border-red-200";
             case "w trakcie":
                 return "bg-amber-100 text-amber-800 border border-amber-200";
-            case "zakończone":
+            case "zakończona":
                 return "bg-green-100 text-green-800 border border-green-200";
+            case "anulowana":
+                return "bg-gray-200 text-gray-700 border border-gray-300";
             default:
                 return "bg-gray-100 text-gray-800 border border-gray-200";
         }
