@@ -5,6 +5,8 @@ import toastService from '../utils/toast';
 const generateOrderPDF = (...args) => import("../utils/orderPdfGenerator").then((m) => m.generateOrderPDF(...args));
 import ConfirmDialog from './ConfirmDialog';
 import {formatDate, toInputDate} from "../utils/dates.js";
+import {apiError} from "../utils/apiError.js";
+import {ORDER_STATUSES, ORDER_KEEPS_RECEIPT} from "../constants/statuses.js";
 
 function OrderDetailModal({ isOpen, onClose, orderId, onOrderUpdate }) {
     const [order, setOrder] = useState(null);
@@ -18,13 +20,12 @@ function OrderDetailModal({ isOpen, onClose, orderId, onOrderUpdate }) {
     const [confirmAction, setConfirmAction] = useState(null);
     const [confirmMessage, setConfirmMessage] = useState('');
     const [showSettings, setShowSettings] = useState(false)
-    const statusOptions = [
-        { value: 'Nowe', label: 'Nowe' },
-        { value: 'Zamówione', label: 'Zamówione' },
-        { value: 'Przyjęte', label: 'Przyjęte' },
-        { value: 'Zakończone', label: 'Zakończone' },
-        { value: 'Anulowane', label: 'Anulowane' }
-    ];
+    // Undoing a receipt: target status, and whether the second confirmation step is shown.
+    const [undoTarget, setUndoTarget] = useState('Nowe');
+    const [undoConfirm, setUndoConfirm] = useState(false);
+    const received = Boolean(order?.data_przyjecia);
+    // A received order keeps its stock only in Przyjęte/Zakończone; other statuses go through the undo card.
+    const statusOptions = (received ? ORDER_KEEPS_RECEIPT : ORDER_STATUSES).map(value => ({value, label: value}));
 
     useEffect(() => {
         if (isOpen && orderId) {
@@ -99,80 +100,50 @@ function OrderDetailModal({ isOpen, onClose, orderId, onOrderUpdate }) {
         try {
             setLoading(true);
 
-            // 1. Update order name if changed
-            if (editedName !== order.nazwa) {
-                const nameResponse = await fetch(`${apiUrl}zamowienia/${orderId}/name`, {
+            // 1. Name and date
+            if (editedName !== order.nazwa || editedCreationDate !== order.data_zamowienia) {
+                const response = await fetch(`${apiUrl}zamowienia/${orderId}/details`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ nazwa: editedName })
+                    body: JSON.stringify({ nazwa: editedName, data_zamowienia: editedCreationDate })
                 });
+                if (!response.ok) throw new Error(await apiError(response));
+            }
 
-                if (!nameResponse.ok) {
-                    throw new Error('Failed to update order name');
+            // 2. Items that changed
+            const changed = (edited, item) => edited && (
+                edited.ilosc !== item.ilosc ||
+                edited.uwagi !== (item.uwagi || '') ||
+                (edited.data_waznosci || '') !== (item.data_waznosci || '')
+            );
+            const updatePromises = [];
+            for (const [type, items] of [['lek', order.leki], ['sprzet', order.sprzet]]) {
+                for (const item of items || []) {
+                    const editedItem = editedItems[`${type}_${item.id}`];
+                    if (!changed(editedItem, item)) continue;
+                    updatePromises.push(fetch(`${apiUrl}zamowienia/${type}/${item.id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            ilosc: editedItem.ilosc,
+                            uwagi: editedItem.uwagi,
+                            data_waznosci: editedItem.data_waznosci || ''
+                        })
+                    }));
                 }
             }
-
-
-
-            const updatePromises = [];
-
-            if (order.leki) {
-                order.leki.forEach(item => {
-                    const editedItem = editedItems[`lek_${item.id}`];
-                    if (editedItem && (editedItem.ilosc !== item.ilosc || editedItem.uwagi !== (item.uwagi || '')) || editedItem.data_waznosci !== item.data_waznosci) {
-                        updatePromises.push(
-                            fetch(`${apiUrl}zamowienia/lek/${item.id}`, {
-                                method: 'PUT',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                    ilosc: editedItem.ilosc,
-                                    uwagi: editedItem.uwagi,
-                                    data_waznosci: editedItem.data_waznosci || ''
-                                })
-                            })
-                        );
-                    }
-                });
+            for (const response of await Promise.all(updatePromises)) {
+                if (!response.ok) throw new Error(await apiError(response));
             }
 
-            if (order.sprzet) {
-                order.sprzet.forEach(item => {
-                    const editedItem = editedItems[`sprzet_${item.id}`];
-                    if (editedItem && (editedItem.ilosc !== item.ilosc || editedItem.uwagi !== (item.uwagi || '')) || editedItem.data_waznosci !== item.data_waznosci) {
-                        updatePromises.push(
-                            fetch(`${apiUrl}zamowienia/sprzet/${item.id}`, {
-                                method: 'PUT',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                    ilosc: editedItem.ilosc,
-                                    uwagi: editedItem.uwagi,
-                                    data_waznosci: editedItem.data_waznosci || ''
-                                })
-                            })
-                        );
-                    }
-                });
-            }
-
-            if (updatePromises.length > 0) {
-                const results = await Promise.all(updatePromises);
-                results.forEach(response => {
-                    if (!response.ok) {
-                        throw new Error('Failed to update some items');
-                    }
-                });
-            }
-
+            // 3. Status
             if (editedStatus !== order.status) {
-                const statusResponse = await fetch(`${apiUrl}zamowienia/${orderId}/status`, {
+                const response = await fetch(`${apiUrl}zamowienia/${orderId}/status`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ status: editedStatus })
                 });
-
-                if (!statusResponse.ok) {
-                    throw new Error('Failed to update order status');
-                }
+                if (!response.ok) throw new Error(await apiError(response));
             }
 
             toastService.success('Zamówienie zaktualizowane pomyślnie');
@@ -181,7 +152,29 @@ function OrderDetailModal({ isOpen, onClose, orderId, onOrderUpdate }) {
             if (onOrderUpdate) onOrderUpdate();
         } catch (error) {
             console.error('Error updating order:', error);
-            toastService.error('Błąd podczas aktualizacji zamówienia');
+            toastService.error(`Błąd podczas aktualizacji zamówienia: ${error.message}`);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    /** Leave "Przyjęte": the server takes back the stock added by the receipt, then sets the new status. */
+    const undoReceipt = async () => {
+        try {
+            setLoading(true);
+            const response = await fetch(`${apiUrl}zamowienia/${orderId}/status`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: undoTarget, cofnijPrzyjecie: true })
+            });
+            if (!response.ok) throw new Error(await apiError(response));
+            toastService.success(`Status zmieniony na „${undoTarget}”, stany sprzed przyjęcia przywrócone`);
+            setUndoConfirm(false);
+            setEditMode(false);
+            await fetchOrderDetails();
+            if (onOrderUpdate) onOrderUpdate();
+        } catch (error) {
+            toastService.error(`Nie udało się zmienić statusu: ${error.message}`);
         } finally {
             setLoading(false);
         }
@@ -335,6 +328,7 @@ function OrderDetailModal({ isOpen, onClose, orderId, onOrderUpdate }) {
                                         <button
                                             onClick={() => {
                                                 setEditMode(false);
+                                                setUndoConfirm(false);
                                                 fetchOrderDetails();
                                             }}
                                             disabled={loading}
@@ -416,6 +410,71 @@ function OrderDetailModal({ isOpen, onClose, orderId, onOrderUpdate }) {
                             </div>
                         </div>
 
+                        {editMode && received && (
+                            <div role="region" aria-label="Zamówienie przyjęte" className="mb-6 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm">
+                                <p className="font-semibold text-amber-900">
+                                    To zamówienie zostało już przyjęte ({formatDate(order.data_przyjecia)}).
+                                </p>
+                                {!undoConfirm ? (
+                                    <>
+                                        <p className="mt-1 text-amber-900">
+                                            Stany magazynowe zostały już powiększone o tę dostawę. Możesz zmienić status na inny niż „Przyjęte” / „Zakończone”, ale wtedy przyjęcie zostanie cofnięte.
+                                        </p>
+                                        <div className="mt-3 flex flex-wrap items-center gap-2">
+                                            <select
+                                                aria-label="Nowy status"
+                                                value={undoTarget}
+                                                onChange={(e) => setUndoTarget(e.target.value)}
+                                                className="border rounded-sm px-2 py-1"
+                                            >
+                                                {ORDER_STATUSES.filter(st => !ORDER_KEEPS_RECEIPT.includes(st)).map(st => (
+                                                    <option key={st} value={st}>{st}</option>
+                                                ))}
+                                            </select>
+                                            <button
+                                                type="button"
+                                                onClick={() => setUndoConfirm(true)}
+                                                className="bg-amber-600 hover:bg-amber-700 text-white px-3 py-1 rounded-sm"
+                                            >
+                                                Tak, zmień status
+                                            </button>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <>
+                                        <p className="mt-1 text-amber-900">
+                                            Stany zmienione przy przyjęciu tego zamówienia zostaną cofnięte do stanu sprzed przyjęcia, a status zmieni się na „{undoTarget}”:
+                                        </p>
+                                        <ul className="mt-2 list-disc pl-5 text-amber-900">
+                                            {[...(order.leki || []).map(i => [i.id, i.nazwa_leku, i.przyjeta_ilosc]),
+                                              ...(order.sprzet || []).map(i => [`s${i.id}`, i.nazwa_sprzetu, i.przyjeta_ilosc])]
+                                                .filter(([, , qty]) => qty != null)
+                                                .map(([key, name, qty]) => <li key={key}>{name}: −{qty}</li>)}
+                                        </ul>
+                                        <p className="mt-2 text-amber-900">Historia dostaw traci wpis tego przyjęcia, a data ważności wraca do poprzedniej, jeśli przyjęcie ją ustawiło.</p>
+                                        <div className="mt-3 flex gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={undoReceipt}
+                                                disabled={loading}
+                                                className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-sm disabled:opacity-50"
+                                            >
+                                                Zmień
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setUndoConfirm(false)}
+                                                disabled={loading}
+                                                className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-3 py-1 rounded-sm"
+                                            >
+                                                Anuluj
+                                            </button>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        )}
+
                         {/* Medicines */}
                         {order.leki && order.leki.length > 0 && (
                             <div className="mb-6">
@@ -448,17 +507,7 @@ function OrderDetailModal({ isOpen, onClose, orderId, onOrderUpdate }) {
                                                 )}
                                             </td>
                                             <td className="border px-4 py-2">
-                                                {editMode ? (
-                                                    <input
-                                                        type="text"
-                                                        value={editedItems[`lek_${item.id}`]?.opakowanie || ''}
-                                                        onChange={(e) => handleItemChange('lek', item.id, 'opakowanie', e.target.value)}
-                                                        className="border rounded-sm px-2 py-1 w-full"
-                                                        placeholder="Opakwowanie"
-                                                    />
-                                                ) : (
-                                                    item.opakowanie || '-'
-                                                )}
+                                                {item.opakowanie || '-'}
                                             </td>
                                             <td className="border px-4 py-2">
 
