@@ -1084,6 +1084,7 @@ function MainEquipmentList() {
                 isOpen={isOrderModalOpen}
                 onClose={() => setIsOrderModalOpen(false)}
                 equipment={selectedEquipment}
+                onAdded={fetchEquipment}
             />
 
             <ConfirmDialog

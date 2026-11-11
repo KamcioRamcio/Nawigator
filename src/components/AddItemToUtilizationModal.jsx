@@ -1,3 +1,8 @@
+/**
+ * OUTDATED – nieużywane. Okno ręcznego dodania pozycji spoza spisu do utylizacji nie jest
+ * otwierane z żadnego miejsca w UI (UtilizationList renderuje je, ale nic nie wywołuje
+ * handleOpenAddItemModal). Zostawione celowo; przed podpięciem przetestować.
+ */
 import React, { useState, useEffect } from 'react';
 import apiUrl from '../constants/api';
 import toastService from '../utils/toast';

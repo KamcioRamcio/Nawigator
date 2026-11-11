@@ -205,7 +205,7 @@ function MainMedicineList() {
         const userEditFields = ["rozchod_ilosc", "stan_magazynowy_ilosc"]
 
         if (userPosition !== "admin" && !userEditFields.includes(field)) {
-            alert("Tylko administartor może edytować te pola");
+            alert("Tylko administrator może edytować te pola");
             return;
         }
 
@@ -1276,6 +1276,7 @@ function MainMedicineList() {
                 isOpen={isOrderModalOpen}
                 onClose={() => setIsOrderModalOpen(false)}
                 medicine={selectedMedicine}
+                onAdded={fetchMedicines}
             />
             
             <ConfirmDialog
