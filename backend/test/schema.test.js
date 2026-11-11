@@ -141,3 +141,29 @@ test('item in two open orders shows the order it was added to first', async () =
     await updateStatusTrigger();
     assert.equal((await db.get('SELECT status FROM Leki WHERE id = ?', [lek])).status, 'W zamówieniu: Drugie');
 });
+
+test('orders received by an older version are marked received; undo takes quantity and history entry back', async () => {
+    const {updateOrderStatus} = await import('../db/orderQueries.js');
+    await db.exec('DELETE FROM Zamowienia_Leki; DELETE FROM Zamowienia; DELETE FROM Leki;');
+    const {lastID: lek} = await db.run(`INSERT INTO Leki (nazwa_leku, ilosc_wstepna, rozchod_ilosc, data_waznosci, important_status)
+                                        VALUES ('Legacy', 15, 0, '31-12-2030', 'stare; 5x31-12-2030')`);
+    const {lastID: order} = await db.run(`INSERT INTO Zamowienia (nazwa, status, data_zamowienia) VALUES ('Stare', 'Przyjęte', '01-03-2025')`);
+    await db.run(`INSERT INTO Zamowienia_Leki (id_zamowienia, id_leku, ilosc, data_waznosci) VALUES (?, ?, 5, '2030-12-31')`, [order, lek]);
+    await migrate();
+    await migrate(); // idempotent
+    assert.equal((await db.get('SELECT data_przyjecia AS d FROM Zamowienia WHERE id = ?', [order])).d, '01-03-2025');
+
+    assert.equal(await updateOrderStatus(order, 'Nowe'), 'received');
+    assert.equal(await updateOrderStatus(order, 'Nowe', {undoReceipt: true}), 'ok');
+    const row = await db.get('SELECT ilosc_wstepna, data_waznosci, important_status FROM Leki WHERE id = ?', [lek]);
+    assert.deepEqual({...row}, {ilosc_wstepna: 10, data_waznosci: '31-12-2030', important_status: 'stare'});
+});
+
+test('migration fills missing name copies of utilization items', async () => {
+    await db.exec('DELETE FROM Utylizacje_Leki; DELETE FROM Utylizacje; DELETE FROM Zamowienia_Leki; DELETE FROM Leki;');
+    const {lastID: lek} = await db.run(`INSERT INTO Leki (nazwa_leku) VALUES ('Kopia')`);
+    const {lastID: u} = await db.run(`INSERT INTO Utylizacje (nazwa) VALUES ('U')`);
+    await db.run('INSERT INTO Utylizacje_Leki (id_utylizacji, id_leku, ilosc) VALUES (?, ?, 1)', [u, lek]);
+    await migrate();
+    assert.equal((await db.get('SELECT nazwa_leku AS n FROM Utylizacje_Leki WHERE id_utylizacji = ?', [u])).n, 'Kopia');
+});

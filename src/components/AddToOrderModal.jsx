@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import apiUrl from "../constants/api.js"
 import toastService from "../utils/toast.js"
 
-function AddToOrderModal({ isOpen, onClose, medicine, equipment }) {
+function AddToOrderModal({ isOpen, onClose, medicine, equipment, onAdded }) {
     const [orders, setOrders] = useState([])
     const [selectedOrder, setSelectedOrder] = useState("")
     const [amount, setAmount] = useState(1)
@@ -140,6 +140,7 @@ function AddToOrderModal({ isOpen, onClose, medicine, equipment }) {
 
             if (response.ok) {
                 toastService.success(`${itemType === "medicine" ? "Lek" : "Sprzęt"} dodany do zamówienia`)
+                onAdded?.() // the item's status changed to "W zamówieniu: …"
                 onClose()
             } else {
                 const errorData = await response.json().catch(() => ({}))

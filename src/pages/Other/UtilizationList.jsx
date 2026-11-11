@@ -94,10 +94,6 @@ function UtilizationList() {
                 return 'bg-green-100 text-green-800';
             case 'Anulowana':
                 return 'bg-red-100 text-red-800';
-            case 'W realizacji':
-                return 'bg-yellow-100 text-yellow-800';
-            case 'W trakcie':
-                return 'bg-blue-100 text-blue-800';
             default:
                 return 'bg-gray-100 text-gray-800'; // 'Nowa'
         }
@@ -218,7 +214,6 @@ function UtilizationList() {
                             >
                                 <option value="all">Wszystkie statusy</option>
                                 <option value="Nowa">Nowa</option>
-                                <option value="W realizacji">W realizacji</option>
                                 <option value="Zakończona">Zakończone</option>
                                 <option value="Anulowana">Anulowane</option>
                             </select>

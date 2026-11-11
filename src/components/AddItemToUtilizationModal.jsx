@@ -1,6 +1,12 @@
+/**
+ * OUTDATED – nieużywane. Okno ręcznego dodania pozycji spoza spisu do utylizacji nie jest
+ * otwierane z żadnego miejsca w UI (UtilizationList renderuje je, ale nic nie wywołuje
+ * handleOpenAddItemModal). Zostawione celowo; przed podpięciem przetestować.
+ */
 import React, { useState, useEffect } from 'react';
 import apiUrl from '../constants/api';
 import toastService from '../utils/toast';
+import {UTILIZATION_CLOSED} from "../constants/statuses.js";
 
 function AddItemToUtilizationModal({ isOpen, onClose, onItemAdded }) {
     const [utilizations, setUtilizations] = useState([]);
@@ -45,8 +51,7 @@ function AddItemToUtilizationModal({ isOpen, onClose, onItemAdded }) {
             }
             const data = await response.json();
             const activeUtilizations = data.filter(utilization =>
-                utilization.status?.toLowerCase() !== "zakończone" &&
-                utilization.status?.toLowerCase() !== "anulowane"
+                !UTILIZATION_CLOSED.includes(utilization.status)
             );
             setUtilizations(activeUtilizations);
         } catch (error) {
@@ -88,7 +93,7 @@ function AddItemToUtilizationModal({ isOpen, onClose, onItemAdded }) {
                 endpoint = `${apiUrl}utylizacja/lek`;
                 payload = {
                     id_utylizacji: selectedUtilization,
-                    nazwa: formData.nazwa,
+                    nazwa_leku: formData.nazwa,
                     ilosc: formData.ilosc,
                     opakowanie: formData.opakowanie,
                     data_waznosci: formData.data_waznosci,
@@ -98,7 +103,7 @@ function AddItemToUtilizationModal({ isOpen, onClose, onItemAdded }) {
                 endpoint = `${apiUrl}utylizacja/sprzet`;
                 payload = {
                     id_utylizacji: selectedUtilization,
-                    nazwa: formData.nazwa,
+                    nazwa_sprzetu: formData.nazwa,
                     ilosc: formData.ilosc,
                     data_waznosci: formData.data_waznosci,
                     powod_utylizacji: formData.powod_utylizacji || 'brak'

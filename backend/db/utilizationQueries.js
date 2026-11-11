@@ -71,8 +71,9 @@ export async function addMedicineToUtilization(data) {
     const {id_utylizacji, id_leku, ilosc, uwagi, data_waznosci, powod_utylizacji, ilosc_nominalna, opakowanie, nazwa_leku} = data;
     const result = await db.run(
         `INSERT INTO Utylizacje_Leki (id_utylizacji, id_leku, ilosc, uwagi, data_waznosci, powod_utylizacji, ilosc_nominalna, opakowanie, nazwa_leku)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [id_utylizacji, id_leku ?? null, ilosc, uwagi || '', data_waznosci ?? null, powod_utylizacji || '', ilosc_nominalna ?? null, opakowanie ?? null, nazwa_leku ?? null]
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, COALESCE(?, (SELECT nazwa_leku FROM Leki WHERE id = ?)))`,
+        [id_utylizacji, id_leku ?? null, ilosc, uwagi || '', formatDateToEuropean(data_waznosci) ?? null, powod_utylizacji || '',
+            ilosc_nominalna ?? null, opakowanie ?? null, nazwa_leku || null, id_leku ?? null]
     );
     return result.lastID;
 }
@@ -82,8 +83,9 @@ export async function addEquipmentToUtilization(data) {
     const {id_utylizacji, id_sprzetu, ilosc, uwagi, data_waznosci, powod_utylizacji, nazwa_sprzetu} = data;
     const result = await db.run(
         `INSERT INTO Utylizacje_Sprzet (id_utylizacji, id_sprzetu, ilosc, uwagi, data_waznosci, powod_utylizacji, nazwa_sprzetu)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [id_utylizacji, id_sprzetu ?? null, ilosc, uwagi || '', data_waznosci ?? null, powod_utylizacji || '', nazwa_sprzetu ?? null]
+         VALUES (?, ?, ?, ?, ?, ?, COALESCE(?, (SELECT nazwa FROM Sprzet WHERE id = ?)))`,
+        [id_utylizacji, id_sprzetu ?? null, ilosc, uwagi || '', formatDateToEuropean(data_waznosci) ?? null, powod_utylizacji || '',
+            nazwa_sprzetu || null, id_sprzetu ?? null]
     );
     return result.lastID;
 }
@@ -95,7 +97,7 @@ export async function updateMedicineInUtilization(itemId, {ilosc, uwagi, data_wa
          SET ilosc = ?, uwagi = ?, data_waznosci = COALESCE(?, data_waznosci), powod_utylizacji = COALESCE(?, powod_utylizacji),
              ilosc_nominalna = COALESCE(?, ilosc_nominalna), opakowanie = COALESCE(?, opakowanie)
          WHERE id = ?`,
-        [ilosc, uwagi || null, data_waznosci ?? null, powod_utylizacji ?? null, ilosc_nominalna ?? null, opakowanie ?? null, itemId]
+        [ilosc, uwagi || null, formatDateToEuropean(data_waznosci) ?? null, powod_utylizacji ?? null, ilosc_nominalna ?? null, opakowanie ?? null, itemId]
     );
     return result.changes;
 }
@@ -106,7 +108,7 @@ export async function updateEquipmentInUtilization(itemId, {ilosc, uwagi, data_w
         `UPDATE Utylizacje_Sprzet
          SET ilosc = ?, uwagi = ?, data_waznosci = COALESCE(?, data_waznosci), powod_utylizacji = COALESCE(?, powod_utylizacji)
          WHERE id = ?`,
-        [ilosc, uwagi || null, data_waznosci ?? null, powod_utylizacji ?? null, itemId]
+        [ilosc, uwagi || null, formatDateToEuropean(data_waznosci) ?? null, powod_utylizacji ?? null, itemId]
     );
     return result.changes;
 }

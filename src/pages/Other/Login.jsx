@@ -92,8 +92,8 @@ function Login() {
         if (!file) return;
 
         // Validate file type
-        if (!file.name.endsWith('.db') && !file.name.endsWith('.sqlite')) {
-            toastService.error("Please select a valid database file (.db or .sqlite)");
+        if (!/\.(db|sqlite|sqlite3)$/i.test(file.name)) {
+            toastService.error("Wybierz plik bazy danych (.db, .sqlite lub .sqlite3)");
             e.target.value = null; // Clear the file input
             return;
         }
@@ -224,7 +224,7 @@ function Login() {
                         ref={fileInputRef}
                         style={{ display: 'none' }}
                         onChange={handleFileSelected}
-                        accept=".db,.sqlite"
+                        accept=".db,.sqlite,.sqlite3"
                     />
                 </div>
             </div>

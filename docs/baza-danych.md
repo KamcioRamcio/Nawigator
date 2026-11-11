@@ -62,6 +62,13 @@ flowchart TD
 - `updateStatusTrigger()` (start, noc, usunięcie zamówienia) najpierw ustawia `Zamówione` pozycjom z aktywnych zamówień, ale trigger wiersza od razu przelicza je na wynik z diagramu – pozycja z zamówienia `Nowe`/`W trakcie` kończy jako `W zamówieniu: <nazwa>`.
 - Gdy pozycja jest w kilku otwartych zamówieniach, nazwa pochodzi z zamówienia, do którego dodano ją **najwcześniej** (`ORDER BY` id pozycji – dokładnie tak, jak działały wcześniejsze wersje).
 - Zmiana statusu zamówienia na **Przyjęte** dodaje zamówione ilości do stanu **tylko raz** (ponowne zapisanie tego samego statusu nic nie dodaje), dopisuje `ilość x data` do historii i ustawia datę ważności, jeśli pozycji nie było na stanie lub nie miała daty.
+- Przyjęcie jest zapisywane: `Zamowienia.data_przyjecia` oraz na każdej pozycji `przyjeta_ilosc`, `przyjety_wpis` (dopisany wpis historii), `przed_przyjeciem_data` i `zmieniono_date`.
+- Przyjęte zamówienie może przejść tylko do `Zakończone`. Każdy inny status wymaga **cofnięcia przyjęcia** (w UI karta z potwierdzeniem):
+  - stan zmniejsza się o `przyjeta_ilosc`;
+  - z historii znika `przyjety_wpis`;
+  - data ważności wraca do poprzedniej, jeśli przyjęcie ją ustawiło i nikt jej potem nie zmienił;
+  - pozycje dodane po przyjęciu nie są ruszane.
+- Zamówienia przyjęte w starszych wersjach (status `Przyjęte` bez `data_przyjecia`) migracja oznacza jako przyjęte (`data_przyjecia = data_zamowienia`, `przyjeta_ilosc = ilosc`). Ich cofnięcie zdejmuje ilość i wpis historii, ale daty nie zmienia.
 
 ## Migracja (`migrate()`)
 

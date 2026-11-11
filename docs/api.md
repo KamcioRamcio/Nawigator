@@ -27,9 +27,9 @@ Daty: frontend wysyła `YYYY-MM-DD` (pole `<input type="date">`) lub `D.M.YYYY`;
 | Metoda | Ścieżka | Opis |
 |---|---|---|
 | GET | `/admin/users` | lista bez haseł (`has_password`) |
-| POST | `/admin/users` | `{ username*, password, position* }` → 201 `{ id }` |
-| PUT | `/admin/users/:id` | pola pominięte lub puste (`""`) zostają bez zmian – puste hasło nie kasuje hasła |
-| DELETE | `/admin/users/:id` | |
+| POST | `/admin/users` | `{ username*, password, position* }` → 201 `{ id }`; `position` ∈ `admin, user, viewer` |
+| PUT | `/admin/users/:id` | pola pominięte lub puste (`""`) zostają bez zmian – puste hasło nie kasuje hasła. Zdegradowanie ostatniego admina → 409 |
+| DELETE | `/admin/users/:id` | usunięcie ostatniego admina → 409 |
 
 ## Leki
 
@@ -66,7 +66,8 @@ Daty: frontend wysyła `YYYY-MM-DD` (pole `<input type="date">`) lub `D.M.YYYY`;
 | GET | `/zamowienia` | lista od najnowszej daty, z `leki_count`, `sprzet_count` |
 | GET | `/zamowienia/:id` | zamówienie z `leki[]` i `sprzet[]` |
 | POST | `/zamowienia` | `{ nazwa*, status, data_zamowienia }` (domyślnie `Nowe`, dziś) |
-| PUT | `/zamowienia/:id/status` | `status` ∈ `Nowe, W trakcie, Zamówione, Przyjęte, Zakończone, Anulowane`. `Przyjęte` dodaje stany raz (transakcja). |
+| PUT | `/zamowienia/:id/status` | `status` ∈ `Nowe, W trakcie, Zamówione, Przyjęte, Zakończone, Anulowane`. Pierwsze `Przyjęte` dodaje stany (transakcja). Przyjęte zamówienie może przejść tylko do `Przyjęte`/`Zakończone`; inny status → 409 `{ code: "ORDER_RECEIVED" }`, chyba że wysłano `cofnijPrzyjecie: true` (cofa stany dodane przy przyjęciu). |
+| PUT | `/zamowienia/:id/details` | `{ nazwa, data_zamowienia, uwagi }`, pola pominięte zostają bez zmian |
 | POST | `/zamowienia/lek` | `{ id_zamowienia*, id_leku*, ilosc* (≥ 0), uwagi, data_waznosci }` |
 | POST | `/zamowienia/sprzet` | `{ id_zamowienia*, id_sprzetu*, ilosc*, ... }` |
 | PUT | `/zamowienia/lek/:id`, `/zamowienia/sprzet/:id` | `{ ilosc*, uwagi, data_waznosci }` |

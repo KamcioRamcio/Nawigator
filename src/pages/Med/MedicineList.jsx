@@ -3,8 +3,10 @@ import apiUrl from "../../constants/api.js";
 import ConstantsMedicine from "../../constants/constantsMedicine.js";
 import AddItemModal from "../../components/AddItemModal.jsx";
 import SiteChange from "../../components/SiteChange.jsx";
-import { showEditButtonNoMain, showAddButton } from "../../constants/permisions.js";
+import { showEditButtonNoMain, showAddButton, showDeleteButton } from "../../constants/permisions.js";
 import toastService from '../../utils/toast.js';
+import {apiError} from "../../utils/apiError.js";
+import {toInputDate} from "../../utils/dates.js";
 
 /**
  * MedicineList Component
@@ -163,6 +165,9 @@ function MedicineList() {
             [medicineId]: {
                 ...prev[medicineId],
                 [field]: value,
+                // a new parent category invalidates the lower levels
+                ...(field === 'id_kategorii' ? {id_pod_kategorii: null, id_pod_pod_kategorii: null} : {}),
+                ...(field === 'id_pod_kategorii' ? {id_pod_pod_kategorii: null} : {}),
                 rozchod_kto_zmienil: username,
             },
         }));
@@ -316,6 +321,7 @@ function MedicineList() {
      * @param {string} medicineId - The ID of the medicine to be deleted.
      */
     const handleDeleteMedicine = async (medicineId) => {
+        if (!showDeleteButton(userPosition)) return;
         if (!confirm("Czy na pewno chcesz usunąć tę pozycję? Ta operacja jest nieodwracalna.")) {
             return;
         }
@@ -324,7 +330,7 @@ function MedicineList() {
                 method: "DELETE",
             });
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                throw new Error(await apiError(response));
             }
             toastService.info('Lek został usunięty');
         } catch (error) {
@@ -672,7 +678,6 @@ function MedicineList() {
                                                                                         value={editedValues[medicine.lek_id]?.id_kategorii || ""}
                                                                                         onChange={(e) => {
                                                                                             handleEdit(medicine.lek_id, "id_kategorii", parseInt(e.target.value));
-                                                                                            setSelectedCategory(e.target.value);
                                                                                         }}
                                                                                         className="border rounded-md px-2 py-1 w-full text-sm"
                                                                                     >
@@ -688,13 +693,12 @@ function MedicineList() {
                                                                                         value={editedValues[medicine.lek_id]?.id_pod_kategorii || ""}
                                                                                         onChange={(e) => {
                                                                                             handleEdit(medicine.lek_id, "id_pod_kategorii", parseInt(e.target.value));
-                                                                                            setSelectedSubCategory(e.target.value);
                                                                                         }}
                                                                                         className="border rounded-md px-2 py-1 w-full text-sm"
                                                                                         disabled={!editedValues[medicine.lek_id]?.id_kategorii}
                                                                                     >
                                                                                         <option value="">Wybierz podkategorię</option>
-                                                                                        {selectedCategory && ConstantsMedicine.SubCategoryOptions[selectedCategory]?.map(option => (
+                                                                                        {ConstantsMedicine.SubCategoryOptions[editedValues[medicine.lek_id]?.id_kategorii]?.map(option => (
                                                                                             <option key={option.value} value={option.value}>
                                                                                                 {option.label}
                                                                                             </option>
@@ -708,8 +712,7 @@ function MedicineList() {
                                                                                         disabled={!editedValues[medicine.lek_id]?.id_pod_kategorii}
                                                                                     >
                                                                                         <option value="">Wybierz podpodkategorię</option>
-                                                                                        {Array.isArray(ConstantsMedicine.SubSubCategoryOptions[selectedCategory]?.[selectedSubCategory]) &&
-                                                                                            ConstantsMedicine.SubSubCategoryOptions[selectedCategory][selectedSubCategory].map(option => (
+                                                                                        {ConstantsMedicine.SubSubCategoryOptions[editedValues[medicine.lek_id]?.id_kategorii]?.[editedValues[medicine.lek_id]?.id_pod_kategorii]?.map(option => (
                                                                                                 <option key={option.value} value={option.value}>
                                                                                                     {option.label}
                                                                                                 </option>
@@ -740,7 +743,7 @@ function MedicineList() {
                                                                             {globalEditMode ? (
                                                                                 <input
                                                                                     type="date"
-                                                                                    value={editedValues[medicine.lek_id]?.lek_data || ""}
+                                                                                    value={toInputDate(editedValues[medicine.lek_id]?.lek_data)}
                                                                                     onChange={(e) => handleEdit(medicine.lek_id, "lek_data", e.target.value)}
                                                                                     className="border rounded-md px-2 py-1 w-full text-sm"
                                                                                 />
@@ -756,7 +759,7 @@ function MedicineList() {
                                                                         </td>
                                                                         <td className="px-2 py-2 md:py-4 whitespace-nowrap text-right text-sm font-medium">
                                                                             {/* Delete button only visible when not in global edit mode */}
-                                                                            {!globalEditMode && (
+                                                                            {!globalEditMode && showDeleteButton(userPosition) && (
                                                                                 <button
                                                                                     onClick={() => handleDeleteMedicine(medicine.lek_id)}
                                                                                     className="bg-red-100 text-red-700 text-xs py-1 px-2 rounded-sm hover:bg-red-200"

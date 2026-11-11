@@ -1048,7 +1048,9 @@ const Documentation = () => {
                             <strong className="text-yellow-700">Przyjęte</strong>
                             <p className="text-gray-600 mt-1">status używany po fizycznym otrzymaniu zamówienia; na tym
                                 etapie należy wprowadzić daty ważności dla każdego otrzymanego produktu, co umożliwi
-                                systemowi prawidłową aktualizację danych w głównych arkuszach</p>
+                                systemowi prawidłową aktualizację danych w głównych arkuszach. Ilości dodawane są do
+                                stanu tylko raz. Przyjęte zamówienie można później oznaczyć jako Zakończone; zmiana na
+                                inny status wymaga potwierdzenia i cofa stany dodane przy przyjęciu.</p>
                         </div>
                         <div className="p-4 bg-purple-50 rounded-lg border-l-4 border-purple-500">
                             <strong className="text-purple-700">Zakończone</strong>

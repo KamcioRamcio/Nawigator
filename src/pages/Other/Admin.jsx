@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import apiUrl from "../../constants/api.js";
 import SiteChange from "../../components/SiteChange.jsx";
 import toastService from "../../utils/toast.js";
+import {apiError} from "../../utils/apiError.js";
 
 /**
  * Admin Component
@@ -113,7 +114,7 @@ function Admin() {
             });
 
             if (!response.ok) {
-                throw new Error(`Server responded with ${response.status}`);
+                throw new Error(await apiError(response));
             }
 
             setEditMode((prev) => ({ ...prev, [userId]: false }));
@@ -145,7 +146,7 @@ function Admin() {
             });
 
             if (!response.ok) {
-                throw new Error(`Server responded with ${response.status}`);
+                throw new Error(await apiError(response));
             }
 
             toastService.info("Użytkownik usunięty pomyślnie!");
@@ -193,7 +194,7 @@ function Admin() {
             });
 
             if (!response.ok) {
-                throw new Error(`Server responded with ${response.status}`);
+                throw new Error(await apiError(response));
             }
 
             setNewUser({ username: "", password: "", position: "" });
@@ -253,8 +254,8 @@ function Admin() {
             const file = e.target.files[0];
             if (!file) return;
 
-            if (!file.name.endsWith('.db') && !file.name.endsWith('.sqlite')) {
-                toastService.error('Proszę wybrać plik bazy danych (.db lub .sqlite)');
+            if (!/\.(db|sqlite|sqlite3)$/i.test(file.name)) {
+                toastService.error('Wybierz plik bazy danych (.db, .sqlite lub .sqlite3)');
                 return;
             }
 
@@ -317,7 +318,7 @@ function Admin() {
                             type="file"
                             ref={fileInputRef}
                             onChange={handleDatabaseImport}
-                            accept=".db,.sqlite"
+                            accept=".db,.sqlite,.sqlite3"
                             style={{ display: 'none' }}
                         />
                         <button

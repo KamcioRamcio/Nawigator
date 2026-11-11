@@ -3,8 +3,9 @@ import apiUrl from "../../constants/api.js";
 import AddItemModal from "../../components/AddItemModal.jsx";
 import SiteChange from "../../components/SiteChange.jsx";
 import ConstantsMedicine from "../../constants/constantsMedicine.js";
-import {showEditButtonNoMain, showAddButton} from "../../constants/permisions.js";
+import {showEditButtonNoMain, showAddButton, showDeleteButton} from "../../constants/permisions.js";
 import toastService from '../../utils/toast.js';
+import {apiError} from "../../utils/apiError.js";
 // jsPDF + embedded font (~2MB) load only when a PDF is generated
 const generateMinMedicinePDF = (...args) => import("../../utils/minMedicinePdfGenerator.js").then((m) => m.generateMinMedicinePDF(...args));
 
@@ -12,7 +13,7 @@ const generateMinMedicinePDF = (...args) => import("../../utils/minMedicinePdfGe
 function MinMedicine() {
     const username = localStorage.getItem("username");
     const user = JSON.parse(localStorage.getItem("user"));
-    const userPosition = user.position || "viewer";
+    const userPosition = user?.position || "viewer";
     const [currentDate, setCurrentDate] = useState("");
     const [medicines, setMedicines] = useState({});
     // Change from individual edit mode to global edit mode
@@ -485,6 +486,7 @@ function MinMedicine() {
 
 
     const handleDelete = async (medicineId) => {
+        if (!showDeleteButton(userPosition)) return;
         if (!confirm("Czy na pewno chcesz usunąć tę pozycję? Ta operacja jest nieodwracalna.")) {
             return;
         }
@@ -495,7 +497,7 @@ function MinMedicine() {
             });
 
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                throw new Error(await apiError(response));
             }
             toastService.info('Lek został usunięty z minimum leków');
 
@@ -979,7 +981,7 @@ function MinMedicine() {
                                                                             )}
                                                                         </td>
                                                                         <td className="px-2 py-2 md:py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                                            {!globalEditMode && (
+                                                                            {!globalEditMode && showDeleteButton(userPosition) && (
                                                                                 <button
                                                                                     onClick={() => handleDelete(medicine.lek_min_id)}
                                                                                     className="bg-red-100 text-red-700 text-xs py-1 px-2 rounded-sm hover:bg-red-200 flex items-center justify-center"

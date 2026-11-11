@@ -9,3 +9,10 @@ export function formatDate(value) {
     if (iso) return `${iso[3]}-${iso[2]}-${iso[1]}`;
     return value;
 }
+
+/** Any supported date string -> YYYY-MM-DD, the only format <input type="date"> accepts ('' if unknown). */
+export function toInputDate(value) {
+    const eu = formatDate(value);
+    const m = /^(\d{2})-(\d{2})-(\d{4})$/.exec(eu);
+    return m ? `${m[3]}-${m[2]}-${m[1]}` : '';
+}

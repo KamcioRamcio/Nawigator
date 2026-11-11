@@ -9,6 +9,7 @@ import UtilizationButton from "../../components/UtilizationButton.jsx";
 import { showEditButton, showDeleteButton, showUtilizationButton, showAddButton, showPredictedStatusButton, showOrderButton } from "../../constants/permisions.js";
 import EquipmentStatusPreview from "../../components/EquipmentStatusPreview.jsx";
 import toastService from '../../utils/toast.js';
+import {apiError} from "../../utils/apiError.js";
 // jsPDF + embedded font (~2MB) load only when a PDF is generated
 const generateMainEqPDF = (...args) => import("../../utils/mainEqPdfGenerator.js").then((m) => m.generateMainEqPDF(...args));
 
@@ -27,7 +28,7 @@ function MainEquipmentList() {
     const [currentDate, setCurrentDate] = useState("");
     const username = localStorage.getItem("username");
     const user = JSON.parse(localStorage.getItem("user"));
-    const userPosition = user.position || "viewer";
+    const userPosition = user?.position || "viewer";
     const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
 
     const [selectedEquipment, setSelectedEquipment] = useState(null);
@@ -124,6 +125,7 @@ function MainEquipmentList() {
                 [equipmentId]: {
                     ...prev[equipmentId],
                     [field]: processedValue,
+                    ...(field === 'id_kategorii' ? {id_pod_kategorii: null} : {}),
                     sprzet_kto_zmienil: username
                 }
             }
@@ -415,7 +417,7 @@ function MainEquipmentList() {
 
             });
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status()}`);
+                throw new Error(await apiError(response));
             }
             toastService.info('Sprzęt został usunięty');
         } catch (error) {
@@ -503,7 +505,7 @@ function MainEquipmentList() {
         const statusMatch = statusFilter === "all" ||
             equipment.sprzet_termin === statusFilter ||
             equipment.sprzet_ilosc_termin === statusFilter ||
-            (statusFilter === "W zamówieniu" && equipment.sprzet_ilosc_termin.includes("W zamówieniu"));
+            (statusFilter === "W zamówieniu" && equipment.sprzet_ilosc_termin?.includes("W zamówieniu"));
         ;
 
         return queryMatch && statusMatch;
@@ -879,7 +881,6 @@ function MainEquipmentList() {
                                                                             value={editedEquipment[equipment.sprzet_id]?.id_kategorii || ""}
                                                                             onChange={(e) => {
                                                                                 handleEdit(equipment.sprzet_id, "id_kategorii", e.target.value)
-                                                                                setSelectedCategory(e.target.value)
                                                                             }}
                                                                             className="border rounded-md px-2 py-1 w-full text-sm"
                                                                         >
@@ -895,12 +896,11 @@ function MainEquipmentList() {
                                                                             value={editedEquipment[equipment.sprzet_id]?.id_pod_kategorii || ""}
                                                                             onChange={(e) => {
                                                                                 handleEdit(equipment.sprzet_id, "id_pod_kategorii", e.target.value)
-                                                                                setSelectedCategory(e.target.value)
                                                                             }}
                                                                             className="border rounded-md px-2 py-1 w-full text-sm"
                                                                         >
                                                                             <option value="">Wybierz podkategorię</option>
-                                                                            {selectedCategory && ConstantsEquipment.SubCategoryOptions[selectedCategory]?.map(option => (
+                                                                            {ConstantsEquipment.SubCategoryOptions[editedEquipment[equipment.sprzet_id]?.id_kategorii]?.map(option => (
                                                                                 <option key={option.value} value={option.value}>
                                                                                     {option.label}
                                                                                 </option>
@@ -1084,6 +1084,7 @@ function MainEquipmentList() {
                 isOpen={isOrderModalOpen}
                 onClose={() => setIsOrderModalOpen(false)}
                 equipment={selectedEquipment}
+                onAdded={fetchEquipment}
             />
 
             <ConfirmDialog

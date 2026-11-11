@@ -1,3 +1,8 @@
+/**
+ * OUTDATED – nieużywane. Strona „Zgrany spis sprzętu” nie ma trasy w App.jsx ani linku w menu.
+ * Zostawiona celowo; przed podpięciem przetestować (m.in. edycja podkategorii w wierszu
+ * korzysta jeszcze z globalnego selectedCategory, a API nie zwraca id_kategorii dla tej listy).
+ */
 import React, { useEffect, useState } from "react";
 import apiUrl from "../../constants/api.js";
 import AddItemModal from "../../components/AddItemModal.jsx";

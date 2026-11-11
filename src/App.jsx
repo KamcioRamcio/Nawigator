@@ -10,6 +10,7 @@ const Documentation = lazy(() => import("./pages/Other/Documentation.jsx"));
 const OrderList = lazy(() => import("./pages/Other/OrderList.jsx"));
 const Admin = lazy(() => import("./pages/Other/Admin.jsx"));
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute.jsx";
+import RequireUser from "./components/RequireUser.jsx";
 const UtilizationList = lazy(() => import("./pages/Other/UtilizationList.jsx"));
 import './index.css';
 import { ToastContainer } from 'react-toastify';
@@ -26,14 +27,16 @@ function App(){
                     <Route element={<ProtectedAdminRoute />}>
                         <Route path="/admin" element={<Admin />} />
                     </Route>
-                    <Route path="/Main/Leki" element={<MainMedicineList />} />
-                    <Route path="/Main/Sprzet" element={<MainEquipmentList/>}/>
-                    <Route path="/zestawienie-lekow" element={<MedicineList/>}></Route>
-                    <Route path="/minimum-lekow" element={<MinMedicine/>}></Route>
-                    <Route path="/zestawienie-sprzetu" element={<EquipmentList/>}></Route>
-                    <Route path="/utylizacja" element={<UtilizationList/>}></Route>
+                    <Route element={<RequireUser />}>
+                        <Route path="/Main/Leki" element={<MainMedicineList />} />
+                        <Route path="/Main/Sprzet" element={<MainEquipmentList/>}/>
+                        <Route path="/zestawienie-lekow" element={<MedicineList/>}></Route>
+                        <Route path="/minimum-lekow" element={<MinMedicine/>}></Route>
+                        <Route path="/zestawienie-sprzetu" element={<EquipmentList/>}></Route>
+                        <Route path="/utylizacja" element={<UtilizationList/>}></Route>
+                        <Route path="/zamowienia" element={<OrderList/>}></Route>
+                    </Route>
                     <Route path="/dokumentacja" element={<Documentation/>}></Route>
-                    <Route path="/zamowienia" element={<OrderList/>}></Route>
                     <Route path="*" element={<Navigate to="/" />} />
                 </Routes>
                 </Suspense>

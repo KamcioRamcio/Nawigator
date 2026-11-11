@@ -46,3 +46,41 @@ test('order PDF can be generated from the details view', async ({page}) => {
     await page.getByRole('button', {name: /PDF/}).click();
     expect((await download).suggestedFilename()).toMatch(/\.pdf$/);
 });
+
+test('received order: rename + date save, status locked behind the undo card, undo takes the stock back', async ({page}) => {
+    await login(page);
+    const stockReceived = (await ibuprofen(page)).lek_ilosc;
+    await page.goto('/zamowienia');
+    await page.getByRole('row', {name: /Dostawa E2E/}).getByRole('button', {name: 'Zobacz szczegóły'}).click();
+    await page.getByRole('button', {name: /Opcje/}).click();
+    await page.getByRole('button', {name: 'Edytuj'}).click();
+
+    // the stored DD-MM-YYYY date is shown in the date input; name and date are saved
+    const [nameInput, dateInput] = [page.locator('.fixed input[type="text"]').first(), page.locator('.fixed input[type="date"]').first()];
+    await expect(dateInput).not.toHaveValue('');
+    await nameInput.fill('Dostawa E2E zmieniona');
+    await dateInput.fill('2026-03-05');
+    // only statuses that keep the receipt are offered in the normal select
+    await expect(page.locator('.fixed select').first().locator('option')).toHaveText(['Przyjęte', 'Zakończone']);
+    await page.getByRole('button', {name: 'Zapisz'}).click();
+    await expect(page.getByText('Zamówienie zaktualizowane pomyślnie')).toBeVisible();
+    const [order] = (await api(page, 'zamowienia')).filter(o => o.nazwa === 'Dostawa E2E zmieniona');
+    expect(order.data_zamowienia).toBe('05-03-2026');
+
+    // undo card: two steps, Anuluj keeps everything
+    await page.getByRole('button', {name: 'Edytuj'}).click();
+    const card = page.getByRole('region', {name: 'Zamówienie przyjęte'});
+    await expect(card).toContainText('zostało już przyjęte');
+    await card.getByLabel('Nowy status').selectOption('Nowe');
+    await card.getByRole('button', {name: 'Tak, zmień status'}).click();
+    await expect(card).toContainText('zostaną cofnięte');
+    await expect(card).toContainText('Ibuprofen: −5');
+    await card.getByRole('button', {name: 'Anuluj'}).click();
+    expect((await ibuprofen(page)).lek_ilosc).toBe(stockReceived);
+
+    await card.getByRole('button', {name: 'Tak, zmień status'}).click();
+    await card.getByRole('button', {name: 'Zmień'}).click();
+    await expect.poll(async () => (await ibuprofen(page)).lek_ilosc).toBe(stockReceived - 5);
+    expect((await api(page, `zamowienia/${order.id}`)).status).toBe('Nowe');
+    expect((await ibuprofen(page)).stan_magazynowy_status).toBe('W zamówieniu: Dostawa E2E zmieniona');
+});

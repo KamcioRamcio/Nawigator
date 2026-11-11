@@ -366,7 +366,10 @@ export async function fetchMinMedicinesByCategory() {
                 lek_min_pakowanie: row.lek_min_pakowanie,
                 lek_min_w_opakowaniu: row.lek_min_w_opakowaniu,
                 leki_min_przechowywanie: row.leki_min_przechowywanie,
-                leki_min_na_statku_spis_podstawowy: row.leki_min_na_statku_spis_podstawowy
+                leki_min_na_statku_spis_podstawowy: row.leki_min_na_statku_spis_podstawowy,
+                id_kategorii: row.kategoria_id,
+                id_pod_kategorii: row.podkategoria_id,
+                id_pod_pod_kategorii: row.podpodkategoria_id
             });
         }
 

@@ -141,7 +141,8 @@ const TABLES_SQL = `
                                                   status TEXT DEFAULT 'Nowe',
                                                   data_zamowienia DATE NOT NULL DEFAULT (strftime('%d-%m-%Y', 'now')),
                                                   data_realizacji DATE DEFAULT NULL DEFAULT (strftime('%d-%m-%Y', 'now')),
-                                                  uwagi TEXT
+                                                  uwagi TEXT,
+                                                  data_przyjecia TEXT
         );
 
         CREATE TABLE IF NOT EXISTS Zamowienia_Leki (
@@ -151,6 +152,10 @@ const TABLES_SQL = `
                                                        ilosc REAL NOT NULL,
                                                        uwagi TEXT,
                                                        data_waznosci DATE,
+                                                       przyjeta_ilosc REAL,
+                                                       przyjety_wpis TEXT,
+                                                       przed_przyjeciem_data TEXT,
+                                                       zmieniono_date INTEGER,
                                                        FOREIGN KEY (id_zamowienia) REFERENCES Zamowienia(id),
                                                        FOREIGN KEY (id_leku) REFERENCES Leki(id)
         );
@@ -162,6 +167,10 @@ const TABLES_SQL = `
                                                          ilosc REAL NOT NULL,
                                                          uwagi TEXT,
                                                          data_waznosci DATE,
+                                                         przyjeta_ilosc REAL,
+                                                         przyjety_wpis TEXT,
+                                                         przed_przyjeciem_data TEXT,
+                                                         zmieniono_date INTEGER,
                                                          FOREIGN KEY (id_zamowienia) REFERENCES Zamowienia(id),
                                                          FOREIGN KEY (id_sprzetu) REFERENCES Sprzet(id)
         );
@@ -784,6 +793,10 @@ const DATE_COLUMNS = [
     ['Sprzet', 'data_waznosci'],
     ['Zamowienia', 'data_zamowienia'],
     ['Utylizacje', 'data_utworzenia'],
+    ['Zamowienia_Leki', 'data_waznosci'],
+    ['Zamowienia_Sprzet', 'data_waznosci'],
+    ['Utylizacje_Leki', 'data_waznosci'],
+    ['Utylizacje_Sprzet', 'data_waznosci'],
 ];
 
 export async function updateDateFormatToEuropean() {
@@ -868,8 +881,38 @@ export async function migrate() {
     await addStatusMedicineTrigger();
     await addExpiryStatusTrigger();
     await updateDateFormatToEuropean();
+    await markLegacyReceipts();
+    await fillUtilizationNames();
     await refreshStatuses();
     await ensureAdminUser();
+}
+
+// Orders received by older versions have no receipt record. Mark them received so leaving
+// "Przyjęte" asks to undo the stock (quantity + history entry; the expiry date is left as is).
+async function markLegacyReceipts() {
+    const db = await getDb();
+    const orders = await db.all(`SELECT id FROM Zamowienia WHERE status = 'Przyjęte' AND data_przyjecia IS NULL`);
+    for (const {id} of orders) {
+        for (const table of ['Zamowienia_Leki', 'Zamowienia_Sprzet']) {
+            for (const item of await db.all(`SELECT id, ilosc, data_waznosci FROM ${table} WHERE id_zamowienia = ?`, [id])) {
+                const entry = item.data_waznosci ? `${item.ilosc}x${item.data_waznosci}` : '';
+                await db.run(`UPDATE ${table} SET przyjeta_ilosc = ?, przyjety_wpis = ?, zmieniono_date = 0 WHERE id = ?`,
+                    [item.ilosc, entry, item.id]);
+            }
+        }
+        await db.run(`UPDATE Zamowienia SET data_przyjecia = data_zamowienia WHERE id = ?`, [id]);
+    }
+}
+
+// Utilization items keep a copy of the name; older clients never sent it.
+async function fillUtilizationNames() {
+    const db = await getDb();
+    await db.exec(`
+        UPDATE Utylizacje_Leki SET nazwa_leku = (SELECT nazwa_leku FROM Leki WHERE Leki.id = Utylizacje_Leki.id_leku)
+        WHERE nazwa_leku IS NULL AND id_leku IS NOT NULL;
+        UPDATE Utylizacje_Sprzet SET nazwa_sprzetu = (SELECT nazwa FROM Sprzet WHERE Sprzet.id = Utylizacje_Sprzet.id_sprzetu)
+        WHERE nazwa_sprzetu IS NULL AND id_sprzetu IS NOT NULL;
+    `);
 }
 
 // A brand-new database would otherwise have nobody who can log in (or open the admin panel).

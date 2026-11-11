@@ -62,3 +62,14 @@ sequenceDiagram
         end
     end
 ```
+
+## Nieużywany kod (outdated)
+
+Te pliki zostają w repo, ale nie są dostępne z aplikacji. Mają na górze komentarz „OUTDATED”:
+
+| Plik | Co to jest | Dlaczego nieużywane |
+|---|---|---|
+| `src/pages/Eq/OrganizedEquipment.jsx` | strona „Zgrany spis sprzętu” (tabela `Sprzet_zgrany_spis`, API `/api/sprzet-zgrany*` działa) | brak trasy w `App.jsx` i linku w menu |
+| `src/components/AddItemToUtilizationModal.jsx` | ręczne dodanie do utylizacji pozycji spoza spisu | renderowane w `UtilizationList`, ale żaden przycisk go nie otwiera |
+
+Przed ponownym podpięciem trzeba je przetestować. Nie były objęte poprawkami UI z listopada 2026, poza statusami i nazwami pól.

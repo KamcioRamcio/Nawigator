@@ -16,6 +16,7 @@ import {
 } from "../../constants/permisions.js";
 import MedicineStatusPreview from "../../components/MedicineStatusPreview.jsx";
 import toastService from '../../utils/toast.js';
+import {apiError} from "../../utils/apiError.js";
 // jsPDF + embedded font (~2MB) load only when a PDF is generated
 const generateMainMedicinePDF = (...args) => import("../../utils/mainMedicinePdfGenerator.js").then((m) => m.generateMainMedicinePDF(...args));
 
@@ -32,7 +33,7 @@ function MainMedicineList() {
     const [editedValues, setEditedValues] = useState({});
     const username = localStorage.getItem("username");
     const user = JSON.parse(localStorage.getItem("user"));
-    const userPosition = user.position || "viewer";
+    const userPosition = user?.position || "viewer";
     const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
 
     const [selectedMedicine, setSelectedMedicine] = useState(null);
@@ -204,7 +205,7 @@ function MainMedicineList() {
         const userEditFields = ["rozchod_ilosc", "stan_magazynowy_ilosc"]
 
         if (userPosition !== "admin" && !userEditFields.includes(field)) {
-            alert("Tylko administartor może edytować te pola");
+            alert("Tylko administrator może edytować te pola");
             return;
         }
 
@@ -547,7 +548,7 @@ function MainMedicineList() {
                 method: "DELETE",
             });
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                throw new Error(await apiError(response));
             }
             toastService.info('Lek został usunięty');
         } catch (error) {
@@ -1275,6 +1276,7 @@ function MainMedicineList() {
                 isOpen={isOrderModalOpen}
                 onClose={() => setIsOrderModalOpen(false)}
                 medicine={selectedMedicine}
+                onAdded={fetchMedicines}
             />
             
             <ConfirmDialog
